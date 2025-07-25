@@ -69,18 +69,19 @@
           <h2 class="text-xl text-gray-800 font-semibold">Connexion</h2>
         </div>
 
-        <form class="space-y-6">
+        <form method="POST" action="{{ route('login.submit') }}" class="space-y-6">
+          @csrf
           <div class="space-y-4">
             <div>
               <label for="email" class="block text-gray-700 mb-1">Adresse e-mail</label>
-              <input type="email" id="email" placeholder="votre@email.com"
-                     class="w-full bg-gray-50 border border-gray-200 focus:border-yellow-400 focus:ring-yellow-400 rounded px-4 py-2">
+              <input type="email" id="email" name="email" placeholder="votre@email.com"
+                      class="w-full bg-gray-50 border border-gray-200 focus:border-yellow-400 focus:ring-yellow-400 rounded px-4 py-2">       
             </div>
 
             <div>
               <label for="password" class="block text-gray-700 mb-1">Mot de passe</label>
-              <input type="password" id="password" placeholder="••••••••"
-                     class="w-full bg-gray-50 border border-gray-200 focus:border-yellow-400 focus:ring-yellow-400 rounded px-4 py-2">
+              <input type="password" id="password" name="password" placeholder="••••••••"
+                      class="w-full bg-gray-50 border border-gray-200 focus:border-yellow-400 focus:ring-yellow-400 rounded px-4 py-2">       
             </div>
           </div>
 
