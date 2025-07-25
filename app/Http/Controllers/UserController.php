@@ -46,4 +46,12 @@ class UserController extends Controller
         session()->flush();
         return redirect()->route('login');
     }
+
+    // Affiche chaque section
+    public function overview()    { return view('components.overview'); }
+    public function orders()      { return view('components.orders'); }
+    public function users()       { return view('components.users'); }
+    public function analytics()   { return view('components.analytics'); }
+
+
 }
