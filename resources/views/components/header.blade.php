@@ -19,6 +19,7 @@
     }
   </script>
   <script src="{{ asset('js/dashboard.js') }}" defer></script>
+  
 </head>
 <body class="min-h-screen bg-gray-50">
 <header class="bg-white border-b border-gray-200 px-6 py-4 dashboard-header">
@@ -54,9 +55,12 @@
                     <p class="text-xs text-gray-600">admin@hello.com</p>
                 </div>
             </div>
-            <button class="p-2 rounded-full hover:bg-gray-100">
-                <i class="fas fa-sign-out-alt text-gray-700"></i>
-            </button>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="p-2 rounded-full hover:bg-gray-100">
+                  <i class="fas fa-sign-out-alt text-gray-700"></i>
+                </button>
+              </form>
         </div>
     </div>
 </header>

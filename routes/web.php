@@ -12,6 +12,10 @@ Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
 Route::get('/overview',     [UserController::class, 'overview'])    ->name('overview');
     Route::get('/orders',       [UserController::class, 'orders'])      ->name('orders');
-    Route::get('/users',        [UserController::class, 'users'])       ->name('users');
+    
     Route::get('/reservations', [UserController::class, 'reservations'])->name('reservations');
     Route::get('/analytics',    [UserController::class, 'analytics'])   ->name('analytics');
+    Route::get('/chat', [UserController::class, 'chat'])->name('chat');
+
+Route::post('/users', [UserController::class, 'createUser'])->name('users.create');
+Route::get('/users', [UserController::class, 'users'])->name('users');    

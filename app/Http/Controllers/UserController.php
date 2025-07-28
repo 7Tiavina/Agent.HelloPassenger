@@ -50,8 +50,33 @@ class UserController extends Controller
     // Affiche chaque section
     public function overview()    { return view('components.overview'); }
     public function orders()      { return view('components.orders'); }
-    public function users()       { return view('components.users'); }
     public function analytics()   { return view('components.analytics'); }
+    public function chat()        { return view('components.chat'); }
+
+    public function users() {
+        $agents = User::where('role', 'admin')->get();
+        $users = User::where('role', 'user')->get();
+        return view('components.users', compact('agents', 'users'));
+    }
+
+    public function createUser(Request $request)
+    {
+        $request->validate([
+            'email'                 => 'required|email|unique:users',
+            'role'                  => 'required|in:user,agent',
+            'password'              => 'required|min:6|confirmed',
+        ]);
+
+        User::create([
+            'email'           => $request->email,
+            'role'            => $request->role,
+            'password_hash'   => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('users')->with('success', 'Utilisateur créé.');
+    }
+
+
 
 
 }

@@ -19,11 +19,12 @@
         Utilisateurs
       </a>
 
-      <a href="{{ route('reservations') }}"
-         class="w-full flex items-center px-4 py-2 rounded-md {{ request()->routeIs('reservations') ? 'bg-yellow-400 text-gray-800 hover:bg-yellow-500' : 'hover:bg-gray-100 text-gray-700' }}">
-        <i class="fas fa-calendar mr-3"></i>
-        Réservations
+      <a href="{{ route('chat') }}"
+         class="w-full flex items-center px-4 py-2 rounded-md {{ request()->routeIs('chat') ? 'bg-yellow-400 text-gray-800 hover:bg-yellow-500' : 'hover:bg-gray-100 text-gray-700' }}">
+        <i class="fas fa-comments mr-3"></i>
+        Chat
       </a>
+
 
       <a href="{{ route('analytics') }}"
          class="w-full flex items-center px-4 py-2 rounded-md {{ request()->routeIs('analytics') ? 'bg-yellow-400 text-gray-800 hover:bg-yellow-500' : 'hover:bg-gray-100 text-gray-700' }}">
