@@ -7,11 +7,24 @@
         Vue d'ensemble
       </a>
 
-      <a href="{{ route('orders') }}"
-         class="w-full flex items-center px-4 py-2 rounded-md {{ request()->routeIs('orders') ? 'bg-yellow-400 text-gray-800 hover:bg-yellow-500' : 'hover:bg-gray-100 text-gray-700' }}">
-        <i class="fas fa-box mr-3"></i>
-        Commandes
-      </a>
+      <div class="relative">
+        <button onclick="toggleDropdown(this)"
+          class="w-full flex items-center px-4 py-2 rounded-md bg-yellow-400 text-gray-800 hover:bg-yellow-500 transition">
+          <i class="fas fa-box mr-3"></i>
+          Commandes
+          <svg class="ml-auto w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <path d="M5.5 7l4.5 4.5L14.5 7z" />
+          </svg>
+        </button>
+        <div class="hidden mt-1 ml-6 space-y-1 dropdown-menu">
+          <a href="{{ route('orders') }}" class="block px-4 py-2 text-sm text-gray-700 rounded hover:bg-gray-100">
+            Nouvelle commande
+          </a>
+          <a href="#" class="block px-4 py-2 text-sm text-gray-700 rounded hover:bg-gray-100">
+            Mes commandes
+          </a>
+        </div>
+      </div>
 
       <a href="{{ route('users') }}"
          class="w-full flex items-center px-4 py-2 rounded-md {{ request()->routeIs('users') ? 'bg-yellow-400 text-gray-800 hover:bg-yellow-500' : 'hover:bg-gray-100 text-gray-700' }}">
@@ -53,3 +66,9 @@
     </div>
   </nav>
 </aside>
+<script>
+  function toggleDropdown(button) {
+    const menu = button.nextElementSibling;
+    menu.classList.toggle('hidden');
+  }
+</script>

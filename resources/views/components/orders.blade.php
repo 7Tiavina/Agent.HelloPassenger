@@ -5,152 +5,178 @@
   @include('components.sidebar')
 
   <main class="flex-1 p-6">
-    <div id="orders" data-tab-content class="space-y-6">
-      <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-semibold text-gray-800">Gestion des commandes</h2>
-        <div class="flex items-center gap-3">
-          <button
-            onclick="exportOrders()"
-            class="px-3 py-1 rounded-md border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 flex items-center"
-          >
-            <i class="fas fa-download mr-2"></i>Exporter
-          </button>
-          <button
-            onclick="createOrder()"
-            class="px-4 py-2 rounded-md bg-yellow-400 text-gray-800 hover:bg-yellow-500 flex items-center"
-          >
-            <i class="fas fa-plus mr-2"></i>Nouvelle commande
-          </button>
+    {{-- Header et bouton Scanner --}}
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-semibold">Gestion des commandes</h2>
+      <button
+        onclick="openScannerModal()"
+        class="px-4 py-2 bg-yellow-400 text-gray-800 rounded hover:bg-yellow-500 flex items-center"
+      >
+        <i class="fas fa-qrcode mr-2"></i>Scanner
+      </button>
+    </div>
+
+    {{-- Quick Stats --}}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
+        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+        <div>
+          <p class="text-sm text-gray-600">Terminées</p>
+          <p class="text-xl text-gray-800">156</p>
         </div>
       </div>
-
-      <!-- Quick Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <!-- Terminees -->
-        <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
-          <i class="fas fa-check-circle text-green-600 text-2xl"></i>
-          <div>
-            <p class="text-sm text-gray-600">Terminées</p>
-            <p class="text-xl text-gray-800">156</p>
-          </div>
-        </div>
-        <!-- En cours -->
-        <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
-          <i class="fas fa-clock text-orange-600 text-2xl"></i>
-          <div>
-            <p class="text-sm text-gray-600">En cours</p>
-            <p class="text-xl text-gray-800">24</p>
-          </div>
-        </div>
-        <!-- En attente -->
-        <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
-          <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-          <div>
-            <p class="text-sm text-gray-600">En attente</p>
-            <p class="text-xl text-gray-800">8</p>
-          </div>
-        </div>
-        <!-- Revenus jour -->
-        <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
-          <i class="fas fa-euro-sign text-blue-600 text-2xl"></i>
-          <div>
-            <p class="text-sm text-gray-600">Revenus jour</p>
-            <p class="text-xl text-gray-800">€450</p>
-          </div>
+      <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
+        <i class="fas fa-clock text-orange-600 text-2xl"></i>
+        <div>
+          <p class="text-sm text-gray-600">En cours</p>
+          <p class="text-xl text-gray-800">24</p>
         </div>
       </div>
-
-      <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-sm p-4">
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="relative flex-1 min-w-[200px]">
-            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input
-              type="text"
-              placeholder="Rechercher une commande..."
-              class="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              oninput="filterOrders(this.value)"
-            >
-          </div>
-          <select
-            class="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            onchange="filterByStatus(this.value)"
-          >
-            <option value="">Filtrer par statut</option>
-            <option value="active">Actif</option>
-            <option value="completed">Terminé</option>
-            <option value="pending">En attente</option>
-          </select>
-          <select
-            class="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            onchange="filterByService(this.value)"
-          >
-            <option value="">Service</option>
-            <option value="consigne">Consigne</option>
-            <option value="transfert">Transfert</option>
-          </select>
-          <button
-            onclick="applyFilters()"
-            class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center"
-          >
-            <i class="fas fa-filter mr-2"></i>Filtres
-          </button>
+      <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
+        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+        <div>
+          <p class="text-sm text-gray-600">En attente</p>
+          <p class="text-xl text-gray-800">8</p>
         </div>
       </div>
-
-      <!-- Table des commandes -->
-      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm divide-y divide-gray-200">
-            <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-xs font-medium">
-              <tr>
-                <th class="px-4 py-3">ID</th>
-                <th class="px-4 py-3">Client</th>
-                <th class="px-4 py-3">Service</th>
-                <th class="px-4 py-3">Localisation</th>
-                <th class="px-4 py-3">Date</th>
-                <th class="px-4 py-3">Prix</th>
-                <th class="px-4 py-3">Statut</th>
-                <th class="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="orders-table" class="bg-white divide-y divide-gray-200">
-              <!-- Lignes générées dynamiquement -->
-            </tbody>
-          </table>
+      <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-3">
+        <i class="fas fa-euro-sign text-blue-600 text-2xl"></i>
+        <div>
+          <p class="text-sm text-gray-600">Revenus jour</p>
+          <p class="text-xl text-gray-800">€450</p>
         </div>
+      </div>
+    </div>
+
+    {{-- Filters --}}
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="relative flex-1 min-w-[200px]">
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          <input
+            type="text"
+            placeholder="Rechercher une commande..."
+            class="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            oninput="filterOrders(this.value)"
+          >
+        </div>
+        <select
+          class="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          onchange="filterByStatus(this.value)"
+        >
+          <option value="">Filtrer par statut</option>
+          <option value="active">Actif</option>
+          <option value="completed">Terminé</option>
+          <option value="pending">En attente</option>
+        </select>
+        <select
+          class="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          onchange="filterByService(this.value)"
+        >
+          <option value="">Service</option>
+          <option value="consigne">Consigne</option>
+          <option value="transfert">Transfert</option>
+        </select>
+        <button
+          onclick="applyFilters()"
+          class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center"
+        >
+          <i class="fas fa-filter mr-2"></i>Filtres
+        </button>
+      </div>
+    </div>
+
+    {{-- Table des commandes --}}
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm divide-y divide-gray-200">
+          <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-xs font-medium">
+            <tr>
+              <th class="px-4 py-3">ID</th>
+              <th class="px-4 py-3">Client</th>
+              <th class="px-4 py-3">Service</th>
+              <th class="px-4 py-3">Localisation</th>
+              <th class="px-4 py-3">Date</th>
+              <th class="px-4 py-3">Prix</th>
+              <th class="px-4 py-3">Statut</th>
+              <th class="px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orders-table" class="bg-white divide-y divide-gray-200">
+            <!-- Lignes générées dynamiquement -->
+          </tbody>
+        </table>
       </div>
     </div>
   </main>
 </div>
 
+{{-- Modal Scanner --}}
+<div id="scannerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+  <div class="bg-white p-6 rounded-lg shadow-lg relative w-full max-w-sm">
+    <button onclick="closeScannerModal()" class="absolute top-3 right-3 text-gray-600 hover:text-black">
+      <i class="fas fa-times"></i>
+    </button>
+    <h3 class="mb-4 text-lg font-semibold">Scannez le QR Code</h3>
+    <video id="qrVideo" class="w-full rounded-md"></video>
+    <canvas id="qrCanvas" class="hidden"></canvas>
+  </div>
+</div>
+
+{{-- jsQR et script de scan --}}
+<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    initOrders();
-  });
+  let video, canvas, ctx, scanning = false;
 
-  function exportOrders() {
-    // TODO: déclencher export côté controller
+  function openScannerModal() {
+    document.getElementById('scannerModal').classList.remove('hidden');
+    startScanner();
   }
-
-  function createOrder() {
-    // TODO: rediriger vers formulaire de création
-  }
-
-  function filterOrders(query) {
-    // TODO
-  }
-  function filterByStatus(status) {
-    // TODO
-  }
-  function filterByService(service) {
-    // TODO
-  }
-  function applyFilters() {
-    // TODO
+  function closeScannerModal() {
+    document.getElementById('scannerModal').classList.add('hidden');
+    stopScanner();
   }
 
-  function initOrders() {
-    // TODO: générer stats et ligne de commandes
+  function startScanner() {
+    video  = document.getElementById('qrVideo');
+    canvas = document.getElementById('qrCanvas');
+    ctx    = canvas.getContext('2d');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        video.srcObject = stream;
+        video.setAttribute('playsinline', true);
+        video.play();
+        scanning = true;
+        scanFrame();
+      })
+      .catch(() => {
+        alert('Impossible d’accéder à la caméra');
+      });
+  }
+
+  function stopScanner() {
+    scanning = false;
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+    }
+  }
+
+  function scanFrame() {
+    if (!scanning) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, canvas.width, canvas.height);
+      if (code) {
+        stopScanner();
+        closeScannerModal();
+        window.location.href = `/reservations/ref/${encodeURIComponent(code.data)}`;
+        return;
+      }
+    }
+    requestAnimationFrame(scanFrame);
   }
 </script>
