@@ -26,3 +26,7 @@ Route::get('/reservations', [UserController::class, 'reservations'])->name('rese
 // Affiche la fiche d’une réservation via son ref (QR code)
 Route::get('/reservations/ref/{ref}', [BagageConsigneController::class, 'showByRef'])
      ->name('reservations.showByRef');
+
+
+Route::get('/reservations/ref/{ref}', [BagageConsigneController::class, 'showByRef'])
+     ->name('reservations.showByRef');     

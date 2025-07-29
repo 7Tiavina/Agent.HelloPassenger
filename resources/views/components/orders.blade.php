@@ -128,11 +128,11 @@
 <script>
   let video, canvas, ctx, scanning = false;
 
-  function openScannerModal() {
+  function openScannerModal(){
     document.getElementById('scannerModal').classList.remove('hidden');
     startScanner();
   }
-  function closeScannerModal() {
+  function closeScannerModal(){
     document.getElementById('scannerModal').classList.add('hidden');
     stopScanner();
   }
@@ -145,38 +145,52 @@
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => {
         video.srcObject = stream;
-        video.setAttribute('playsinline', true);
         video.play();
         scanning = true;
         scanFrame();
-      })
-      .catch(() => {
-        alert('Impossible d’accéder à la caméra');
       });
   }
 
   function stopScanner() {
     scanning = false;
-    if (video.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop());
-    }
+    video.srcObject.getTracks().forEach(t => t.stop());
   }
 
   function scanFrame() {
-    if (!scanning) return;
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, canvas.width, canvas.height);
-      if (code) {
-        stopScanner();
-        closeScannerModal();
-        window.location.href = `/reservations/ref/${encodeURIComponent(code.data)}`;
-        return;
+  if (!scanning) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, canvas.width, canvas.height);
+    if (code) {
+      stopScanner();
+      closeScannerModal();
+
+      // 1) On lit raw = code.data
+      let raw = code.data;
+
+      // 2) Tente de parser en JSON et d’en extraire .ref
+      try {
+        const obj = JSON.parse(raw);
+        if (obj.ref) {
+          raw = obj.ref; 
+        }
+      } catch (e) {
+        // si JSON.parse échoue, on garde raw tel quel
       }
+
+      // 3) console.log pour debug
+      console.log('Redirecting to ref:', raw);
+
+      // 4) Redirection finale
+      window.location.href = `/reservations/ref/${encodeURIComponent(raw)}`;
+      return;
     }
-    requestAnimationFrame(scanFrame);
   }
+  requestAnimationFrame(scanFrame);
+}
+
 </script>
+

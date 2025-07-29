@@ -22,14 +22,14 @@ class BagageConsigneController extends Controller
         return view('components.reservation_create');
     }
     
+
     public function showByRef($ref)
         {
-            // Recherche la réservation ET l’utilisateur lié
-            $reservation = Reservation::where('ref', $ref)
-                                      ->with('user')
+            $reservation = Reservation::with('user')
+                                      ->where('ref', $ref)
                                       ->firstOrFail();
 
-            // Affiche resources/views/components/reservation_show.blade.php
             return view('components.reservation_show', compact('reservation'));
         }
+    
 }
