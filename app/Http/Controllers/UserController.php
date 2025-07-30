@@ -4,6 +4,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Reservation;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\Output\QROutputInterface;
+
+use App\Models\BagageHistory;
 
 class UserController extends Controller
 {
@@ -86,22 +92,35 @@ class UserController extends Controller
         return view('components.orders', compact('reservations'));
     }
 
-    public function myorders()
+   public function myorders()
     {
         $agentId = session('user_id');
 
-        $reservationIds = \App\Models\BagageHistory::where('agent_id', $agentId)
+        $reservationIds = BagageHistory::where('agent_id', $agentId)
             ->where('status', 'collecté')
             ->pluck('reservation_id');
 
-        $reservations = \App\Models\Reservation::with(['user', 'histories.agent'])
+        $reservations = Reservation::with(['user', 'histories.agent'])
             ->whereIn('id', $reservationIds)
             ->orderByDesc('created_at')
             ->take(25)
             ->get();
 
+        // → On ne passe PAS 'version' du tout
+        $options = new QROptions([
+            'eccLevel'   => QRCode::ECC_L,
+            'outputType' => QROutputInterface::MARKUP_SVG,
+            'scale'      => 5,
+        ]);
+        $qrGenerator = new QRCode($options);
+
+        foreach ($reservations as $res) {
+            $res->qr_svg = $qrGenerator->render($res->ref);
+        }
+
         return view('components.myorders', compact('reservations'));
     }
+
 
 
 
