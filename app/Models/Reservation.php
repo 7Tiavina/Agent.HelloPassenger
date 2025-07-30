@@ -26,4 +26,9 @@ class Reservation extends Model
         return $this->hasMany(BagageHistory::class);
     }
 
+    public function histories()
+    {
+        return $this->hasMany(BagageHistory::class);
+    }
+
 }

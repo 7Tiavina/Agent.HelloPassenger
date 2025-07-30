@@ -86,6 +86,25 @@ class UserController extends Controller
         return view('components.orders', compact('reservations'));
     }
 
+    public function myorders()
+    {
+        $agentId = session('user_id');
+
+        $reservationIds = \App\Models\BagageHistory::where('agent_id', $agentId)
+            ->where('status', 'collecté')
+            ->pluck('reservation_id');
+
+        $reservations = \App\Models\Reservation::with(['user', 'histories.agent'])
+            ->whereIn('id', $reservationIds)
+            ->orderByDesc('created_at')
+            ->take(25)
+            ->get();
+
+        return view('components.myorders', compact('reservations'));
+    }
+
+
+
 
 
 }

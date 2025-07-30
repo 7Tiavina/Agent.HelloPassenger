@@ -20,7 +20,7 @@
           <a href="{{ route('orders') }}" class="block px-4 py-2 text-sm text-gray-700 rounded hover:bg-gray-100">
             Nouvelle commande
           </a>
-          <a href="#" class="block px-4 py-2 text-sm text-gray-700 rounded hover:bg-gray-100">
+          <a href="{{ route('myorders') }}" class="block px-4 py-2 text-sm text-gray-700 rounded hover:bg-gray-100">
             Mes commandes
           </a>
         </div>

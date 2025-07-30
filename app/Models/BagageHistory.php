@@ -15,4 +15,9 @@ class BagageHistory extends Model
     {
         return $this->belongsTo(Reservation::class);
     }
+
+    public function agent()
+    {
+        return $this->belongsTo(User::class, 'agent_id');
+    }
 }
