@@ -6,7 +6,64 @@
 <div class="flex">
   @include('components.sidebar')
 
-  <main class="flex-1 p-6" x-data="{ openModal: false, selectedHistory: null }" x-cloak>
+  <main class="flex-1 p-6" x-data="{
+    openModal: false,
+    selectedHistory: null,
+    async downloadQRPDF(reservation) {
+        // Charger jsPDF dynamiquement
+        if (!window.jspdf) {
+            await new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                script.onload = resolve;
+                document.head.appendChild(script);
+            });
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Ajouter le titre HelloPassenger
+        doc.setFontSize(24);
+        doc.text('HelloPassenger', 105, 20, null, null, 'center');
+        
+        // Ajouter la référence
+        doc.setFontSize(18);
+        doc.text(`Référence: ${reservation.ref}`, 105, 35, null, null, 'center');
+        
+        // Convertir SVG en image
+        const qrImg = new Image();
+        qrImg.crossOrigin = 'Anonymous';
+        qrImg.src = reservation.qr_svg;
+        
+        await new Promise((resolve) => {
+            qrImg.onload = resolve;
+        });
+        
+        // Créer un canvas pour la conversion
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = qrImg.width;
+        canvas.height = qrImg.height;
+        ctx.drawImage(qrImg, 0, 0);
+        
+        const pngDataUrl = canvas.toDataURL('image/png');
+        
+        // Ajouter le QR code
+        const imgWidth = 80;
+        const imgHeight = 80;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const x = (pageWidth - imgWidth) / 2;
+        doc.addImage(pngDataUrl, 'PNG', x, 45, imgWidth, imgHeight);
+        
+        // Ajouter le message
+        doc.setFontSize(14);
+        doc.text('Merci d\'utiliser nos services !', 105, 140, null, null, 'center');
+        
+        // Sauvegarder
+        doc.save(`bagage-${reservation.ref}.pdf`);
+    }
+}" x-cloak>
     <h2 class="text-2xl font-bold mb-4">Mes collectes de bagages</h2>
 
     {{-- Tableau --}}
@@ -88,6 +145,15 @@
                 alt="QR Code" 
                 class="border p-1 bg-white rounded shadow-sm w-32 h-32"
               >
+              <button 
+                @click="downloadQRPDF(selectedHistory)"
+                class="mt-2 flex items-center justify-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm w-full"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Télécharger PDF
+              </button>
             </div>
 
             {{-- Infos en deux colonnes --}}
