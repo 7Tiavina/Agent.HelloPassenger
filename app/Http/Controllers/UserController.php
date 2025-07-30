@@ -49,12 +49,12 @@ class UserController extends Controller
 
     // Affiche chaque section
     public function overview()    { return view('components.overview'); }
-    public function orders()      { return view('components.orders'); }
+    
     public function analytics()   { return view('components.analytics'); }
     public function chat()        { return view('components.chat'); }
 
     public function users() {
-        $agents = User::where('role', 'admin')->get();
+        $agents = User::where('role', 'agent')->get();
         $users = User::where('role', 'user')->get();
         return view('components.users', compact('agents', 'users'));
     }
@@ -76,6 +76,15 @@ class UserController extends Controller
         return redirect()->route('users')->with('success', 'Utilisateur créé.');
     }
 
+    public function orders()
+    {
+        $reservations = \App\Models\Reservation::with('user')
+            ->orderByDesc('created_at')
+            ->take(25)
+            ->get();
+
+        return view('components.orders', compact('reservations'));
+    }
 
 
 

@@ -93,17 +93,35 @@
           <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-xs font-medium">
             <tr>
               <th class="px-4 py-3">ID</th>
+              <th class="px-4 py-3">Refference</th>
               <th class="px-4 py-3">Client</th>
-              <th class="px-4 py-3">Service</th>
-              <th class="px-4 py-3">Localisation</th>
-              <th class="px-4 py-3">Date</th>
-              <th class="px-4 py-3">Prix</th>
+              <th class="px-4 py-3">Consigne</th>
+              <th class="px-4 py-3">Date depart</th>
+              <th class="px-4 py-3">_</th>
               <th class="px-4 py-3">Statut</th>
               <th class="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody id="orders-table" class="bg-white divide-y divide-gray-200">
             <!-- Lignes générées dynamiquement -->
+            @foreach($reservations as $res)
+            <tr>
+              <td class="px-4 py-3">{{ $res->id }}</td>
+              <td class="px-4 py-3">{{ $res->ref }}</td>
+              <td class="px-4 py-3">{{ $res->user->name ?? '-' }}</td>
+              <td class="px-4 py-3">Consigne</td>
+              <td class="px-4 py-3">{{ $res->departure }} → {{ $res->arrival }}</td>
+              <td class="px-4 py-3">{{ \Carbon\Carbon::parse($res->collect_date)->format('d/m/Y') }}</td>
+              <td class="px-4 py-3">—</td>
+              <td class="px-4 py-3">{{ $res->status }}</td>
+              <td class="px-4 py-3">
+                <a href="{{ url('/reservations/ref/' . $res->ref) }}" class="text-yellow-600 hover:underline">
+                  Voir
+                </a>
+              </td>
+            </tr>
+            @endforeach
+
           </tbody>
         </table>
       </div>

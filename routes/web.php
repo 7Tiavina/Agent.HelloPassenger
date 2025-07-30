@@ -29,4 +29,7 @@ Route::get('/reservations/ref/{ref}', [BagageConsigneController::class, 'showByR
 
 
 Route::get('/reservations/ref/{ref}', [BagageConsigneController::class, 'showByRef'])
-     ->name('reservations.showByRef');     
+     ->name('reservations.showByRef');
+
+Route::post('/reservations/{id}/collecter', [BagageConsigneController::class, 'collecterBagage'])->name('collecter.bagage');
+          

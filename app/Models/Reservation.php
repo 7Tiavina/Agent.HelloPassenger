@@ -20,4 +20,10 @@ class Reservation extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
+
+    public function bagageHistories()
+    {
+        return $this->hasMany(BagageHistory::class);
+    }
+
 }
