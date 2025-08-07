@@ -3,8 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BagageConsigneController;
+use App\Http\Controllers\FrontController;
 
-Route::get('/', fn() => redirect()->route('login'));
+Route::get('/acceuil', [FrontController::class, 'acceuil'])->name('front.acceuil');
+
+Route::get('/', fn() => redirect()->route('front.acceuil'));
 Route::get('/login', [UserController::class, 'showLogin'])->name('login');
 Route::post('/login', [UserController::class, 'login'])->name('login.submit');
 Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');
