@@ -10,4 +10,9 @@ class FrontController extends Controller
     {
         return view('Front.acceuil');
     }
+
+    public function redirectForm()
+    {
+        return view('Front.formulaire-consigne');
+    }
 }

@@ -1,1 +1,0 @@
-nav-front.blade.php

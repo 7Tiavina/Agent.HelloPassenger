@@ -33,3 +33,27 @@ Route::get('/reservations/ref/{ref}', [BagageConsigneController::class, 'showByR
      ->name('reservations.showByRef');
 
 Route::post('/reservations/{id}/collecter', [BagageConsigneController::class, 'collecterBagage'])->name('collecter.bagage');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Route::get('/link-form', [FrontController::class, 'redirectForm'])->name('form-consigne');

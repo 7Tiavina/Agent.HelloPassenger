@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon-hellopassenger.png') }}">
     <title>HelloPassenger - Facilite votre voyage à Paris</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -75,34 +76,8 @@
     </style>
 </head>
 <body class="min-h-screen bg-white">
-    <!-- Header -->
-    <header class="bg-yellow-custom px-6 py-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                    <span class="text-yellow-custom text-sm font-bold">H</span>
-                </div>
-                <span class="text-black font-semibold text-lg">HelloPassenger</span>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors btn-hover">
-                    SE CONNECTER
-                </button>
-                <button class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors btn-hover">
-                    MES RÉSERVATIONS
-                </button>
-                <div class="flex items-center space-x-2 cursor-pointer">
-                    <span class="text-black text-sm font-medium">MENU</span>
-                    <div class="flex flex-col space-y-1">
-                        <div class="w-4 h-0.5 bg-black"></div>
-                        <div class="w-4 h-0.5 bg-black"></div>
-                        <div class="w-4 h-0.5 bg-black"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
+    @include('Front.header-front')
+   
     <!-- Hero Section -->
     <section class="bg-yellow-custom px-6 py-16 relative overflow-hidden">
         <!-- Background luggage illustrations -->
@@ -204,7 +179,10 @@
 
                 <!-- Two cards -->
                 <div class="flex flex-col md:flex-row gap-6 justify-center items-center max-w-4xl mx-auto mb-8">
-                    <div class="bg-white rounded-xl p-8 w-full md:w-96 transform hover:scale-105 transition-transform duration-300 service-card">
+
+                <!-- Carte 1 : TRANSPORT DE BAGAGES -->
+                <a href="{{ route('front.acceuil') }}" class="block w-full md:w-96">
+                    <div class="bg-white rounded-xl p-8 transform hover:scale-105 transition-transform duration-300 service-card">
                         <div class="text-center">
                             <div class="text-xs text-gray-500 tracking-wider mb-3">TRANSPORT DE BAGAGES</div>
                             <h3 class="font-bold text-xl mb-6 leading-tight text-gray-800">
@@ -212,16 +190,16 @@
                                 nous acheminons<br />
                                 vos bagages !
                             </h3>
-                            <div class="w-12 h-12 bg-yellow-custom rounded-full mx-auto mb-6 flex items-center justify-center">
+                            <div class="w-12 h-12 bg-yellow-custom rounded-full mx-auto flex items-center justify-center shadow-md btn-hover">
                                 <span class="text-black font-bold text-lg">→</span>
                             </div>
-                            <button class="bg-yellow-custom text-black hover:bg-yellow-hover w-12 h-12 rounded-full p-0 shadow-md btn-hover">
-                                →
-                            </button>
                         </div>
                     </div>
+                </a>
 
-                    <div class="bg-white rounded-xl p-8 w-full md:w-96 transform hover:scale-105 transition-transform duration-300 service-card">
+                <!-- Carte 2 : CONSIGNE À BAGAGES -->
+                <a href="{{ route('form-consigne') }}" class="block w-full md:w-96">
+                    <div class="bg-white rounded-xl p-8 transform hover:scale-105 transition-transform duration-300 service-card">
                         <div class="text-center">
                             <div class="text-xs text-gray-500 tracking-wider mb-3">CONSIGNE À BAGAGES</div>
                             <h3 class="font-bold text-xl mb-6 leading-tight text-gray-800">
@@ -229,15 +207,15 @@
                                 Nous gardons<br />
                                 vos bagages !
                             </h3>
-                            <div class="w-12 h-12 bg-yellow-custom rounded-full mx-auto mb-6 flex items-center justify-center">
+                            <div class="w-12 h-12 bg-yellow-custom rounded-full mx-auto flex items-center justify-center shadow-md btn-hover">
                                 <span class="text-black font-bold text-lg">→</span>
                             </div>
-                            <button class="bg-yellow-custom text-black hover:bg-yellow-hover w-12 h-12 rounded-full p-0 shadow-md btn-hover">
-                                →
-                            </button>
                         </div>
                     </div>
-                </div>
+                </a>
+
+            </div>
+
             </div>
         </div>
     </section>
@@ -413,35 +391,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-yellow-custom px-6 py-12">
-        <div class="max-w-7xl mx-auto text-center">
-            <p class="text-black mb-6 leading-relaxed">
-                Offre valable uniquement sur hellopassenger.com - Mentions légales applicables aux commandes
-            </p>
-            <div class="flex justify-center space-x-8">
-                <a href="#" class="text-black hover:text-gray-700 underline font-medium transition-colors">
-                    POLITIQUE CONFIDENTIALE →
-                </a>
-            </div>
-            <div class="mt-8 flex justify-center space-x-6">
-                <a href="#" class="text-black hover:text-gray-700 transition-colors">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.129 22 16.99 22 12z"/>
-                    </svg>
-                </a>
-                <a href="#" class="text-black hover:text-gray-700 transition-colors">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/>
-                    </svg>
-                </a>
-                <a href="#" class="text-black hover:text-gray-700 transition-colors">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                    </svg>
-                </a>
-            </div>
-        </div>
-    </footer>
+    
+    @include('Front.footer-front')
 </body>
 </html>
