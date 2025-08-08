@@ -1,5 +1,5 @@
 <!-- Footer -->
-    <footer class="bg-yellow-custom px-6 py-12">
+    <footer class="bg-yellow-custom px-6 py-12" id="footer">
         <div class="max-w-7xl mx-auto text-center">
             <p class="text-black mb-6 leading-relaxed">
                 Offre valable uniquement sur hellopassenger.com - Mentions légales applicables aux commandes
