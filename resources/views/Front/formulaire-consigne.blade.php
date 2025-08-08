@@ -93,6 +93,36 @@
             background-repeat: no-repeat;
             background-size: 1.5em 1.5em;
         }
+        
+        .add-baggage-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #FFC107;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .add-baggage-btn:hover {
+            color: #FFB300;
+        }
+        
+        .remove-baggage-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .remove-baggage-btn:hover {
+            background: #e9ecef;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-white">
@@ -133,56 +163,78 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            QUEL EST LE TYPE DE BAGAGE CONSIGNÉ ?
-                        </label>
-                        <div class="grid grid-cols-2 gap-4 mt-3">
-                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="suitcase">
+                    <!-- Premier bloc de bagage -->
+                    <div class="baggage-block">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                QUEL EST LE TYPE DE BAGAGE CONSIGNÉ ? *
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mt-3">
+                            <!-- Bagage en cabine -->
+                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cabin">
                                 <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                    <!-- Icône valise -->
                                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
                                         <rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/>
                                         <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
                                         <circle cx="10" cy="18" r="1" fill="currentColor"/>
                                         <circle cx="14" cy="18" r="1" fill="currentColor"/>
+                                        <path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/>
                                     </svg>
                                 </div>
-                                <span class="text-sm font-medium">Valise</span>
+                                <span class="text-sm font-medium">Bagage en cabine</span>
                             </div>
 
-                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="backpack">
+                            <!-- Bagage en soute -->
+                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="hold">
                                 <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                    <!-- Icône sac à dos -->
                                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
-                                        <path d="M5 12V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v4" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M10 5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
+                                        <rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/>
+                                        <circle cx="9" cy="15" r="1" fill="currentColor"/>
+                                        <circle cx="15" cy="15" r="1" fill="currentColor"/>
                                     </svg>
                                 </div>
-                                <span class="text-sm font-medium">Sac à dos</span>
+                                <span class="text-sm font-medium">Bagage en soute</span>
+                            </div>
+
+                            <!-- Vestiaire -->
+                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cloakroom">
+                                <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
+                                        <path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 14v2" stroke="currentColor" stroke-width="1.5"/>
+                                    </svg>
+                                </div>
+                                <span class="text-sm font-medium">Vestiaire</span>
                             </div>
                         </div>
 
                         <div class="mt-3">
-                            <label class="block text-sm text-gray-600 mb-2">COMBIEN ?</label>
+                            <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
                             <div class="flex items-center space-x-2">
-                                <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover">−</button>
+                                <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-minus">−</button>
                                 <input type="text" class="input-style w-16 text-center" value="1" readonly />
-                                <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover">+</button>
+                                <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-plus">+</button>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Option supplémentaire -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <div class="flex items-start space-x-3">
-                    <div class="checkbox-custom" id="extra-baggage-checkbox"></div>
-                    <label for="extra-baggage-checkbox" class="text-sm font-medium text-gray-700 cursor-pointer">
-                        AJOUTER UN TYPE DE BAGAGE SUPPLÉMENTAIRE
-                    </label>
+                    
+                    <!-- Conteneur pour les bagages supplémentaires -->
+                    <div id="additional-baggages-container" class="space-y-6 mt-6"></div>
+                    
+                    <!-- Bouton pour ajouter un bagage supplémentaire -->
+                    <div class="mt-4">
+                        <div class="add-baggage-btn" id="add-baggage-type">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            <span>AJOUTER UN TYPE DE BAGAGE SUPPLÉMENTAIRE</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -257,26 +309,107 @@
     // Sélection du type de bagage
     document.querySelectorAll('.baggage-option').forEach(option => {
         option.addEventListener('click', function () {
-            document.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
+            // Désélectionner toutes les options dans le même bloc
+            const block = this.closest('.baggage-block');
+            block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
             this.classList.add('selected');
-            console.log('Type de bagage sélectionné:', this.getAttribute('data-type'));
         });
     });
 
-    // Checkbox
-    const checkbox = document.getElementById('extra-baggage-checkbox');
-    checkbox.addEventListener('click', function () {
-        this.classList.toggle('checked');
-        console.log('Option supplémentaire:', this.classList.contains('checked'));
+    // Incrémentation dans chaque bloc
+    document.addEventListener('click', function(e) {
+        // Bouton plus
+        if (e.target.classList.contains('btn-plus')) {
+            const input = e.target.parentNode.querySelector('input');
+            let value = parseInt(input.value) || 1;
+            input.value = Math.max(1, Math.min(10, value + 1));
+        }
+        
+        // Bouton moins
+        if (e.target.classList.contains('btn-minus')) {
+            const input = e.target.parentNode.querySelector('input');
+            let value = parseInt(input.value) || 1;
+            input.value = Math.max(1, Math.min(10, value - 1));
+        }
     });
 
-    // Incrémentation
-    document.querySelectorAll('.btn-hover').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const input = this.parentNode.querySelector('input');
-            let value = parseInt(input.value) || 1;
-            this.textContent === '+' ? value++ : value--;
-            input.value = Math.max(1, Math.min(10, value));
+    // Ajout d'un nouveau type de bagage
+    document.getElementById('add-baggage-type').addEventListener('click', function() {
+        const container = document.getElementById('additional-baggages-container');
+        const blocks = document.querySelectorAll('.baggage-block');
+        
+        // Limite à 5 blocs
+        if (blocks.length >= 5) return;
+        
+        // Création du nouveau bloc
+        const newBlock = document.createElement('div');
+        newBlock.className = 'baggage-block relative border-t border-gray-200 pt-6 mt-6';
+        newBlock.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    TYPE DE BAGAGE SUPPLÉMENTAIRE
+                </label>
+                <button type="button" class="remove-baggage-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mt-3">
+                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cabin">
+                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
+                            <rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/>
+                            <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="10" cy="18" r="1" fill="currentColor"/>
+                            <circle cx="14" cy="18" r="1" fill="currentColor"/>
+                            <path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium">Bagage en cabine</span>
+                </div>
+
+                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="hold">
+                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
+                            <rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/>
+                            <circle cx="9" cy="15" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="15" r="1" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium">Bagage en soute</span>
+                </div>
+
+                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cloakroom">
+                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
+                            <path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 14v2" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium">Vestiaire</span>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
+                <div class="flex items-center space-x-2">
+                    <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-minus">−</button>
+                    <input type="text" class="input-style w-16 text-center" value="1" readonly />
+                    <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-plus">+</button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(newBlock);
+        
+        // Ajouter l'événement pour la suppression
+        newBlock.querySelector('.remove-baggage-btn').addEventListener('click', function() {
+            newBlock.remove();
         });
     });
 
