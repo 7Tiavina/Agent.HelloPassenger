@@ -117,28 +117,50 @@
     </div>
 </div>
 
-<!-- Modal Créer un compte (idem) -->
+<!-- Modal Créer un compte -->
 <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle" tabindex="-1">
     <div class="bg-yellow-400 w-full max-w-md p-8 rounded shadow-lg relative">
         <button id="closeRegisterModal" class="absolute top-2 right-2 text-black text-xl font-bold" aria-label="Close register modal">&times;</button>
         <h2 id="registerModalTitle" class="text-2xl font-bold text-center mb-6">Créer un compte</h2>
-        <form class="space-y-4" novalidate>
+
+        <form method="POST" action="{{ route('client.register') }}" class="space-y-4" novalidate>
+            @csrf
+
             <div>
-                <label for="registerName" class="block text-sm font-medium">NOM COMPLET : <span class="text-red-500">*</span></label>
-                <input id="registerName" type="text" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="name" />
+                <label for="registerNom" class="block text-sm font-medium">NOM : <span class="text-red-500">*</span></label>
+                <input id="registerNom" name="nom" type="text" value="{{ old('nom') }}" class="w-full px-4 py-2 border rounded bg-gray-100" required />
+                @error('nom') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+
+            <div>
+                <label for="registerPrenom" class="block text-sm font-medium">PRÉNOM : <span class="text-red-500">*</span></label>
+                <input id="registerPrenom" name="prenom" type="text" value="{{ old('prenom') }}" class="w-full px-4 py-2 border rounded bg-gray-100" required />
+                @error('prenom') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
             <div>
                 <label for="registerEmail" class="block text-sm font-medium">ADRESSE EMAIL : <span class="text-red-500">*</span></label>
-                <input id="registerEmail" type="email" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="email" />
+                <input id="registerEmail" name="email" type="email" value="{{ old('email') }}" class="w-full px-4 py-2 border rounded bg-gray-100" required />
+                @error('email') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+
+            <div>
+                <label for="registerTelephone" class="block text-sm font-medium">TÉLÉPHONE :</label>
+                <input id="registerTelephone" name="telephone" type="text" value="{{ old('telephone') }}" class="w-full px-4 py-2 border rounded bg-gray-100" />
+                @error('telephone') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
             <div>
                 <label for="registerPassword" class="block text-sm font-medium">MOT DE PASSE : <span class="text-red-500">*</span></label>
-                <input id="registerPassword" type="password" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="new-password" />
+                <input id="registerPassword" name="password" type="password" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="new-password" />
+                @error('password') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+
             <div>
                 <label for="registerPasswordConfirm" class="block text-sm font-medium">CONFIRMER MOT DE PASSE : <span class="text-red-500">*</span></label>
-                <input id="registerPasswordConfirm" type="password" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="new-password" />
+                <input id="registerPasswordConfirm" name="password_confirmation" type="password" class="w-full px-4 py-2 border rounded bg-gray-100" required />
             </div>
+
             <button type="submit" class="w-full bg-black text-white py-2 rounded-full font-bold hover:bg-gray-800 flex items-center justify-center gap-2">
                 CRÉER MON COMPTE
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -146,6 +168,7 @@
                 </svg>
             </button>
         </form>
+
         <button id="goToLoginBtn" class="mt-4 w-full bg-white text-black py-2 rounded-full font-bold hover:bg-gray-200">
             SE CONNECTER
         </button>
@@ -153,6 +176,19 @@
 </div>
 
 <!-- Scripts -->
+@if(session('from_register') || $errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const registerModal = document.getElementById('registerModal');
+        if (registerModal) registerModal.classList.remove('hidden');
+
+        // optionnel : focus first input
+        const first = registerModal.querySelector('input');
+        if (first) first.focus();
+    });
+</script>
+@endif
+
 <script>
     const loginModal = document.getElementById('loginModal');
     const registerModal = document.getElementById('registerModal');

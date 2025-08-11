@@ -51,7 +51,7 @@ Route::get('/client/login', [FrontController::class, 'showClientLogin'])->name('
 
 // Traitement login client
 Route::post('/client/login', [FrontController::class, 'clientLogin'])->name('client.login.submit');
-
+Route::post('/client/register', [FrontController::class, 'clientRegister'])->name('client.register');
 
 
 
