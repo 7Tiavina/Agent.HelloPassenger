@@ -40,6 +40,17 @@ Route::post('/reservations/{id}/collecter', [BagageConsigneController::class, 'c
 
 
 
+// Dashboard client (protégé)
+Route::middleware('auth:client')->group(function () {
+    Route::get('/client/dashboard', [FrontController::class, 'clientDashboard'])->name('client.dashboard');
+    Route::post('/client/logout', [FrontController::class, 'clientLogout'])->name('client.logout');
+});
+
+// Affiche modal/login
+Route::get('/client/login', [FrontController::class, 'showClientLogin'])->name('client.login');
+
+// Traitement login client
+Route::post('/client/login', [FrontController::class, 'clientLogin'])->name('client.login.submit');
 
 
 

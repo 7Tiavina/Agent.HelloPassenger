@@ -1,3 +1,9 @@
+<!-- resources/views/partials/header.blade.php (ou l'endroit où se trouve ton header) -->
+
+@php
+    $clientGuard = Auth::guard('client');
+@endphp
+
 <!-- Header -->
 <header class="bg-yellow-custom px-6 py-4">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
@@ -18,13 +24,30 @@
                 </svg>
                 <span class="sr-only">Admin</span>
             </a>
-            
-            <button class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors btn-hover" type="button">
-                SE CONNECTER
-            </button>
-            <button class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors" type="button">
-                MES RÉSERVATIONS
-            </button>
+
+            @if($clientGuard->check())
+                <!-- Utilisateur connecté : afficher Déconnecter et lien vers form-consigne -->
+                <a href="{{ route('form-consigne') }}" class="bg-gray-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors">
+                    RÉSERVER
+                </a>
+
+                <form method="POST" action="{{ route('client.logout') }}" class="inline-block">
+                    @csrf
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-500 transition-colors">
+                        DÉCONNECTER
+                    </button>
+                </form>
+            @else
+                <!-- Non connecté : bouton afficher modal login -->
+                <button id="openLoginDesktop" class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors btn-hover" type="button">
+                    SE CONNECTER
+                </button>
+
+                <button id="openMyOrders" class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors" type="button">
+                    MES RÉSERVATIONS
+                </button>
+            @endif
+
             <div class="flex items-center space-x-2 cursor-pointer" role="button" tabindex="0" aria-label="Menu">
                 <span class="text-black text-sm font-medium">MENU</span>
                 <div class="flex flex-col space-y-1">
@@ -37,14 +60,11 @@
     </div>
 </header>
 
-<!-- Loading ANIMATION -->
+<!-- Loading ANIMATION (idem) -->
 <div id="loader" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-50 hidden flex flex-col items-center justify-center" role="status" aria-live="polite" aria-label="Loading">
-    <!-- Barre de progression -->
     <div class="w-64 h-2 bg-gray-700 rounded-full overflow-hidden mb-4">
         <div class="h-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-progress"></div>
     </div>
-    
-    <!-- Texte Loading -->
     <div class="text-yellow-400 font-medium tracking-wider flex items-center">
         <span class="animate-pulse">LOADING</span>
         <span class="ml-1 animate-pulse delay-75">.</span>
@@ -58,14 +78,16 @@
     <div class="bg-yellow-400 w-full max-w-md p-8 rounded shadow-lg relative">
         <button id="closeModal" class="absolute top-2 right-2 text-black text-xl font-bold" aria-label="Close login modal">&times;</button>
         <h2 id="loginModalTitle" class="text-2xl font-bold text-center mb-6">Se connecter</h2>
-        <form class="space-y-4" novalidate>
+
+        <form method="POST" action="{{ route('client.login.submit') }}" class="space-y-4" novalidate>
+            @csrf
             <div>
                 <label for="loginEmail" class="block text-sm font-medium">VOTRE ADRESSE EMAIL : <span class="text-red-500">*</span></label>
-                <input id="loginEmail" type="email" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="email" />
+                <input id="loginEmail" name="email" type="email" value="{{ old('email') }}" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="email" />
             </div>
             <div>
                 <label for="loginPassword" class="block text-sm font-medium">VOTRE MOT DE PASSE : <span class="text-red-500">*</span></label>
-                <input id="loginPassword" type="password" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="current-password" />
+                <input id="loginPassword" name="password" type="password" class="w-full px-4 py-2 border rounded bg-gray-100" required autocomplete="current-password" />
             </div>
             <div class="flex items-center justify-between text-sm">
                 <a href="#" class="text-black font-semibold underline">Mot de passe oublié ?</a>
@@ -81,11 +103,21 @@
                 </svg>
             </button>
         </form>
+
         <button id="openRegister" class="w-full mt-4 bg-white text-black py-2 rounded-full font-bold hover:bg-gray-100" type="button">CRÉER UN COMPTE →</button>
     </div>
 </div>
 
-<!-- Modal Créer un compte -->
+<!-- Modal Erreur connexion -->
+<div id="loginErrorModal" class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="loginErrorTitle" tabindex="-1">
+    <div class="bg-white w-full max-w-sm p-6 rounded shadow-lg relative text-center">
+        <h3 id="loginErrorTitle" class="text-xl font-semibold mb-4">Erreur de connexion</h3>
+        <p class="mb-6">Identifiants invalides — veuillez réessayer.</p>
+        <button id="closeLoginError" class="bg-black text-white px-5 py-2 rounded-full">Fermer</button>
+    </div>
+</div>
+
+<!-- Modal Créer un compte (idem) -->
 <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle" tabindex="-1">
     <div class="bg-yellow-400 w-full max-w-md p-8 rounded shadow-lg relative">
         <button id="closeRegisterModal" class="absolute top-2 right-2 text-black text-xl font-bold" aria-label="Close register modal">&times;</button>
@@ -120,65 +152,74 @@
     </div>
 </div>
 
+<!-- Scripts -->
 <script>
-    document.getElementById('goToLoginBtn').addEventListener('click', () => {
-    registerModal.classList.add('hidden');
-    loader.classList.remove('hidden');
-    setTimeout(() => {
-        loader.classList.add('hidden');
-        loginModal.classList.remove('hidden');
-    }, 400);
-});
-
-</script>
-
-<!-- Script Modal -->
-<script>
-    const openLoginBtn = document.querySelector('.btn-hover'); // SE CONNECTER
     const loginModal = document.getElementById('loginModal');
-    const loader = document.getElementById('loader');
-    const closeLoginBtn = document.getElementById('closeModal');
-
-    const openRegisterBtn = document.getElementById('openRegister');
     const registerModal = document.getElementById('registerModal');
+    const loader = document.getElementById('loader');
+
+    // open login btn (desktop)
+    const openLoginDesktop = document.getElementById('openLoginDesktop');
+    if (openLoginDesktop) {
+        openLoginDesktop.addEventListener('click', () => {
+            loader.classList.remove('hidden');
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+            }, 300);
+        });
+    }
+
+    // open register btn inside login
+    const openRegisterBtn = document.getElementById('openRegister');
+    if (openRegisterBtn) {
+        openRegisterBtn.addEventListener('click', () => {
+            loginModal.classList.add('hidden');
+            loader.classList.remove('hidden');
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                registerModal.classList.remove('hidden');
+            }, 300);
+        });
+    }
+
+    // go to login from register
+    const goToLoginBtn = document.getElementById('goToLoginBtn');
+    if (goToLoginBtn) {
+        goToLoginBtn.addEventListener('click', () => {
+            registerModal.classList.add('hidden');
+            loader.classList.remove('hidden');
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+            }, 300);
+        });
+    }
+
+    // close handlers
+    const closeLoginBtn = document.getElementById('closeModal');
+    if (closeLoginBtn) closeLoginBtn.addEventListener('click', () => loginModal.classList.add('hidden'));
+
     const closeRegisterBtn = document.getElementById('closeRegisterModal');
-
-    openLoginBtn.addEventListener('click', () => {
-        loader.classList.remove('hidden');
-        setTimeout(() => {
-            loader.classList.add('hidden');
-            loginModal.classList.remove('hidden');
-        }, 400);
-    });
-
-    closeLoginBtn.addEventListener('click', () => {
-        loginModal.classList.add('hidden');
-    });
-
-    closeRegisterBtn.addEventListener('click', () => {
-        registerModal.classList.add('hidden');
-    });
-
-    openRegisterBtn.addEventListener('click', () => {
-        loginModal.classList.add('hidden');
-        loader.classList.remove('hidden');
-        setTimeout(() => {
-            loader.classList.add('hidden');
-            registerModal.classList.remove('hidden');
-        }, 400);
-    });
+    if (closeRegisterBtn) closeRegisterBtn.addEventListener('click', () => registerModal.classList.add('hidden'));
 
     window.addEventListener('click', (e) => {
-        if (e.target === loginModal) {
-            loginModal.classList.add('hidden');
-        }
-        if (e.target === registerModal) {
-            registerModal.classList.add('hidden');
-        }
+        if (e.target === loginModal) loginModal.classList.add('hidden');
+        if (e.target === registerModal) registerModal.classList.add('hidden');
     });
+
+    // Error modal (open if session flash 'login_error' exists)
+    @if(session('login_error'))
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginErrorModal = document.getElementById('loginErrorModal');
+            const closeLoginError = document.getElementById('closeLoginError');
+            if (loginErrorModal) loginErrorModal.classList.remove('hidden');
+            if (closeLoginError) closeLoginError.addEventListener('click', () => loginErrorModal.classList.add('hidden'));
+        });
+    @endif
 </script>
 
-<!-- Configuration Tailwind Loader animation -->
+<!-- tailwind config script (idem) -->
 <script>
     tailwind.config = {
         theme: {
