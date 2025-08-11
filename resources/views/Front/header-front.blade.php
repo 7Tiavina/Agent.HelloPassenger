@@ -2,11 +2,14 @@
 <header class="bg-yellow-custom px-6 py-4">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
         <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <span class="text-yellow-custom text-sm font-bold">H</span>
-            </div>
-            <span class="text-black font-semibold text-lg">HelloPassenger</span>
+            <a href="{{ url('/') }}" class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                    <span class="text-yellow-custom text-sm font-bold">H</span>
+                </div>
+                <span class="text-black font-semibold text-lg">HelloPassenger</span>
+            </a>
         </div>
+
         <div class="flex items-center space-x-4">
             <!-- Bouton Admin discret -->
             <a href="{{ route('login') }}" class="text-gray-600 hover:text-black text-xs font-medium transition-colors">
@@ -111,8 +114,23 @@
                 </svg>
             </button>
         </form>
+        <button id="goToLoginBtn" class="mt-4 w-full bg-white text-black py-2 rounded-full font-bold hover:bg-gray-200">
+            SE CONNECTER
+        </button>
     </div>
 </div>
+
+<script>
+    document.getElementById('goToLoginBtn').addEventListener('click', () => {
+    registerModal.classList.add('hidden');
+    loader.classList.remove('hidden');
+    setTimeout(() => {
+        loader.classList.add('hidden');
+        loginModal.classList.remove('hidden');
+    }, 400);
+});
+
+</script>
 
 <!-- Script Modal -->
 <script>
