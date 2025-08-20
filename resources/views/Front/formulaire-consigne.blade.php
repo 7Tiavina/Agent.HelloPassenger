@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ asset('favicon-hellopassenger.png') }}">
     <title>Réserver une consigne - HelloPassenger</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -307,7 +308,6 @@
 @include('Front.footer-front')
 
 <footer id="footer"></footer>
-
 <script>
     // Variables globales
     let airportId;
@@ -320,31 +320,37 @@
     // Événement pour la sélection de l'aéroport
     document.getElementById('airport-select').addEventListener('change', function() {
         airportId = this.value;
+        console.log('✅ Aéroport sélectionné:', airportId);
     });
 
     // Événement pour la sélection du type de bagage
     document.addEventListener('click', function(e) {
         if (e.target.closest('.baggage-option')) {
+            const baggageType = e.target.closest('.baggage-option').dataset.type;
             const block = e.target.closest('.baggage-block');
             block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
             e.target.closest('.baggage-option').classList.add('selected');
+            console.log('✅ Type de bagage sélectionné:', baggageType);
         }
     });
 
     // Incrémentation / décrémentation et suppression
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('btn-plus')) {
-            const input = e.target.closest('.flex').querySelector('input');
+            const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
             let value = parseInt(input.value) || 1;
             input.value = Math.min(10, value + 1);
+            console.log('✅ Quantité incrémentée:', input.value);
         }
         if (e.target.classList.contains('btn-minus')) {
-            const input = e.target.closest('.flex').querySelector('input');
+            const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
             let value = parseInt(input.value) || 1;
             input.value = Math.max(1, value - 1);
+            console.log('✅ Quantité décrémentée:', input.value);
         }
         if (e.target.closest('.remove-baggage-btn')) {
             e.target.closest('.baggage-block').remove();
+            console.log('✅ Type de bagage supprimé.');
         }
     });
 
@@ -353,7 +359,10 @@
         const container = document.getElementById('additional-baggages-container');
         const blocks = document.querySelectorAll('.baggage-block');
         
-        if (blocks.length >= 5) return;
+        if (blocks.length >= 5) {
+            console.warn('⚠️ Limite de 5 types de bagages atteinte.');
+            return;
+        }
         
         const newBlock = document.createElement('div');
         newBlock.className = 'baggage-block relative border-t border-gray-200 pt-6 mt-6';
@@ -418,6 +427,7 @@
             </div>
         `;
         container.appendChild(newBlock);
+        console.log('✅ Nouveau type de bagage ajouté.');
     });
 
     // Fonction principale pour interroger les tarifs
@@ -428,16 +438,32 @@
         const heureRecuperation = document.getElementById('heure-recuperation').value;
 
         // Validation des champs
+        console.log('--- Lancement de la requête ---');
+        console.log('Variables d\'entrée:', {
+            airportId,
+            dateDepot,
+            heureDepot,
+            dateRecuperation,
+            heureRecuperation
+        });
+
         if (!airportId || !dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
+            console.error('❌ ERREUR: Un ou plusieurs champs obligatoires sont manquants.');
             alert('Veuillez remplir tous les champs obligatoires.');
             return;
         }
 
         // Formatage de la date pour la vérification de disponibilité
         const dateToVerify = `${new Date(dateDepot).toLocaleDateString('fr-FR').replace(/\//g, '-')}`;
+        console.log('⏩ Date de vérification formatée:', dateToVerify);
         
         // 1. Appel à la route proxy pour vérifier la disponibilité
         try {
+            console.log('➡️ Appel à /api/check-availability avec les données:', {
+                idPlateforme: airportIds[airportId],
+                dateToCheck: dateToVerify
+            });
+
             const availabilityResponse = await fetch('/api/check-availability', {
                 method: 'POST',
                 headers: {
@@ -449,23 +475,35 @@
                     dateToCheck: dateToVerify
                 })
             });
+            console.log('⬅️ Réponse reçue de /api/check-availability, statut:', availabilityResponse.status);
 
             const availabilityResult = await availabilityResponse.json();
+            console.log('➡️ Corps de la réponse disponibilité:', availabilityResult);
 
             if (!availabilityResult.success || !availabilityResult.isAvailable) {
+                console.error('❌ ERREUR: La disponibilité est FALSE.', availabilityResult.message);
                 alert('La plateforme est fermée à la date de dépôt sélectionnée.');
                 return;
             }
+            console.log('✅ Disponibilité vérifiée, la plateforme est disponible.');
 
             // 2. Si la plateforme est disponible, on calcule la durée et on appelle l'API pour les tarifs
             const debut = new Date(`${dateDepot}T${heureDepot}:00`);
             const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
             const dureeEnSecondes = Math.abs(fin - debut) / 1000;
+            console.log('⏩ Durée calculée:', dureeEnSecondes, 'secondes');
 
             if (dureeEnSecondes <= 0) {
+                console.error('❌ ERREUR: La durée est négative ou nulle.');
                 alert('La date de récupération doit être postérieure à la date de dépôt.');
                 return;
             }
+
+            console.log('➡️ Appel à /api/get-quote avec les données:', {
+                idPlateforme: airportIds[airportId],
+                idService: serviceId,
+                duree: dureeEnSecondes
+            });
 
             const productsResponse = await fetch('/api/get-quote', {
                 method: 'POST',
@@ -479,33 +517,40 @@
                     duree: dureeEnSecondes
                 })
             });
+            console.log('⬅️ Réponse reçue de /api/get-quote, statut:', productsResponse.status);
 
             const productsResult = await productsResponse.json();
+            console.log('➡️ Corps de la réponse tarifs:', productsResult);
 
             if (productsResult.success) {
+                console.log('✅ Tarifs récupérés avec succès.');
                 // Stockage des produits et des prix
                 const products = productsResult.data.reduce((acc, curr) => {
                     acc[curr.libelle] = { id: curr.id, prix: curr.prixUnitaire };
                     return acc;
                 }, {});
+                console.log('⏩ Produits stockés pour le panier:', products);
 
                 // Mise à jour du panier
                 updateCart(products);
             } else {
+                console.error('❌ ERREUR: Succès est FALSE dans la réponse des tarifs.', productsResult.message);
                 alert('Erreur lors de la récupération des tarifs : ' + productsResult.message);
             }
 
         } catch (error) {
-            console.error('Erreur:', error);
+            console.error('❌ ERREUR: Une erreur de connexion est survenue.', error);
             alert('Une erreur est survenue lors de la vérification de la disponibilité ou de la récupération des tarifs.');
         }
     });
 
     // Fonction de mise à jour du panier
     function updateCart(products) {
+        console.log('--- Mise à jour du panier ---');
         const selectedBaggages = document.querySelectorAll('.baggage-block');
         let total = 0;
         let cartContent = '';
+        const itemsInCart = [];
 
         selectedBaggages.forEach(block => {
             const selectedOption = block.querySelector('.baggage-option.selected');
@@ -523,6 +568,7 @@
                 }
                 
                 total += price * quantity;
+                itemsInCart.push({ type, quantity, price, totalItem: price * quantity });
                 
                 cartContent += `
                     <div class="flex justify-between items-center mb-2">
@@ -532,6 +578,9 @@
                 `;
             }
         });
+
+        console.log('⏩ Contenu du panier à mettre à jour:', itemsInCart);
+        console.log('⏩ Total du panier:', total);
 
         const cartElement = document.getElementById('cart-summary');
         const emptyCartElement = document.getElementById('empty-cart');
@@ -543,6 +592,7 @@
             document.querySelector('#cart-summary .panier-content').innerHTML = cartContent;
             document.querySelector('#cart-summary .total-panier').textContent = `${total.toFixed(2)}€`;
             summaryPriceElement.textContent = `${total.toFixed(2)} €`;
+            console.log('✅ Panier affiché et mis à jour.');
 
             const totalContainer = document.querySelector('.summary-total-container');
             totalContainer.classList.add('cursor-pointer');
@@ -554,6 +604,7 @@
             cartElement.style.display = 'none';
             emptyCartElement.style.display = 'block';
             summaryPriceElement.textContent = `0 €`;
+            console.log('⚠️ Le panier est vide, affichage du message de panier vide.');
         }
     }
 </script>
