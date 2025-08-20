@@ -123,20 +123,23 @@
         .remove-baggage-btn:hover {
             background: #e9ecef;
         }
+
+        /* Styles pour le panier dynamique */
+        #cart-summary {
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-white">
 
 @include('Front.header-front')
 
-<!-- Main Content -->
 <div class="max-w-6xl mx-auto px-6 py-8">
     <h1 class="text-3xl font-bold text-gray-800 mb-2">Réserver une consigne</h1>
     <p class="text-gray-600 mb-8">
         Sélectionnez le type de consigne et suivez les étapes du formulaire. Nous vous indiquerons les informations à fournir.
     </p>
 
-    <!-- Breadcrumb -->
     <div class="flex items-center space-x-2 text-sm text-gray-500 mb-8">
         <span>Accueil</span>
         <span>→</span>
@@ -144,9 +147,7 @@
     </div>
 
     <div class="grid lg:grid-cols-3 gap-8">
-        <!-- Formulaire principal -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Lieu -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
                 <p class="text-sm text-red-500 mb-4">* Tous les champs sont obligatoires</p>
 
@@ -155,7 +156,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             DANS QUEL AÉROPORT SOUHAITEZ-VOUS LAISSER VOS BAGAGES ? *
                         </label>
-                        <select class="input-style custom-select w-full">
+                        <select id="airport-select" class="input-style custom-select w-full">
                             <option value="" selected disabled>Sélectionner un aéroport</option>
                             <option value="cdg">Paris-Charles-de-Gaulle</option>
                             <option value="orly">Paris-Orly</option>
@@ -163,7 +164,6 @@
                         </select>
                     </div>
 
-                    <!-- Premier bloc de bagage -->
                     <div class="baggage-block">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-sm font-medium text-gray-700">
@@ -171,7 +171,6 @@
                             </label>
                         </div>
                         <div class="grid grid-cols-3 gap-4 mt-3">
-                            <!-- Bagage en cabine -->
                             <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cabin">
                                 <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
                                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
@@ -185,7 +184,6 @@
                                 <span class="text-sm font-medium">Bagage en cabine</span>
                             </div>
 
-                            <!-- Bagage en soute -->
                             <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="hold">
                                 <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
                                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
@@ -199,7 +197,6 @@
                                 <span class="text-sm font-medium">Bagage en soute</span>
                             </div>
 
-                            <!-- Vestiaire -->
                             <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cloakroom">
                                 <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
                                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
@@ -223,10 +220,8 @@
                         </div>
                     </div>
                     
-                    <!-- Conteneur pour les bagages supplémentaires -->
                     <div id="additional-baggages-container" class="space-y-6 mt-6"></div>
                     
-                    <!-- Bouton pour ajouter un bagage supplémentaire -->
                     <div class="mt-4">
                         <div class="add-baggage-btn" id="add-baggage-type">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -238,23 +233,27 @@
                 </div>
             </div>
 
-            <!-- Dates -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
                     <h3 class="text-sm font-medium text-gray-700 mb-4">DATE DE DÉPÔT DES BAGAGES *</h3>
-                    <input type="date" class="input-style w-full mb-4">
+                    <input type="date" id="date-depot" class="input-style w-full mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">HEURE DE DÉPÔT *</label>
-                    <input type="time" class="input-style w-full">
+                    <input type="time" id="heure-depot" class="input-style w-full">
                 </div>
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
                     <h3 class="text-sm font-medium text-gray-700 mb-4">DATE DE RÉCUPÉRATION DES BAGAGES *</h3>
-                    <input type="date" class="input-style w-full mb-4">
+                    <input type="date" id="date-recuperation" class="input-style w-full mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">HEURE DE RÉCUPÉRATION *</label>
-                    <input type="time" class="input-style w-full">
+                    <input type="time" id="heure-recuperation" class="input-style w-full">
                 </div>
             </div>
 
-            <!-- Alerte -->
+            <div class="mt-8 text-center">
+                <button id="get-quote-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
+                    INTERROGER LES TARIFS
+                </button>
+            </div>
+
             <div class="bg-yellow-custom rounded-lg p-6">
                 <h3 class="font-bold text-black mb-2">ATTENTION !</h3>
                 <p class="text-sm text-black leading-relaxed">
@@ -262,7 +261,6 @@
                 </p>
             </div>
 
-            <!-- CTA -->
             <div class="bg-gray-800 rounded-lg p-4 flex items-center justify-between">
                 <p class="text-white text-sm">
                     Vous êtes un professionnel du tourisme ? Facilitez le voyage de vos clients !
@@ -273,17 +271,14 @@
             </div>
         </div>
 
-        <!-- Colonne sticky -->
         <div class="w-full lg:w-full relative" id="sticky-wrapper">
             <div id="sticky-summary" class="space-y-6">
-                <!-- Résumé -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center">
                     <p class="text-sm text-gray-600 mb-2">Notre tarif :</p>
-                    <p class="text-xs text-gray-500 mb-4">Pour 24h (TVA incluse)</p>
-                    <div class="text-4xl font-bold text-gray-800">0 €</div>
+                    <p class="text-xs text-gray-500 mb-4">Pour la durée sélectionnée (TVA incluse)</p>
+                    <div id="summary-price" class="text-4xl font-bold text-gray-800">0 €</div>
                 </div>
-                <!-- Panier vide -->
-                <div class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm text-center">
+                <div id="empty-cart" class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm text-center">
                     <div class="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" class="text-gray-400">
                             <path d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L9 11m-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-6" stroke="currentColor" stroke-width="2"/>
@@ -292,7 +287,16 @@
                     <h3 class="font-bold text-lg text-black mb-2">Votre panier est vide :(</h3>
                     <div class="bg-gray-100 rounded p-3 mt-4">
                         <p class="text-sm text-gray-600 mb-2">Total:</p>
-                        <p class="text-2xl font-bold text-black">0€</p>
+                        <p class="text-2xl font-bold text-black total-panier">0€</p>
+                    </div>
+                </div>
+                <div id="cart-summary" class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm">
+                    <h3 class="font-bold text-lg text-black mb-4">Votre panier</h3>
+                    <div class="panier-content">
+                        </div>
+                    <div class="bg-gray-100 rounded p-3 mt-4 flex justify-between items-center summary-total-container">
+                        <p class="text-lg font-bold text-black">Total:</p>
+                        <p class="text-2xl font-bold text-black total-panier">0€</p>
                     </div>
                 </div>
             </div>
@@ -302,34 +306,45 @@
 
 @include('Front.footer-front')
 
-<!-- Ajoute un ID pour détecter le footer en JS -->
 <footer id="footer"></footer>
 
 <script>
-    // Sélection du type de bagage
-    document.querySelectorAll('.baggage-option').forEach(option => {
-        option.addEventListener('click', function () {
-            // Désélectionner toutes les options dans le même bloc
-            const block = this.closest('.baggage-block');
-            block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
-            this.classList.add('selected');
-        });
+    // Variables globales
+    let airportId;
+    const serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
+    const airportIds = {
+        'cdg': '88bb89e0-b966-4420-9ed3-7a6745e4d947',
+        'orly': '64f00ace-31b6-45b0-bcb2-b562b1ac08d9'
+    };
+    
+    // Événement pour la sélection de l'aéroport
+    document.getElementById('airport-select').addEventListener('change', function() {
+        airportId = this.value;
     });
 
-    // Incrémentation dans chaque bloc
+    // Événement pour la sélection du type de bagage
     document.addEventListener('click', function(e) {
-        // Bouton plus
-        if (e.target.classList.contains('btn-plus')) {
-            const input = e.target.parentNode.querySelector('input');
-            let value = parseInt(input.value) || 1;
-            input.value = Math.max(1, Math.min(10, value + 1));
+        if (e.target.closest('.baggage-option')) {
+            const block = e.target.closest('.baggage-block');
+            block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
+            e.target.closest('.baggage-option').classList.add('selected');
         }
-        
-        // Bouton moins
-        if (e.target.classList.contains('btn-minus')) {
-            const input = e.target.parentNode.querySelector('input');
+    });
+
+    // Incrémentation / décrémentation et suppression
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-plus')) {
+            const input = e.target.closest('.flex').querySelector('input');
             let value = parseInt(input.value) || 1;
-            input.value = Math.max(1, Math.min(10, value - 1));
+            input.value = Math.min(10, value + 1);
+        }
+        if (e.target.classList.contains('btn-minus')) {
+            const input = e.target.closest('.flex').querySelector('input');
+            let value = parseInt(input.value) || 1;
+            input.value = Math.max(1, value - 1);
+        }
+        if (e.target.closest('.remove-baggage-btn')) {
+            e.target.closest('.baggage-block').remove();
         }
     });
 
@@ -338,10 +353,8 @@
         const container = document.getElementById('additional-baggages-container');
         const blocks = document.querySelectorAll('.baggage-block');
         
-        // Limite à 5 blocs
         if (blocks.length >= 5) return;
         
-        // Création du nouveau bloc
         const newBlock = document.createElement('div');
         newBlock.className = 'baggage-block relative border-t border-gray-200 pt-6 mt-6';
         newBlock.innerHTML = `
@@ -404,45 +417,145 @@
                 </div>
             </div>
         `;
-        
         container.appendChild(newBlock);
-        
-        // Ajouter l'événement pour la suppression
-        newBlock.querySelector('.remove-baggage-btn').addEventListener('click', function() {
-            newBlock.remove();
-        });
     });
 
-    // Sticky
-    document.addEventListener("DOMContentLoaded", function () {
-        const sticky = document.getElementById("sticky-summary");
-        const wrapper = document.getElementById("sticky-wrapper");
-        const footer = document.getElementById("footer");
+    // Fonction principale pour interroger les tarifs
+    document.getElementById('get-quote-btn').addEventListener('click', async function() {
+        const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
+        const dateRecuperation = document.getElementById('date-recuperation').value;
+        const heureRecuperation = document.getElementById('heure-recuperation').value;
 
-        function updateStickyPosition() {
-            const stickyRect = sticky.getBoundingClientRect();
-            const footerRect = footer.getBoundingClientRect();
-            const wrapperRect = wrapper.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-
-            sticky.style.width = wrapperRect.width + "px";
-            sticky.style.left = wrapperRect.left + "px";
-
-            if (stickyRect.bottom > footerRect.top) {
-                sticky.style.position = "absolute";
-                sticky.style.top = "auto";
-                sticky.style.bottom = "0";
-            } else if (window.scrollY + viewportHeight < footer.offsetTop) {
-                sticky.style.position = "fixed";
-                sticky.style.top = "100px";
-                sticky.style.bottom = "auto";
-            }
+        // Validation des champs
+        if (!airportId || !dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
+            alert('Veuillez remplir tous les champs obligatoires.');
+            return;
         }
 
-        window.addEventListener("scroll", updateStickyPosition);
-        window.addEventListener("resize", updateStickyPosition);
-        updateStickyPosition();
+        // Formatage de la date pour la vérification de disponibilité
+        const dateToVerify = `${new Date(dateDepot).toLocaleDateString('fr-FR').replace(/\//g, '-')}`;
+        
+        // 1. Appel à la route proxy pour vérifier la disponibilité
+        try {
+            const availabilityResponse = await fetch('/api/check-availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    idPlateforme: airportIds[airportId],
+                    dateToCheck: dateToVerify
+                })
+            });
+
+            const availabilityResult = await availabilityResponse.json();
+
+            if (!availabilityResult.success || !availabilityResult.isAvailable) {
+                alert('La plateforme est fermée à la date de dépôt sélectionnée.');
+                return;
+            }
+
+            // 2. Si la plateforme est disponible, on calcule la durée et on appelle l'API pour les tarifs
+            const debut = new Date(`${dateDepot}T${heureDepot}:00`);
+            const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
+            const dureeEnSecondes = Math.abs(fin - debut) / 1000;
+
+            if (dureeEnSecondes <= 0) {
+                alert('La date de récupération doit être postérieure à la date de dépôt.');
+                return;
+            }
+
+            const productsResponse = await fetch('/api/get-quote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    idPlateforme: airportIds[airportId],
+                    idService: serviceId,
+                    duree: dureeEnSecondes
+                })
+            });
+
+            const productsResult = await productsResponse.json();
+
+            if (productsResult.success) {
+                // Stockage des produits et des prix
+                const products = productsResult.data.reduce((acc, curr) => {
+                    acc[curr.libelle] = { id: curr.id, prix: curr.prixUnitaire };
+                    return acc;
+                }, {});
+
+                // Mise à jour du panier
+                updateCart(products);
+            } else {
+                alert('Erreur lors de la récupération des tarifs : ' + productsResult.message);
+            }
+
+        } catch (error) {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de la vérification de la disponibilité ou de la récupération des tarifs.');
+        }
     });
+
+    // Fonction de mise à jour du panier
+    function updateCart(products) {
+        const selectedBaggages = document.querySelectorAll('.baggage-block');
+        let total = 0;
+        let cartContent = '';
+
+        selectedBaggages.forEach(block => {
+            const selectedOption = block.querySelector('.baggage-option.selected');
+            const quantity = parseInt(block.querySelector('input').value) || 0;
+            if (selectedOption) {
+                const type = selectedOption.dataset.type;
+                const baggageLabel = selectedOption.querySelector('span').textContent;
+                let price = 0;
+                if (type === 'cabin' && products['Bagage cabine']) {
+                    price = products['Bagage cabine'].prix;
+                } else if (type === 'hold' && products['Bagage soute']) {
+                    price = products['Bagage soute'].prix;
+                } else if (type === 'cloakroom' && products['Vestiaire']) {
+                    price = products['Vestiaire'].prix;
+                }
+                
+                total += price * quantity;
+                
+                cartContent += `
+                    <div class="flex justify-between items-center mb-2">
+                        <span>${quantity} x ${baggageLabel}</span>
+                        <span>${(price * quantity).toFixed(2)} €</span>
+                    </div>
+                `;
+            }
+        });
+
+        const cartElement = document.getElementById('cart-summary');
+        const emptyCartElement = document.getElementById('empty-cart');
+        const summaryPriceElement = document.getElementById('summary-price');
+        
+        if (total > 0) {
+            cartElement.style.display = 'block';
+            emptyCartElement.style.display = 'none';
+            document.querySelector('#cart-summary .panier-content').innerHTML = cartContent;
+            document.querySelector('#cart-summary .total-panier').textContent = `${total.toFixed(2)}€`;
+            summaryPriceElement.textContent = `${total.toFixed(2)} €`;
+
+            const totalContainer = document.querySelector('.summary-total-container');
+            totalContainer.classList.add('cursor-pointer');
+            totalContainer.onclick = () => {
+                alert('Panier total cliqué ! Logique de paiement à implémenter.');
+            };
+
+        } else {
+            cartElement.style.display = 'none';
+            emptyCartElement.style.display = 'block';
+            summaryPriceElement.textContent = `0 €`;
+        }
+    }
 </script>
 
 </body>

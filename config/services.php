@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+
+
+    'bdm' => [
+        'base_url' => env('BDM_API_BASE_URL'),
+        'api_token' => env('BDM_API_TOKEN'),
+    ],
+
 ];

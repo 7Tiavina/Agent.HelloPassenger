@@ -97,5 +97,74 @@ class FrontController extends Controller
 
 
 
+//-------------------------------API-----BDM-----------------------------
+
+    //Vérifie la disponibilité d'une plateforme à une date donnée.
+    
+    public function checkAvailability(Request $request)
+    {
+        $validated = $request->validate([
+            'idPlateforme' => 'required|string',
+            'dateToCheck' => 'required|string',
+        ]);
+        
+        Log::info('Appel à l\'API BDM pour la disponibilité', ['data' => $validated]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.bdm.api_token'),
+            ])->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/date/{$validated['dateToCheck']}");
+            
+            Log::info('Réponse de l\'API BDM (disponibilité)', ['status' => $response->status(), 'body' => $response->json()]);
+
+            return response()->json($response->json(), $response->status());
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la vérification de la disponibilité', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la vérification de la disponibilité: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère les tarifs (produits) pour une plateforme, un service et une durée donnés.
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getQuote(Request $request)
+    {
+        $validated = $request->validate([
+            'idPlateforme' => 'required|string',
+            'idService' => 'required|string',
+            'duree' => 'required|integer|min:1',
+        ]);
+        
+        Log::info('Appel à l\'API BDM pour les tarifs', ['data' => $validated]);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.bdm.api_token'),
+            ])->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/service/{$validated['idService']}/{$validated['duree']}/produits");
+            
+            Log::info('Réponse de l\'API BDM (tarifs)', ['status' => $response->status(), 'body' => $response->json()]);
+
+            return response()->json($response->json(), $response->status());
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération des tarifs', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des tarifs: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+
+
+
 
 }

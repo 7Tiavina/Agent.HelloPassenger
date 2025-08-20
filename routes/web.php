@@ -59,6 +59,15 @@ Route::post('/client/register', [FrontController::class, 'clientRegister'])->nam
 
 
 
+// Nouvelles routes pour les appels de l'API BDM via le FrontController
+Route::post('/api/check-availability', [FrontController::class, 'checkAvailability'])->name('api.check-availability');
+Route::post('/api/get-quote', [FrontController::class, 'getQuote'])->name('api.get-quote');
+
+
+
+
+
+
 
 
 
