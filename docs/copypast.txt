@@ -1,387 +1,48 @@
-BDM API
- v1 
-OAS3
-/swagger/v1/swagger.json
-BDM API
-
-Terms of service
-Contact - Website
-License Merlytech
-Authorize
-Commande
-
-
-POST
-/api/plateforme/{idPlateforme}/commande
-
-Parameters
-Try it out
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-idPlateforme
-Request body
-
-application/json
-Example Value
-Schema
-{
-  "commandeLignes": [
-    {
-      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "dateDebut": "2025-08-21T08:12:16.399Z",
-      "dateFin": "2025-08-21T08:12:16.399Z",
-      "prixTTC": 0,
-      "quantite": 0
-    }
-  ],
-  "client": {
-    "email": "jaQuqHwxlQ_Olkl1amL6z7taz13GSAiPgnvAx7gkOE11MbaJbUvtvaaa6CPzJqpecvd5VbTtz_PuUw9Wim@8QTZEggAQdT6iY78b",
-    "telephone": "string",
-    "nom": "EIyRRdGRqLVfadN bPEFWJdmQi'",
-    "prenom": "WfOSuRCVVSdpzTtVctpdAzbtmU'xKByUwPbL cmpCH",
-    "civilite": "string",
-    "nomSociete": " IC3qQyNproqd",
-    "adresse": "DNPHMjD20yKJhi,T2W9sMdAjeAjlRdE6 FEbgjfv2nyNVVpD71",
-    "complementAdresse": "HUYD7-M,WBtzcoTJc8vqy6wqV71jrwdQM,mtTYg51TOLihmRb",
-    "ville": "LiOlQ",
-    "codePostal": "40668",
-    "pays": "yEokPBdd"
-  }
-}
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-Plateforme
-
-
-GET
-/api/service/{idService}/plateformes
-Récupère une liste de plateformes en fonction d'un service donné
-
-Parameters
-Try it out
-Name	Description
-idService *
-string($uuid)
-(path)
-l'id du service demandé
-
-idService
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-
-GET
-/api/plateformes
-Récupère une liste de plateformes
-
-Parameters
-Try it out
-No parameters
-
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-
 GET
 /api/plateforme/{idPlateforme}/date/{dateToCheck}
 Récupère un boolean de si une plateforme est ouverte en fonction d'une date heure
 
 Parameters
-Try it out
+Cancel
 Name	Description
 idPlateforme *
 string($uuid)
 (path)
 l'id de la plateforme
 
-idPlateforme
+64f00ace-31b6-45b0-bcb2-b562b1ac08d9
 dateToCheck *
 string
 (path)
 la date de début/fin (yyyyMMddTHHmm)
 
-dateToCheck
+20250822T1000
+Execute
+Clear
 Responses
-Code	Description	Links
+Curl
+
+curl -X 'GET' \
+  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/date/20250822T1000' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzU1NzY5OTI1LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.gLSxNI8iukN_5THx1L5UHk_n12_Tl-4NHykIbnzBY2U'
+Request URL
+https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/date/20250822T1000
+Server response
+Code	Details
 200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
+Response body
+Download
 {
-  "content": "string",
-  "statut": 0,
-  "message": "string"
+  "content": true,
+  "statut": 1,
+  "message": ""
 }
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-Produit
-
-
-GET
-/api/plateforme/{idPlateforme}/service/{idService}/{duree}/produits
-Permet de récupèrer une liste de produit en fonction d'un service et d'une plateforme
-
-Parameters
-Try it out
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-L'id de la plateforme
-
-idPlateforme
-idService *
-string($uuid)
-(path)
-L'id du service
-
-idService
-duree *
-integer($int32)
-(path)
-La durée en minutes
-
-duree
-lg
-string
-(query)
-Default value : fr
-
-fr
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-Service
-
-
-GET
-/api/plateforme/{idPlateforme}/services
-Récupère une liste de services en fonction d'une plateforme donnée
-
-Parameters
-Try it out
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-L'id de la plateforme
-
-idPlateforme
-lg
-string
-(query)
-Default value : fr
-
-fr
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-
-GET
-/api/services
-Récupère une liste de services
-
-Parameters
-Try it out
-Name	Description
-lg
-string
-(query)
-Default value : fr
-
-fr
+Response headers
+ content-type: application/json; charset=utf-8 
+ date: Thu,21 Aug 2025 08:53:26 GMT 
+ server: Microsoft-IIS/10.0 
+ x-powered-by: ASP.NET 
 Responses
 Code	Description	Links
 200	

@@ -136,6 +136,7 @@ class FrontController extends Controller
                 throw new \Exception('Authentification API BDM échouée: token manquant dans la réponse.');
             }
             
+            Log::info('✅ AUTHENTIFICATION API BDM RÉUSSIE. Token obtenu.');
             Log::info('Nouveau token BDM obtenu et mis en cache.');
             return $token;
         });
@@ -153,7 +154,9 @@ class FrontController extends Controller
 
         try {
             $token = $this->getBdmToken();
-            $response = Http::withToken($token)->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/date/{$validated['dateToCheck']}");
+            $response = Http::withToken($token)
+                ->withHeaders(['Accept' => 'application/json'])
+                ->get(config('services.bdm.base_url') . "/api/plateforme/{$validated['idPlateforme']}/date/{$validated['dateToCheck']}");
             
             Log::info('Réponse de l\'API BDM (disponibilité)', ['status' => $response->status(), 'body' => $response->json()]);
 
@@ -185,7 +188,9 @@ class FrontController extends Controller
 
         try {
             $token = $this->getBdmToken();
-            $response = Http::withToken($token)->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/service/{$validated['idService']}/{$validated['duree']}/produits");
+            $response = Http::withToken($token)
+                ->withHeaders(['Accept' => 'application/json'])
+                ->get(config('services.bdm.base_url') . "/api/plateforme/{$validated['idPlateforme']}/service/{$validated['idService']}/{$validated['duree']}/produits");
             
             Log::info('Réponse de l\'API BDM (tarifs)', ['status' => $response->status(), 'body' => $response->json()]);
 

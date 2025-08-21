@@ -4,11 +4,18 @@ link-form:598 ✅ Aéroport sélectionné: orly
 link-form:608 ✅ Type de bagage sélectionné: cabin
 link-form:618 ✅ Quantité incrémentée: 2
 link-form:624 ✅ Quantité décrémentée: 1
-link-form:716 --- Lancement de la requête ---
-link-form:717 Variables d'entrée: {airportId: 'orly', dateDepot: '2025-08-26', heureDepot: '16:20', dateRecuperation: '2025-08-29', heureRecuperation: '16:20'}airportId: "orly"dateDepot: "2025-08-26"dateRecuperation: "2025-08-29"heureDepot: "16:20"heureRecuperation: "16:20"[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()
-link-form:735 ⏩ Date de vérification formatée: 20250826T1620
-link-form:739 ➡️ Appel à /api/check-availability avec les données: {idPlateforme: '64f00ace-31b6-45b0-bcb2-b562b1ac08d9', dateToCheck: '20250826T1620'}dateToCheck: "20250826T1620"idPlateforme: "64f00ace-31b6-45b0-bcb2-b562b1ac08d9"[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()
-link-form:755 ⬅️ Réponse reçue de /api/check-availability, statut: 200
-link-form:758 ➡️ Corps de la réponse disponibilité: {}[[Prototype]]: Object
-link-form:761  ❌ ERREUR: La disponibilité est FALSE. undefined
-(anonymous) @ link-form:761
+link-form:710 --- DÉBUT DE L'INTERROGATION DES TARIFS ---
+link-form:718 Étape 1: Valeurs récupérées {airportId: 'orly', dateDepot: '2025-08-26', heureDepot: '12:07', dateRecuperation: '2025-08-28', heureRecuperation: '15:07'}
+link-form:728 
+--- Étape 2: Vérification de la disponibilité ---
+link-form:732 Formatage de la date pour l'API: 20250826T1207
+link-form:743 Réponse du serveur pour disponibilité: 200
+link-form:745 Corps de la réponse: {content: true, statut: 1, message: ''}
+link-form:753 ✅ SUCCÈS: La plateforme est disponible.
+link-form:756 
+--- Étape 3: Récupération des tarifs ---
+link-form:760 Calcul de la durée: 3060 minutes
+link-form:777 Réponse du serveur pour les tarifs: 200
+link-form:779 Corps de la réponse: {content: Array(5), statut: 1, message: ''}
+link-form:793  ❌ ERREUR lors de la récupération des tarifs: 
+(anonymous) @ link-form:793

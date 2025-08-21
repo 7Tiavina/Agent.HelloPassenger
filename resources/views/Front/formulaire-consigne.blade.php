@@ -432,39 +432,29 @@
 
     // Fonction principale pour interroger les tarifs
     document.getElementById('get-quote-btn').addEventListener('click', async function() {
+        console.log('--- DÉBUT DE L\'INTERROGATION DES TARIFS ---');
+        
+        // 1. Récupération des valeurs du formulaire
         const dateDepot = document.getElementById('date-depot').value;
         const heureDepot = document.getElementById('heure-depot').value;
         const dateRecuperation = document.getElementById('date-recuperation').value;
         const heureRecuperation = document.getElementById('heure-recuperation').value;
 
-        // Validation des champs
-        console.log('--- Lancement de la requête ---');
-        console.log('Variables d\'entrée:', {
-            airportId,
-            dateDepot,
-            heureDepot,
-            dateRecuperation,
-            heureRecuperation
-        });
+        console.log('Étape 1: Valeurs récupérées', { airportId, dateDepot, heureDepot, dateRecuperation, heureRecuperation });
 
         if (!airportId || !dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
-            console.error('❌ ERREUR: Un ou plusieurs champs obligatoires sont manquants.');
             alert('Veuillez remplir tous les champs obligatoires.');
+            console.error('❌ ERREUR: Champs manquants.');
             return;
         }
 
-        // Formatage de la date pour la vérification de disponibilité (yyyyMMddTHHmm)
-        const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
-        const pad = (num) => num.toString().padStart(2, '0');
-        const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
-        console.log('⏩ Date de vérification formatée:', dateToVerify);
-        
-        // 1. Appel à la route proxy pour vérifier la disponibilité
+        // 2. Vérification de la disponibilité
         try {
-            console.log('➡️ Appel à /api/check-availability avec les données:', {
-                idPlateforme: airportIds[airportId],
-                dateToCheck: dateToVerify
-            });
+            console.log('\n--- Étape 2: Vérification de la disponibilité ---');
+            const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
+            const pad = (num) => num.toString().padStart(2, '0');
+            const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
+            console.log(`Formatage de la date pour l\'API: ${dateToVerify}`);
 
             const availabilityResponse = await fetch('/api/check-availability', {
                 method: 'POST',
@@ -472,40 +462,33 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({
-                    idPlateforme: airportIds[airportId],
-                    dateToCheck: dateToVerify
-                })
+                body: JSON.stringify({ idPlateforme: airportIds[airportId], dateToCheck: dateToVerify })
             });
-            console.log('⬅️ Réponse reçue de /api/check-availability, statut:', availabilityResponse.status);
 
+            console.log(`Réponse du serveur pour disponibilité:`, availabilityResponse.status);
             const availabilityResult = await availabilityResponse.json();
-            console.log('➡️ Corps de la réponse disponibilité:', availabilityResult);
+            console.log('Corps de la réponse:', availabilityResult);
 
-            if (!availabilityResult.success || !availabilityResult.isAvailable) {
-                console.error('❌ ERREUR: La disponibilité est FALSE.', availabilityResult.message);
+            // L'API renvoie un objet { content: boolean, statut: int, ... }
+            if (availabilityResult.statut !== 1 || availabilityResult.content !== true) {
                 alert('La plateforme est fermée à la date de dépôt sélectionnée.');
+                console.error('❌ La plateforme est fermée ou une erreur est survenue.', availabilityResult);
                 return;
             }
-            console.log('✅ Disponibilité vérifiée, la plateforme est disponible.');
+            console.log('✅ SUCCÈS: La plateforme est disponible.');
 
-            // 2. Si la plateforme est disponible, on calcule la durée et on appelle l'API pour les tarifs
+            // 3. Récupération des tarifs
+            console.log('\n--- Étape 3: Récupération des tarifs ---');
             const debut = new Date(`${dateDepot}T${heureDepot}:00`);
             const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
             const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
-            console.log('⏩ Durée calculée:', dureeEnMinutes, 'minutes');
+            console.log(`Calcul de la durée: ${dureeEnMinutes} minutes`);
 
             if (dureeEnMinutes <= 0) {
-                console.error('❌ ERREUR: La durée est négative ou nulle.');
                 alert('La date de récupération doit être postérieure à la date de dépôt.');
+                console.error('❌ ERREUR: Durée invalide.');
                 return;
             }
-
-            console.log('➡️ Appel à /api/get-quote avec les données:', {
-                idPlateforme: airportIds[airportId],
-                idService: serviceId,
-                duree: dureeEnMinutes
-            });
 
             const productsResponse = await fetch('/api/get-quote', {
                 method: 'POST',
@@ -513,36 +496,31 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({
-                    idPlateforme: airportIds[airportId],
-                    idService: serviceId,
-                    duree: dureeEnMinutes
-                })
+                body: JSON.stringify({ idPlateforme: airportIds[airportId], idService: serviceId, duree: dureeEnMinutes })
             });
-            console.log('⬅️ Réponse reçue de /api/get-quote, statut:', productsResponse.status);
 
+            console.log(`Réponse du serveur pour les tarifs:`, productsResponse.status);
             const productsResult = await productsResponse.json();
-            console.log('➡️ Corps de la réponse tarifs:', productsResult);
+            console.log('Corps de la réponse:', productsResult);
 
-            if (productsResult.success) {
-                console.log('✅ Tarifs récupérés avec succès.');
-                // Stockage des produits et des prix
-                const products = productsResult.data.reduce((acc, curr) => {
+            if (productsResult.statut === 0 && productsResult.content) {
+                const productsData = JSON.parse(productsResult.content);
+                console.log('✅ SUCCÈS: Tarifs récupérés et parsés.', productsData);
+                
+                const products = productsData.reduce((acc, curr) => {
                     acc[curr.libelle] = { id: curr.id, prix: curr.prixUnitaire };
                     return acc;
                 }, {});
-                console.log('⏩ Produits stockés pour le panier:', products);
-
-                // Mise à jour du panier
+                
                 updateCart(products);
             } else {
-                console.error('❌ ERREUR: Succès est FALSE dans la réponse des tarifs.', productsResult.message);
                 alert('Erreur lors de la récupération des tarifs : ' + productsResult.message);
+                console.error('❌ ERREUR lors de la récupération des tarifs:', productsResult.message);
             }
 
         } catch (error) {
-            console.error('❌ ERREUR: Une erreur de connexion est survenue.', error);
-            alert('Une erreur est survenue lors de la vérification de la disponibilité ou de la récupération des tarifs.');
+            console.error('❌ ERREUR GLOBALE: Une erreur de connexion ou de script est survenue.', error);
+            alert('Une erreur technique est survenue. Veuillez vérifier la console.');
         }
     });
 
