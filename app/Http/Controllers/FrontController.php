@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Client;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Client\Response;
 
 
 class FrontController extends Controller
@@ -99,8 +103,45 @@ class FrontController extends Controller
 
 //-------------------------------API-----BDM-----------------------------
 
+    /**
+     * Récupère un token d'authentification pour l'API BDM, en le mettant en cache.
+     * @return string
+     * @throws \Illuminate\Http\Client\RequestException
+     */
+    private function getBdmToken(): string
+    {
+        // Tente de récupérer le token depuis le cache
+        return Cache::remember('bdm_api_token', 3300, function () {
+            Log::info('Cache BDM token expiré. Demande d\'un nouveau token.');
+
+            $response = Http::post(config('services.bdm.base_url') . '/User/Login', [
+                'userName' => config('services.bdm.username'),
+                'email' => config('services.bdm.email'),
+                'password' => config('services.bdm.password'),
+            ]);
+
+            // Lance une exception si la requête HTTP elle-même échoue
+            $response->throw();
+
+            // Vérifie si le login a réussi selon la réponse de l'API
+            if (!$response->json('isSucceed')) {
+                Log::error('L\'API BDM a refusé la connexion.', ['response' => $response->json()]);
+                throw new \Exception('Authentification API BDM échouée: L\'API a refusé la connexion.');
+            }
+
+            $token = $response->json('data.accessToken');
+
+            if (!$token) {
+                Log::error('Impossible de récupérer l\'accessToken depuis la réponse de l\'API BDM.', ['response' => $response->json()]);
+                throw new \Exception('Authentification API BDM échouée: token manquant dans la réponse.');
+            }
+            
+            Log::info('Nouveau token BDM obtenu et mis en cache.');
+            return $token;
+        });
+    }
+
     //Vérifie la disponibilité d'une plateforme à une date donnée.
-    
     public function checkAvailability(Request $request)
     {
         $validated = $request->validate([
@@ -111,9 +152,8 @@ class FrontController extends Controller
         Log::info('Appel à l\'API BDM pour la disponibilité', ['data' => $validated]);
 
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('services.bdm.api_token'),
-            ])->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/date/{$validated['dateToCheck']}");
+            $token = $this->getBdmToken();
+            $response = Http::withToken($token)->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/date/{$validated['dateToCheck']}");
             
             Log::info('Réponse de l\'API BDM (disponibilité)', ['status' => $response->status(), 'body' => $response->json()]);
 
@@ -144,9 +184,8 @@ class FrontController extends Controller
         Log::info('Appel à l\'API BDM pour les tarifs', ['data' => $validated]);
 
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('services.bdm.api_token'),
-            ])->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/service/{$validated['idService']}/{$validated['duree']}/produits");
+            $token = $this->getBdmToken();
+            $response = Http::withToken($token)->get(config('services.bdm.base_url') . "/plateforme/{$validated['idPlateforme']}/service/{$validated['idService']}/{$validated['duree']}/produits");
             
             Log::info('Réponse de l\'API BDM (tarifs)', ['status' => $response->status(), 'body' => $response->json()]);
 
@@ -160,11 +199,4 @@ class FrontController extends Controller
             ], 500);
         }
     }
-
-
-
-
-
-
-
 }

@@ -39,7 +39,9 @@ return [
 
     'bdm' => [
         'base_url' => env('BDM_API_BASE_URL'),
-        'api_token' => env('BDM_API_TOKEN'),
+        'username' => env('BDM_API_USERNAME'),
+        'email'    => env('BDM_API_EMAIL'),
+        'password' => env('BDM_API_PASSWORD'),
     ],
 
 ];

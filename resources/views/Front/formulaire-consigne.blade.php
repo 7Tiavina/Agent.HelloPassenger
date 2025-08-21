@@ -453,8 +453,10 @@
             return;
         }
 
-        // Formatage de la date pour la vérification de disponibilité
-        const dateToVerify = `${new Date(dateDepot).toLocaleDateString('fr-FR').replace(/\//g, '-')}`;
+        // Formatage de la date pour la vérification de disponibilité (yyyyMMddTHHmm)
+        const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
+        const pad = (num) => num.toString().padStart(2, '0');
+        const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
         console.log('⏩ Date de vérification formatée:', dateToVerify);
         
         // 1. Appel à la route proxy pour vérifier la disponibilité
@@ -490,10 +492,10 @@
             // 2. Si la plateforme est disponible, on calcule la durée et on appelle l'API pour les tarifs
             const debut = new Date(`${dateDepot}T${heureDepot}:00`);
             const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
-            const dureeEnSecondes = Math.abs(fin - debut) / 1000;
-            console.log('⏩ Durée calculée:', dureeEnSecondes, 'secondes');
+            const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
+            console.log('⏩ Durée calculée:', dureeEnMinutes, 'minutes');
 
-            if (dureeEnSecondes <= 0) {
+            if (dureeEnMinutes <= 0) {
                 console.error('❌ ERREUR: La durée est négative ou nulle.');
                 alert('La date de récupération doit être postérieure à la date de dépôt.');
                 return;
@@ -502,7 +504,7 @@
             console.log('➡️ Appel à /api/get-quote avec les données:', {
                 idPlateforme: airportIds[airportId],
                 idService: serviceId,
-                duree: dureeEnSecondes
+                duree: dureeEnMinutes
             });
 
             const productsResponse = await fetch('/api/get-quote', {
@@ -514,7 +516,7 @@
                 body: JSON.stringify({
                     idPlateforme: airportIds[airportId],
                     idService: serviceId,
-                    duree: dureeEnSecondes
+                    duree: dureeEnMinutes
                 })
             });
             console.log('⬅️ Réponse reçue de /api/get-quote, statut:', productsResponse.status);
