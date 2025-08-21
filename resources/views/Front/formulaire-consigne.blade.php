@@ -129,6 +129,24 @@
         #cart-summary {
             display: none;
         }
+
+    /* Styles pour le spinner */
+    .custom-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #FFC107; /* Couleur du spinner, jaune comme le bouton */
+        border-radius: 50%;
+        width: 1.5em;
+        height: 1.5em;
+        animation: spin 1s linear infinite;
+        display: inline-block; /* Pour qu'il soit visible */
+        vertical-align: middle; /* Alignement vertical */
+        margin-left: 0.5em; /* Espacement avec le texte */
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
     </style>
 </head>
 <body class="min-h-screen bg-white">
@@ -252,6 +270,7 @@
             <div class="mt-8 text-center">
                 <button id="get-quote-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
                     INTERROGER LES TARIFS
+                    <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-tarifs" style="display: none;"></span>
                 </button>
             </div>
 
@@ -431,7 +450,19 @@
     });
 
     // Fonction principale pour interroger les tarifs
+    function showLoadingSpinnerTarifs() {
+        document.getElementById('get-quote-btn').disabled = true;
+        document.getElementById('loading-spinner-tarifs').style.display = 'inline-block';
+    }
+
+    function hideLoadingSpinnerTarifs() {
+        document.getElementById('get-quote-btn').disabled = false;
+        document.getElementById('loading-spinner-tarifs').style.display = 'none';
+    }
+
 document.getElementById('get-quote-btn').addEventListener('click', async function () {
+    showLoadingSpinnerTarifs(); // Afficher le spinner au début
+
     console.log('--- DÉBUT DE L\'INTERROGATION DES TARIFS ---');
 
     // 1. Récupération des valeurs du formulaire
@@ -445,6 +476,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
     if (!airportId || !dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
         alert('Veuillez remplir tous les champs obligatoires.');
         console.error('❌ ERREUR: Champs manquants.');
+        hideLoadingSpinnerTarifs(); // Masquer le spinner en cas d\'erreur de validation
         return;
     }
 
@@ -454,7 +486,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
         const pad = (num) => num.toString().padStart(2, '0');
         const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
-        console.log(`Formatage de la date pour l'API: ${dateToVerify}`);
+        console.log(`Formatage de la date pour l\'API: ${dateToVerify}`);
 
         const availabilityResponse = await fetch('/api/check-availability', {
             method: 'POST',
@@ -472,10 +504,11 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         const availabilityResult = await availabilityResponse.json();
         console.log('Corps de la réponse:', availabilityResult);
 
-        // L'API renvoie un objet { content: boolean, statut: int, ... }
+        // L\'API renvoie un objet { content: boolean, statut: int, ... }
         if (availabilityResult.statut !== 1 || availabilityResult.content !== true) {
             alert('La plateforme est fermée à la date de dépôt sélectionnée.');
             console.error('❌ La plateforme est fermée ou une erreur est survenue.', availabilityResult);
+            hideLoadingSpinnerTarifs(); // Masquer le spinner en cas d\'erreur API
             return;
         }
         console.log('✅ SUCCÈS: La plateforme est disponible.');
@@ -490,6 +523,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         if (dureeEnMinutes <= 0) {
             alert('La date de récupération doit être postérieure à la date de dépôt.');
             console.error('❌ ERREUR: Durée invalide.');
+            hideLoadingSpinnerTarifs(); // Masquer le spinner en cas d\'erreur de validation
             return;
         }
 
@@ -528,8 +562,11 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
     } catch (error) {
         console.error('❌ ERREUR GLOBALE: Une erreur de connexion ou de script est survenue.', error);
         alert('Une erreur technique est survenue. Veuillez vérifier la console.');
+    } finally {
+        hideLoadingSpinnerTarifs(); // Masquer le spinner à la fin, qu\'il y ait succès ou erreur
     }
 });
+
  
 
     // Fonction de mise à jour du panier
