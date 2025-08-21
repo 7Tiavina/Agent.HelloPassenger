@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BagageConsigneController;
 use App\Http\Controllers\FrontController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\CommandeController;
 
 Route::get('/acceuil', [FrontController::class, 'acceuil'])->name('front.acceuil');
 
@@ -77,3 +79,17 @@ Route::post('/api/get-quote', [FrontController::class, 'getQuote'])->name('api.g
 
 
 Route::get('/link-form', [FrontController::class, 'redirectForm'])->name('form-consigne');
+
+Route::get('/check-auth-status', function () {
+    return response()->json(['authenticated' => Auth::guard('client')->check()]);
+});
+
+Route::middleware('auth:client')->group(function () { // Spécifier la garde 'client'
+    Route::get('/payment', function () {
+        return view('payment');
+    })->name('payment');
+
+    Route::post('/process-payment', [PaymentController::class, 'processPayment'])->name('process.payment');
+    Route::get('/mes-reservations', [CommandeController::class, 'index'])->name('mes.reservations');
+    Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
+});

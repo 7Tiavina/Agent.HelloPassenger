@@ -1,129 +1,69 @@
-Produit
+{airportId: "orly", dateDepot: "2025-08-22", heureDepot: "13:02", dateRecuperation: "2025-08-27",…}
+airportId
+: 
+"orly"
+baggages
+: 
+[{type: "cabin", quantity: 1}]
+0
+: 
+{type: "cabin", quantity: 1}
+dateDepot
+: 
+"2025-08-22"
+dateRecuperation
+: 
+"2025-08-27"
+heureDepot
+: 
+"13:02"
+heureRecuperation
+: 
+"12:02"
+products
+: 
+[{id: "id_produit_cabine", libelle: "Bagage en cabine", prixUnitaire: 10},…]
+0
+: 
+{id: "id_produit_cabine", libelle: "Bagage en cabine", prixUnitaire: 10}
+1
+: 
+{id: "id_produit_soute", libelle: "Bagage en soute", prixUnitaire: 15}
+2
+: 
+{id: "id_produit_vestiaire", libelle: "Vestiaire", prixUnitaire: 5}
 
-
-GET
-/api/plateforme/{idPlateforme}/service/{idService}/{duree}/produits
-Permet de récupèrer une liste de produit en fonction d'un service et d'une plateforme
-
-Parameters
-Cancel
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-L'id de la plateforme
-
-64f00ace-31b6-45b0-bcb2-b562b1ac08d9
-idService *
-string($uuid)
-(path)
-L'id du service
-
-dfb8ac1b-8bb1-4957-afb4-1faedaf641b7
-duree *
-integer($int32)
-(path)
-La durée en minutes
-
-2880
-lg
-string
-(query)
-fr
-Execute
-Clear
-Responses
-Curl
-
-curl -X 'GET' \
-  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/2880/produits?lg=fr' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzU1NzcxMjM0LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.EPE3wxQdKVjfFtYRTkKdLZv2c9nMrIlbwgiFUCwnUNc'
-Request URL
-https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/2880/produits?lg=fr
-Server response
-Code	Details
-200	
-Response body
-Download
-{
-  "content": [
-    {
-      "id": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
-      "libelle": "Accessoires",
-      "prixUnitaire": 15,
-      "referenceInterne": "A",
-      "produitFamilles": []
-    },
-    {
-      "id": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
-      "libelle": "Bagage cabine",
-      "prixUnitaire": 24,
-      "referenceInterne": "BM",
-      "produitFamilles": []
-    },
-    {
-      "id": "01fbbaa3-7fb2-4f24-880f-cfe7d8a50a9b",
-      "libelle": "Bagage soute",
-      "prixUnitaire": 30,
-      "referenceInterne": "BS",
-      "produitFamilles": []
-    },
-    {
-      "id": "868800b2-5635-4da6-a30f-5dbdbc995766",
-      "libelle": "Bagage spécial",
-      "prixUnitaire": 54,
-      "referenceInterne": "HF",
-      "produitFamilles": []
-    },
-    {
-      "id": "2418a6cf-4426-4402-8374-f0b2bd12ee0a",
-      "libelle": "Vestiaire",
-      "prixUnitaire": 20,
-      "referenceInterne": "DV",
-      "produitFamilles": []
-    }
-  ],
-  "statut": 1,
-  "message": ""
-}
-Response headers
- content-type: application/json; charset=utf-8 
- date: Thu,21 Aug 2025 09:14:51 GMT 
- server: Microsoft-IIS/10.0 
- x-powered-by: ASP.NET 
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
+{airportId: "orly", dateDepot: "2025-08-22", heureDepot: "13:02", dateRecuperation: "2025-08-27",…}
+airportId
+: 
+"orly"
+baggages
+: 
+[{type: "cabin", quantity: 1}]
+0
+: 
+{type: "cabin", quantity: 1}
+dateDepot
+: 
+"2025-08-22"
+dateRecuperation
+: 
+"2025-08-27"
+heureDepot
+: 
+"13:02"
+heureRecuperation
+: 
+"12:02"
+products
+: 
+[{id: "id_produit_cabine", libelle: "Bagage en cabine", prixUnitaire: 10},…]
+0
+: 
+{id: "id_produit_cabine", libelle: "Bagage en cabine", prixUnitaire: 10}
+1
+: 
+{id: "id_produit_soute", libelle: "Bagage en soute", prixUnitaire: 15}
+2
+: 
+{id: "id_produit_vestiaire", libelle: "Vestiaire", prixUnitaire: 5}

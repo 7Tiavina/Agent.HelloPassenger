@@ -29,7 +29,7 @@ class FrontController extends Controller
 
     public function showClientLogin()
     {
-        return view('client.login'); // Ta vue dédiée si besoin, sinon intégrer modal existant
+        return view('client.login'); 
     }
 
     

@@ -194,15 +194,19 @@
     const registerModal = document.getElementById('registerModal');
     const loader = document.getElementById('loader');
 
+    window.openLoginModal = function() { // Rendre la fonction globale
+        loader.classList.remove('hidden');
+        setTimeout(() => {
+            loader.classList.add('hidden');
+            loginModal.classList.remove('hidden');
+        }, 300);
+    }
+
     // open login btn (desktop)
     const openLoginDesktop = document.getElementById('openLoginDesktop');
     if (openLoginDesktop) {
         openLoginDesktop.addEventListener('click', () => {
-            loader.classList.remove('hidden');
-            setTimeout(() => {
-                loader.classList.add('hidden');
-                loginModal.classList.remove('hidden');
-            }, 300);
+            openLoginModal(); // Appeler la nouvelle fonction
         });
     }
 

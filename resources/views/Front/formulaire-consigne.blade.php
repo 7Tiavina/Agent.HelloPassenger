@@ -147,6 +147,12 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+
+    .input-completed {
+        border-color: #FFC107 !important; /* Bordure jaune */
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2) !important; /* Ombre jaune */
+        background-color: #fef9e7 !important; /* Fond légèrement jaune, comme les bagages sélectionnés */
+    }
     </style>
 </head>
 <body class="min-h-screen bg-white">
@@ -621,9 +627,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
 
             const totalContainer = document.querySelector('.summary-total-container');
             totalContainer.classList.add('cursor-pointer');
-            totalContainer.onclick = () => {
-                alert('Panier total cliqué ! Logique de paiement à implémenter.');
-            };
+            totalContainer.onclick = handleTotalClick;
 
         } else {
             cartElement.style.display = 'none';
@@ -633,7 +637,132 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         }
     }
     
+    // Fonction pour gérer le clic sur le total du panier
+    async function handleTotalClick() {
+        console.log('Clic sur le total du panier détecté.');
+
+        try {
+            const response = await fetch('/check-auth-status', {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            const data = await response.json();
+
+            if (data.authenticated) {
+                console.log('Utilisateur authentifié. Préparation de la commande et redirection vers la page de paiement.');
+
+                // Collecter les données du formulaire
+                const airportId = document.getElementById('airport-select').value;
+                const dateDepot = document.getElementById('date-depot').value;
+                const heureDepot = document.getElementById('heure-depot').value;
+                const dateRecuperation = document.getElementById('date-recuperation').value;
+                const heureRecuperation = document.getElementById('heure-recuperation').value;
+
+                const baggages = [];
+                document.querySelectorAll('.baggage-block').forEach(block => {
+                    const selectedOption = block.querySelector('.baggage-option.selected');
+                    const quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
+                    if (selectedOption) {
+                        baggages.push({
+                            type: selectedOption.dataset.type,
+                            quantity: quantity
+                        });
+                    }
+                });
+
+                // Récupérer les produits et leurs prix (simulés pour l'instant, devraient venir de l'API get-quote)
+                // Pour un test rapide, je vais utiliser des données statiques ou les récupérer de la console si elles y sont loggées
+                // Idéalement, ces produits devraient être stockés globalement après l'appel à get-quote
+                const products = [
+                    { id: "id_produit_cabine", libelle: "Bagage en cabine", prixUnitaire: 10.00 },
+                    { id: "id_produit_soute", libelle: "Bagage en soute", prixUnitaire: 15.00 },
+                    { id: "id_produit_vestiaire", libelle: "Vestiaire", prixUnitaire: 5.00 }
+                ];
+
+
+                const formData = {
+                    airportId: airportId,
+                    dateDepot: dateDepot,
+                    heureDepot: heureDepot,
+                    dateRecuperation: dateRecuperation,
+                    heureRecuperation: heureRecuperation,
+                    baggages: baggages,
+                    products: products // Inclure les produits pour le calcul des prix côté serveur
+                };
+
+                try {
+                    const prepareResponse = await fetch('/prepare-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (prepareResponse.ok) {
+                        // Redirection gérée par le contrôleur Laravel après stockage en session
+                        window.location.href = '/payment';
+                    } else {
+                        const errorData = await prepareResponse.json();
+                        alert('Erreur lors de la préparation de la commande: ' + (errorData.message || 'Erreur inconnue'));
+                        console.error('Erreur de préparation:', errorData);
+                    }
+                } catch (error) {
+                    console.error('Erreur réseau lors de la préparation de la commande:', error);
+                    alert('Une erreur réseau est survenue lors de la préparation de votre commande.');
+                }
+
+            } else {
+                console.log('Utilisateur non authentifié. Ouverture du modal de connexion client.');
+                if (typeof window.openLoginModal === 'function') {
+                    window.openLoginModal(); // Appeler la fonction globale pour ouvrir le modal
+                } else {
+                    // Fallback si la fonction n'est pas disponible (ex: header-front.blade.php non inclus)
+                    window.location.href = '/client/login';
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lors de la vérification de l\'authentification:', error);
+            alert('Une erreur est survenue lors de la vérification de votre statut de connexion.');
+        }
+    }
+
 </script>
+<script>
+    // Fonction pour gérer le style des champs complétés
+    function handleInputCompletion(event) {
+        const input = event.target;
+        if (input.value.trim() !== '') {
+            input.classList.add('input-completed');
+        } else {
+            input.classList.remove('input-completed');
+        }
+    }
+
+    // Attacher les écouteurs d'événements aux champs concernés
+    document.addEventListener('DOMContentLoaded', () => {
+        const fields = [
+            document.getElementById('airport-select'),
+            document.getElementById('date-depot'),
+            document.getElementById('heure-depot'),
+            document.getElementById('date-recuperation'),
+            document.getElementById('heure-recuperation')
+        ];
+
+        fields.forEach(field => {
+            if (field) { // Vérifier si l'élément existe
+                field.addEventListener('change', handleInputCompletion);
+                field.addEventListener('input', handleInputCompletion); // Pour les inputs textuels
+                // Appliquer le style au chargement si le champ est déjà rempli (ex: après un rechargement de page avec des valeurs pré-remplies)
+                handleInputCompletion({ target: field });
+            }
+        });
+    });
+
+ </script>   
 
 </body>
 </html>
