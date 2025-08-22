@@ -84,9 +84,14 @@ class PaymentController extends Controller
         }
 
         // Récupérer les informations du client connecté (modèle Client)
-        $user = Auth::user();
+        $user = Auth::guard('client')->user(); // Ensure we get the Client model
         if (!$user) {
-            return redirect()->route('login')->with('error', 'Veuillez vous connecter pour continuer.');
+            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour continuer.');
+        }
+        // Re-fetch client data from database to ensure it's the latest
+        $user = \App\Models\Client::find($user->id);
+        if (!$user) {
+            return redirect()->route('client.login')->with('error', 'Client introuvable après authentification.');
         }
         $clientData = [
             "email" => $user->email,
@@ -191,6 +196,33 @@ class PaymentController extends Controller
         if (!$user) {
             return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
         }
+        // Re-fetch client data from database to ensure it's the latest
+        $user = \App\Models\Client::find($user->id);
+        if (!$user) {
+            return redirect()->route('client.login')->with('error', 'Client introuvable après authentification.');
+        }
+
+        // Ensure commandeData in session is updated with latest client info
+        $commandeData = Session::get('commande_en_cours');
+        if ($commandeData) {
+            // Update client data within commandeData
+            $commandeData['client'] = [
+                "email" => $user->email,
+                "telephone" => $user->telephone,
+                "nom" => $user->nom,
+                "prenom" => $user->prenom,
+                "civilite" => $user->civilite ?? null,
+                "nomSociete" => $user->nomSociete ?? null,
+                "adresse" => $user->adresse ?? null,
+                "complementAdresse" => $user->complementAdresse ?? null,
+                "ville" => $user->ville ?? null,
+                "codePostal" => $user->codePostal ?? null,
+                "pays" => $user->pays ?? null
+            ];
+            Session::put('commande_en_cours', $commandeData);
+            Log::info('Commande data in session updated with latest client info: ' . json_encode($commandeData));
+        }
+
         return view('payment', compact('user')); // Pass client data to the view
     }
 }

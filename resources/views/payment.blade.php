@@ -98,8 +98,8 @@
                 if (response.ok) {
                     alert('Informations mises à jour avec succès!');
                     clientProfileModal.classList.add('hidden');
-                    // Optionally, refresh the page or update displayed user info
-                    location.reload();
+                    // Redirect to the payment page to ensure updated client info is loaded into session
+                    window.location.href = '{{ route('payment') }}';
                 } else {
                     alert('Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
                     console.error('Update error:', result);

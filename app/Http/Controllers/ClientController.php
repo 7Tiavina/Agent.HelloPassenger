@@ -35,6 +35,10 @@ class ClientController extends Controller
             $client->fill($validatedData);
             $client->save();
 
+            // Explicitly refresh the authenticated user's instance in the session
+            $client->refresh(); // Refresh the model instance from the database
+            Auth::guard('client')->setUser($client); // Update the authenticated user in the session
+
             Log::info('Client profile updated successfully for client: ' . $client->id);
             return response()->json(['message' => 'Profile updated successfully!', 'client' => $client]);
 
