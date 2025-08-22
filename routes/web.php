@@ -93,3 +93,6 @@ Route::middleware('auth:client')->group(function () { // Spécifier la garde 'cl
     Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
     Route::post('/client/update-profile', [ClientController::class, 'updateProfile'])->name('client.update-profile'); // Point to ClientController
 });
+
+// New route for payment success page
+Route::get('/payment/success', [PaymentController::class, 'showPaymentSuccess'])->name('payment.success');

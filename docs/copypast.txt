@@ -1,6 +1,143 @@
-main.js?attr=65oQOyZHqatt3kZOAfOM6nzwwJA24ldBNPpmgOvoqvOu_qrc2azglNG7hj1tGR-Y:4018   POST http://127.0.0.1:8000/client/update-profile 500 (Internal Server Error)
-fetchCallImpl @ main.js?attr=65oQOyZHqatt3kZOAfOM6nzwwJA24ldBNPpmgOvoqvOu_qrc2azglNG7hj1tGR-Y:4018
-fetch @ main.js?attr=65oQOyZHqatt3kZOAfOM6nzwwJA24ldBNPpmgOvoqvOu_qrc2azglNG7hj1tGR-Y:4024
-(anonymous) @ payment:167
-payment:189  Network error: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
-(anonymous) @ payment:189
+-----
+
+### **1. Requête API : Création d'une commande**
+
+Cette section décrit les paramètres et le corps de la requête pour créer une nouvelle commande via une API.
+
+**URL de la requête :**
+
+`POST /api/plateforme/{idPlateforme}/commande`
+
+**Paramètres de l'URL (`path`) :**
+
+  * `idPlateforme` (`string`): Un identifiant unique (UUID) pour la plateforme.
+      * **Exemple :** `64f00ace-31b6-45b0-bcb2-b562b1ac08d9`
+
+-----
+
+### **2. Corps de la requête (`Request body`)**
+
+Le corps de la requête est au format **JSON** et contient les informations détaillées de la commande.
+
+```json
+{
+  "commandeLignes": [
+    {
+      "idProduit": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
+      "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+      "dateDebut": "2025-08-22T13:30:00.000Z",
+      "dateFin": "2025-08-25T14:30:00.000Z",
+      "prixTTC": 40,
+      "quantite": 1
+    }
+  ],
+  "client": {
+    "email": "client@example.com",
+    "telephone": "0331234567",
+    "nom": "Rabe",
+    "prenom": "Tiavina",
+    "civilite": "M.",
+    "nomSociete": "CamilleSA",
+    "adresse": "12345lop8",
+    "complementAdresse": "I123445",
+    "ville": "Rose Hill",
+    "codePostal": "12345",
+    "pays": "Maurice"
+  }
+}
+```
+
+-----
+
+### **3. Exemple de requête `cURL`**
+
+Cet exemple montre comment exécuter la requête depuis un terminal à l'aide de l'outil `cURL`.
+
+```bash
+curl -X 'POST' \
+  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/commande' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzU1ODU4OTE1LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.4hlRr3wbgE8zeCMzrFVb74dHsHSmevE96c__BtNBVT4' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "commandeLignes": [
+      {
+        "idProduit": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
+        "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+        "dateDebut": "2025-08-22T13:30:00.000Z",
+        "dateFin": "2025-08-25T14:30:00.000Z",
+        "prixTTC": 40,
+        "quantite": 1
+      }
+    ],
+    "client": {
+      "email": "client@example.com",
+      "telephone": "0331234567",
+      "nom": "Rabe",
+      "prenom": "Tiavina",
+      "civilite": "M.",
+      "nomSociete": "CamilleSA",
+      "adresse": "12345lop8",
+      "complementAdresse": "I123445",
+      "ville": "Rose Hill",
+      "codePostal": "12345",
+      "pays": "Maurice"
+    }
+  }'
+```
+
+-----
+
+### **4. Réponse du serveur (`Server response`)**
+
+Le serveur renvoie une réponse au format **JSON** après l'exécution de la requête.
+
+**Code de statut :** `200 OK`
+
+**Corps de la réponse :**
+
+```json
+{
+  "content": "BASE64invoicetxt",
+  "statut": 1,
+  "message": "667b8b92-cd54-4a65-6826-08dde155c3f3"
+}
+```
+
+**En-têtes de la réponse (`Response headers`) :**
+
+  * `content-type`: `application/json; charset=utf-8`
+  * `date`: `Fri, 22 Aug 2025 09:35:45 GMT`
+  * `server`: `Microsoft-IIS/10.0`
+  * `x-powered-by`: `ASP.NET`
+
+-----
+
+### **5. Schémas de réponse**
+
+Cette section présente les structures attendues pour les réponses du serveur en cas de succès et d'échec.
+
+**Code de statut `200` (Succès) :**
+
+```json
+{
+  "content": "string",
+  "statut": 0,
+  "message": "string"
+}
+```
+
+**Code de statut `400` (Requête incorrecte) :**
+
+```json
+{
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+```

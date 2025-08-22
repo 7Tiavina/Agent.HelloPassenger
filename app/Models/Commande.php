@@ -20,13 +20,11 @@ class Commande extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
-        'id_api_commande',
-        'id_plateforme',
+        'client_id',
         'client_email',
-        'client_telephone',
         'client_nom',
         'client_prenom',
+        'client_telephone',
         'client_civilite',
         'client_nom_societe',
         'client_adresse',
@@ -34,9 +32,12 @@ class Commande extends Model
         'client_ville',
         'client_code_postal',
         'client_pays',
+        'id_api_commande',
+        'id_plateforme',
         'total_prix_ttc',
         'statut',
         'details_commande_lignes',
+        'invoice_content',
     ];
 
     /**
@@ -50,10 +51,10 @@ class Commande extends Model
     ];
 
     /**
-     * Get the user that owns the Commande.
+     * Get the client that owns the Commande.
      */
-    public function user(): BelongsTo
+    public function client(): BelongsTo // Renamed method to client
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Client::class, 'client_id'); // Link to Client model, specify foreign key
     }
 }

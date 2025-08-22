@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache; // Added
 
 class PaymentController extends Controller
 {
@@ -124,6 +125,40 @@ class PaymentController extends Controller
         return redirect()->route('payment');
     }
 
+    private function getBdmToken(): string
+    {
+        // Tente de récupérer le token depuis le cache
+        return Cache::remember('bdm_api_token', 3300, function () {
+            Log::info('Cache BDM token expiré. Demande d\'un nouveau token.');
+
+            $response = Http::post(config('services.bdm.base_url') . '/User/Login', [
+                'userName' => config('services.bdm.username'),
+                'email' => config('services.bdm.email'),
+                'password' => config('services.bdm.password'),
+            ]);
+
+            // Lance une exception si la requête HTTP elle-même échoue
+            $response->throw();
+
+            // Vérifie si le login a réussi selon la réponse de l'API
+            if (!$response->json('isSucceed')) {
+                Log::error('L\'API BDM a refusé la connexion.', ['response' => $response->json()]);
+                throw new \Exception('Authentification API BDM échouée: L\'API a refusé la connexion.');
+            }
+
+            $token = $response->json('data.accessToken');
+
+            if (!$token) {
+                Log::error('Impossible de récupérer l\'accessToken depuis la réponse de l\'API BDM.', ['response' => $response->json()]);
+                throw new \Exception('Authentification API BDM échouée: token manquant dans la réponse.');
+            }
+            
+            Log::info('✅ AUTHENTIFICATION API BDM RÉUSSIE. Token obtenu.');
+            Log::info('Nouveau token BDM obtenu et mis en cache.');
+            return $token;
+        });
+    }
+
     /**
      * Traite le paiement simulé et enregistre la commande.
      *
@@ -146,47 +181,71 @@ class PaymentController extends Controller
         $totalPrixTTC = $commandeData['total_prix_ttc'];
 
         try {
-            // Appel à l'API externe
-            $response = Http::post("https://api.example.com/plateforme/{$idPlateforme}/commande", [
-                'commandeLignes' => $commandeLignes,
-                'client' => $clientData,
-                'totalPrixTTC' => $totalPrixTTC
+            // Appel à l\'API externe
+            $token = $this->getBdmToken();
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", [
+                'CommandeLignes' => $commandeLignes, // Use exact key from API spec
+                'Client' => $clientData, // Use exact key from API spec
             ]);
+
+            Log::info('API Commande response: ' . $response->body());
 
             $apiResult = $response->json();
 
             if ($response->successful() && $apiResult['statut'] === 1) {
-                // Succès de l'API externe, enregistrer dans notre base de données
+                // Succès de l\'API externe, enregistrer dans notre base de données
+                $client = Auth::guard('client')->user();
                 $commande = Commande::create([
-                    'user_id' => Auth::id(),
-                    'id_api_commande' => $apiResult['content'] ?? null,
+                    'client_id' => $client->id,
+                    'client_email' => $client->email,
+                    'client_nom' => $client->nom,
+                    'client_prenom' => $client->prenom,
+                    'client_telephone' => $client->telephone,
+                    'client_civilite' => $client->civilite,
+                    'client_nom_societe' => $client->nomSociete,
+                    'client_adresse' => $client->adresse,
+                    'client_complement_adresse' => $client->complementAdresse,
+                    'client_ville' => $client->ville,
+                    'client_code_postal' => $client->codePostal,
+                    'client_pays' => $client->pays,
+                    'id_api_commande' => $apiResult['message'] ?? null, // UUID is in 'message' field
                     'id_plateforme' => $idPlateforme,
-                    'client_email' => $clientData['email'],
-                    'client_telephone' => $clientData['telephone'],
-                    'client_nom' => $clientData['nom'],
-                    'client_prenom' => $clientData['prenom'],
-                    'client_civilite' => $clientData['civilite'],
-                    'client_nom_societe' => $clientData['nomSociete'],
-                    'client_adresse' => $clientData['adresse'],
-                    'client_complement_adresse' => $clientData['complementAdresse'],
-                    'client_ville' => $clientData['ville'],
-                    'client_codePostal' => $clientData['codePostal'],
-                    'client_pays' => $clientData['pays'],
                     'total_prix_ttc' => $totalPrixTTC,
                     'statut' => 'completed',
-                    'details_commande_lignes' => $commandeLignes,
+                    'details_commande_lignes' => json_encode($commandeLignes), // Store as JSON
+                    'invoice_content' => $apiResult['content'] ?? null, // Store the base64 content as invoice_content
                 ]);
 
                 Session::forget('commande_en_cours');
-                return redirect()->route('mes.reservations')->with('success', 'Votre commande a été passée avec succès !');
+                Session::put('api_payment_result', $apiResult); // Store API result for success page
+                Session::put('last_commande_id', $commande->id); // Store Commande ID for success page
+
+                return response()->json([
+                    'statut' => 1,
+                    'message' => 'Votre commande a été passée avec succès !',
+                    'redirect' => route('payment.success')
+                ]);
 
             } else {
+                Log::error('API Commande failed. Status: ' . $response->status() . ' Body: ' . $response->body());
                 $errorMessage = $apiResult['message'] ?? 'Erreur inconnue lors de la commande via l\'API externe.';
-                return back()->with('error', 'Échec de la commande : ' . $errorMessage);
+                
+                return response()->json([
+                    'statut' => 0,
+                    'message' => $errorMessage
+                ], $response->status()); // Return appropriate HTTP status
             }
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Une erreur technique est survenue : ' . $e->getMessage());
+            Log::error('Technical error during payment processing: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'statut' => 0,
+                'message' => 'Une erreur technique est survenue. Veuillez réessayer.'
+            ], 500);
         }
     }
 
@@ -224,5 +283,24 @@ class PaymentController extends Controller
         }
 
         return view('payment', compact('user')); // Pass client data to the view
+    }
+
+    public function showPaymentSuccess()
+    {
+        $apiResult = Session::get('api_payment_result');
+        $lastCommandeId = Session::get('last_commande_id');
+
+        if (!$apiResult || !$lastCommandeId) {
+            // Optionally handle cases where session data is missing
+            return redirect()->route('form-consigne')->with('error', 'La session de paiement a expiré. Veuillez réessayer.');
+        }
+
+        // Forget the session data after using it
+        Session::forget(['api_payment_result', 'last_commande_id']);
+
+        return view('payment-success', [
+            'apiResult' => $apiResult,
+            'lastCommandeId' => $lastCommandeId
+        ]);
     }
 }

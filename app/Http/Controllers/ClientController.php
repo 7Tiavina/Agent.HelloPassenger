@@ -27,7 +27,7 @@ class ClientController extends Controller
                 'adresse' => 'nullable|string|max:255',
                 'complementAdresse' => 'nullable|string|max:255',
                 'ville' => 'nullable|string|max:255',
-                'codePostal' => 'nullable|string|max:255',
+                'codePostal' => 'nullable|string|digits:5', // Enforce 5 digits
                 'pays' => 'nullable|string|max:255',
             ]);
 

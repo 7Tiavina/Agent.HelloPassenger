@@ -9,6 +9,10 @@
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <div id="paymentMessage" class="hidden px-4 py-3 rounded relative mb-4" role="alert">
+            <strong id="paymentMessageTitle" class="font-bold"></strong>
+            <span id="paymentMessageBody" class="block sm:inline"></span>
+        </div>
         <h1 class="text-2xl font-bold mb-6">Page de Paiement</h1>
 
         <p class="mb-4">Ceci est la page de paiement simulée. Veuillez confirmer les détails de votre commande avant de procéder.</p>
@@ -24,9 +28,9 @@
             </button>
             <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto mb-6">{{ json_encode($commandeData, JSON_PRETTY_PRINT) }}</pre>
 
-            <form action="{{ route('process.payment') }}" method="POST">
+            <form id="processPaymentForm" method="POST">
                 @csrf
-                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                <button type="submit" id="confirmPaymentBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
                     Confirmer le paiement (simulé)
                 </button>
             </form>
@@ -107,6 +111,59 @@
             } catch (error) {
                 alert('Une erreur réseau est survenue.');
                 console.error('Network error:', error);
+            }
+        });
+
+        const paymentMessage = document.getElementById('paymentMessage');
+        const paymentMessageTitle = document.getElementById('paymentMessageTitle');
+        const paymentMessageBody = document.getElementById('paymentMessageBody');
+
+        function showPaymentMessage(type, title, body) {
+            paymentMessage.classList.remove('hidden', 'bg-green-100', 'border-green-400', 'text-green-700', 'bg-red-100', 'border-red-400', 'text-red-700');
+            if (type === 'success') {
+                paymentMessage.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            }
+            else {
+                paymentMessage.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            }
+            paymentMessageTitle.textContent = title;
+            paymentMessageBody.textContent = body;
+            paymentMessage.classList.remove('hidden');
+        }
+
+        document.getElementById('processPaymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            try {
+                const response = await fetch('{{ route('process.payment') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ _token: csrfToken }) // Send CSRF token in body for POST
+                });
+
+                const result = await response.json();
+
+                if (response.ok) { // HTTP status 200-299
+                    if (result.statut === 1) { // Check API's custom status
+                        showPaymentMessage('success', 'Succès!', 'Votre commande a été passée avec succès !');
+                        // Redirect to success page after a short delay or immediately
+                        window.location.href = '{{ route('payment.success') }}';
+                    } else {
+                        // API returned non-1 statut, but HTTP status is OK
+                        showPaymentMessage('error', 'Échec de la commande!', result.message || 'Erreur inconnue lors de la commande.');
+                    }
+                } else { // HTTP status 4xx, 5xx
+                    showPaymentMessage('error', 'Erreur!', result.message || 'Une erreur est survenue lors du traitement de votre paiement.');
+                    console.error('Payment processing error:', result);
+                }
+            } catch (error) {
+                showPaymentMessage('error', 'Erreur réseau!', 'Une erreur réseau est survenue lors de la confirmation de votre paiement.');
+                console.error('Network error during payment:', error);
             }
         });
     </script>
