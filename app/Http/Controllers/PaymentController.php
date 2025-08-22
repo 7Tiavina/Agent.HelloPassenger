@@ -93,13 +93,13 @@ class PaymentController extends Controller
             "telephone" => $user->telephone, // Utilisation directe du champ telephone du modèle Client
             "nom" => $user->nom, // Utilisation directe du champ nom du modèle Client
             "prenom" => $user->prenom, // Utilisation directe du champ prenom du modèle Client
-            "civilite" => "M.", // À adapter si vous avez ce champ dans le formulaire
+            "civilite" => $user->civilite ?? null, // À adapter si vous avez ce champ dans le formulaire
             "nomSociete" => null,
-            "adresse" => "123 Rue de l'Exemple", // À adapter si vous avez ce champ dans le formulaire
+            "adresse" => $user->adresse ?? null, // À adapter si vous avez ce champ dans le formulaire
             "complementAdresse" => null,
-            "ville" => "Paris", // À adapter si vous avez ce champ dans le formulaire
-            "codePostal" => "75001", // À adapter si vous avez ce champ dans le formulaire
-            "pays" => "France"
+            "ville" => $user->ville ?? null, // À adapter si vous avez ce champ dans le formulaire
+            "codePostal" => $user->codePostal ?? null, // À adapter si vous avez ce champ dans le formulaire
+            "pays" => $user->pays ?? null
         ];
 
         $commandeData = [
@@ -183,5 +183,14 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Une erreur technique est survenue : ' . $e->getMessage());
         }
+    }
+
+    public function showPaymentPage()
+    {
+        $user = Auth::guard('client')->user(); // Get the authenticated client
+        if (!$user) {
+            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
+        }
+        return view('payment', compact('user')); // Pass client data to the view
     }
 }

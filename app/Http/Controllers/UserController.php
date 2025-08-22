@@ -120,10 +120,4 @@ class UserController extends Controller
 
         return view('components.myorders', compact('reservations'));
     }
-
-
-
-
-
-
 }

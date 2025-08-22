@@ -6,6 +6,7 @@ use App\Http\Controllers\BagageConsigneController;
 use App\Http\Controllers\FrontController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CommandeController;
+use App\Http\Controllers\ClientController; // Add this import
 
 Route::get('/acceuil', [FrontController::class, 'acceuil'])->name('front.acceuil');
 
@@ -85,11 +86,10 @@ Route::get('/check-auth-status', function () {
 });
 
 Route::middleware('auth:client')->group(function () { // Spécifier la garde 'client'
-    Route::get('/payment', function () {
-        return view('payment');
-    })->name('payment');
+    Route::get('/payment', [PaymentController::class, 'showPaymentPage'])->name('payment');
 
     Route::post('/process-payment', [PaymentController::class, 'processPayment'])->name('process.payment');
     Route::get('/mes-reservations', [CommandeController::class, 'index'])->name('mes.reservations');
     Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
+    Route::post('/client/update-profile', [ClientController::class, 'updateProfile'])->name('client.update-profile'); // Point to ClientController
 });

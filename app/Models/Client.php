@@ -17,6 +17,13 @@ class Client extends Authenticatable
         'nom',
         'prenom',
         'telephone',
+        'civilite',
+        'nomSociete',
+        'adresse',
+        'complementAdresse',
+        'ville',
+        'codePostal',
+        'pays',
     ];
 
     protected $hidden = [
