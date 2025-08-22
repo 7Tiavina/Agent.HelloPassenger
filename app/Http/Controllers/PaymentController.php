@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -18,6 +19,7 @@ class PaymentController extends Controller
      */
     public function preparePayment(Request $request)
     {
+        Log::info('Entering preparePayment method.'); // Added very early log
         // Valider les données reçues du formulaire
         $validatedData = $request->validate([
             'airportId' => 'required|string',
@@ -31,13 +33,15 @@ class PaymentController extends Controller
             'products' => 'required|array',
         ]);
 
+        Log::info('Received validated data for payment preparation: ' . json_encode($validatedData));
+
         // Construire les commandeLignes pour l'API externe
         $commandeLignes = [];
 
         // Mapping for baggage types to product libelles
         $baggageTypeToLibelleMap = [
-            'cabin' => 'Bagage en cabine',
-            'soute' => 'Bagage en soute',
+            'cabin' => 'Bagage cabine', // Corrected to match API response
+            'soute' => 'Bagage soute',   // Corrected to match API response
             'vestiaire' => 'Vestiaire',
             // Add other mappings as needed
         ];
@@ -109,6 +113,7 @@ class PaymentController extends Controller
 
         // Stocker les données de la commande en session
         Session::put('commande_en_cours', $commandeData);
+        Log::info('Commande data stored in session: ' . json_encode($commandeData)); // Added log
 
         // Rediriger vers la page de paiement
         return redirect()->route('payment');
@@ -124,6 +129,7 @@ class PaymentController extends Controller
     {
         // Récupérer les données de la commande depuis la session
         $commandeData = Session::get('commande_en_cours');
+        Log::info('Commande data retrieved from session: ' . json_encode($commandeData)); // Added log
 
         if (!$commandeData) {
             return redirect()->route('form-consigne')->with('error', 'Aucune commande en cours. Veuillez recommencer.');

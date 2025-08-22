@@ -341,6 +341,7 @@
         'cdg': '88bb89e0-b966-4420-9ed3-7a6745e4d947',
         'orly': '64f00ace-31b6-45b0-bcb2-b562b1ac08d9'
     };
+    let globalProductsData = []; // New global variable
     
     // Événement pour la sélection de l'aéroport
     document.getElementById('airport-select').addEventListener('change', function() {
@@ -553,9 +554,9 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         console.log('DEBUG: productsResult.statut:', productsResult.statut, 'productsResult.content:', productsResult.content);
         if (productsResult.statut === 1 && Array.isArray(productsResult.content) && productsResult.content.length > 0) {
             console.log('✅ SUCCÈS: Tarifs récupérés et parsés.');
-            const productsData = productsResult.content;
+            globalProductsData = productsResult.content; // Assign to global variable
 
-            const products = productsData.reduce((acc, curr) => {
+            const products = globalProductsData.reduce((acc, curr) => { // Use globalProductsData
                 acc[curr.libelle] = { id: curr.id, prix: curr.prixUnitaire };
                 return acc;
             }, {});
@@ -578,7 +579,9 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
     // Fonction de mise à jour du panier
     function updateCart(products) {
         console.log('--- Mise à jour du panier ---');
+        console.log('Products received by updateCart:', products); // Added log
         const selectedBaggages = document.querySelectorAll('.baggage-block');
+        console.log('Selected baggages in updateCart:', selectedBaggages); // Added log
         let total = 0;
         let cartContent = '';
         const itemsInCart = [];
@@ -597,6 +600,8 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 } else if (type === 'cloakroom' && products['Vestiaire']) {
                     price = products['Vestiaire'].prix;
                 }
+                
+                console.log(`Processing baggage type: ${type}, quantity: ${quantity}, price found: ${price}`); // Added log
                 
                 total += price * quantity;
                 itemsInCart.push({ type, quantity, price, totalItem: price * quantity });
@@ -672,18 +677,32 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                     }
                 });
 
-                // Récupérer les produits et leurs prix (simulés pour l'instant, devraient venir de l'API get-quote)
-                // Pour un test rapide, je vais utiliser des données statiques ou les récupérer de la console si elles y sont loggées
-                // Idéalement, ces produits devraient être stockés globalement après l'appel à get-quote
-                const products = [
-                    { id: "id_produit_cabine", libelle: "Bagage en cabine", prixUnitaire: 10.00 },
-                    { id: "id_produit_soute", libelle: "Bagage en soute", prixUnitaire: 15.00 },
-                    { id: "id_produit_vestiaire", libelle: "Vestiaire", prixUnitaire: 5.00 }
-                ];
+                // Construire le tableau 'products' en filtrant globalProductsData et en assurant l'unicité
+                const products = [];
+                const seenProductIds = new Set(); // To track unique product IDs
+                const baggageTypeToLibelleMap = {
+                    'cabin': 'Bagage cabine', // Corrected: removed "en "
+                    'hold': 'Bagage soute',   // Corrected: removed "en "
+                    'cloakroom': 'Vestiaire',
+                    // Add other mappings if necessary, matching the backend's map
+                };
+
+                baggages.forEach(baggage => {
+                    const expectedLibelle = baggageTypeToLibelleMap[baggage.type];
+                    console.log('handleTotalClick: Processing baggage type:', baggage.type, 'Expected Libelle:', expectedLibelle); // Added log
+                    if (expectedLibelle) {
+                        const matchingProduct = globalProductsData.find(p => p.libelle === expectedLibelle);
+                        console.log('handleTotalClick: Matching product found:', matchingProduct); // Added log
+                        if (matchingProduct && !seenProductIds.has(matchingProduct.id)) {
+                            products.push(matchingProduct);
+                            seenProductIds.add(matchingProduct.id);
+                        }
+                    }
+                });
 
 
                 const formData = {
-                    airportId: airportId,
+                    airportId: airportIds[airportId], // Use the mapped UUID
                     dateDepot: dateDepot,
                     heureDepot: heureDepot,
                     dateRecuperation: dateRecuperation,
@@ -691,6 +710,8 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                     baggages: baggages,
                     products: products // Inclure les produits pour le calcul des prix côté serveur
                 };
+
+                console.log('Sending formData to /prepare-payment:', formData); // Added log
 
                 try {
                     const prepareResponse = await fetch('/prepare-payment', {
