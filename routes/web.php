@@ -93,7 +93,7 @@ Route::middleware('auth:client')->group(function () { // Spécifier la garde 'cl
 });
 
 // New routes for Monetico payment
-Route::get('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
+Route::match(['get', 'post'], '/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
 Route::get('/payment/error', [PaymentController::class, 'paymentError'])->name('payment.error');
 Route::get('/payment/cancel', [PaymentController::class, 'paymentCancel'])->name('payment.cancel');
 Route::get('/payment/return', [PaymentController::class, 'paymentReturn'])->name('payment.return');

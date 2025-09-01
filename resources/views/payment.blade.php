@@ -30,6 +30,14 @@
 
 <div class="container mx-auto max-w-5xl my-12 px-4">
 
+    <!-- Afficheur de message d'erreur -->
+    @if(session('error'))
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p class="font-bold">Action requise</p>
+            <p>{{ session('error') }}</p>
+        </div>
+    @endif
+
     @if ($commandeData)
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <!-- Colonne de gauche : Récapitulatif de la commande -->
@@ -62,7 +70,8 @@
                     <div class="text-sm text-gray-600 space-y-2">
                         <p id="display-user-name"><strong>Nom:</strong> {{ $user->prenom }} {{ $user->nom }}</p>
                         <p id="display-user-email"><strong>Email:</strong> {{ $user->email }}</p>
-                        <p id="display-user-phone"><strong>Téléphone:</strong> {{ $user->telephone }}</p>
+                        <p id="display-user-phone"><strong>Téléphone:</strong> {{ $user->telephone ?? 'Non renseigné' }}</p>
+                        <p id="display-user-address"><strong>Adresse:</strong> {{ $user->adresse ?? 'Non renseignée' }}</p>
                     </div>
                     <button id="openClientProfileModalBtn" class="mt-4 text-sm text-yellow-600 hover:text-yellow-700 font-semibold">Modifier</button>
                 </div>
@@ -70,7 +79,13 @@
                 <!-- Bloc de paiement -->
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Paiement sécurisé</h2>
-                    <div class="kr-smart-form" kr-form-token="{{ $formToken }}"></div>
+                    @if(!session('open_modal'))
+                        <div class="kr-smart-form" kr-form-token="{{ $formToken }}"></div>
+                    @else
+                        <div class="p-4 bg-gray-100 rounded-md text-center text-gray-600">
+                            Veuillez compléter votre profil pour activer le paiement.
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Bloc de débogage -->
@@ -98,70 +113,71 @@
 @include('components.client-profile-modal')
 
 <script>
-    // Le script pour la modale reste identique
-    const clientProfileModal = document.getElementById('clientProfileModal');
-    const openClientProfileModalBtn = document.getElementById('openClientProfileModalBtn');
-    const closeClientProfileModalBtn = document.getElementById('closeClientProfileModalBtn');
-    const clientProfileForm = document.getElementById('clientProfileForm');
+    document.addEventListener('DOMContentLoaded', function() {
+        const clientProfileModal = document.getElementById('clientProfileModal');
+        const openClientProfileModalBtn = document.getElementById('openClientProfileModalBtn');
+        const closeClientProfileModalBtn = document.getElementById('closeClientProfileModalBtn');
+        const clientProfileForm = document.getElementById('clientProfileForm');
 
-    const userData = @json($user);
+        const userData = @json($user);
 
-    openClientProfileModalBtn.addEventListener('click', () => {
-        document.getElementById('modal-email').value = userData.email || '';
-        document.getElementById('modal-telephone').value = userData.telephone || '';
-        document.getElementById('modal-civilite').value = userData.civilite || 'M.';
-        document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
-        document.getElementById('modal-adresse').value = userData.adresse || '';
-        document.getElementById('modal-complementAdresse').value = userData.complementAdresse || '';
-        document.getElementById('modal-ville').value = userData.ville || '';
-        document.getElementById('modal-codePostal').value = userData.codePostal || '';
-        document.getElementById('modal-pays').value = userData.pays || '';
-        clientProfileModal.classList.remove('hidden');
-    });
+        openClientProfileModalBtn.addEventListener('click', () => {
+            document.getElementById('modal-email').value = userData.email || '';
+            document.getElementById('modal-telephone').value = userData.telephone || '';
+            document.getElementById('modal-civilite').value = userData.civilite || 'M.';
+            document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
+            document.getElementById('modal-adresse').value = userData.adresse || '';
+            document.getElementById('modal-complementAdresse').value = userData.complementAdresse || '';
+            document.getElementById('modal-ville').value = userData.ville || '';
+            document.getElementById('modal-codePostal').value = userData.codePostal || '';
+            document.getElementById('modal-pays').value = userData.pays || '';
+            clientProfileModal.classList.remove('hidden');
+        });
 
-    closeClientProfileModalBtn.addEventListener('click', () => {
-        clientProfileModal.classList.add('hidden');
-    });
+        closeClientProfileModalBtn.addEventListener('click', () => {
+            clientProfileModal.classList.add('hidden');
+        });
 
-    clientProfileForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(clientProfileForm);
-        const data = Object.fromEntries(formData.entries());
+        clientProfileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(clientProfileForm);
+            const data = Object.fromEntries(formData.entries());
 
-        for (const key in data) {
-            if (data[key] === '') {
-                data[key] = null;
+            for (const key in data) {
+                if (data[key] === '') {
+                    data[key] = null;
+                }
             }
-        }
 
-        try {
-            const response = await fetch('{{ route("client.update-profile") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch('{{ route("client.update-profile") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(data)
+                });
 
-            const result = await response.json();
+                const result = await response.json();
 
-            if (response.ok && result.success) {
-                alert('Informations mises à jour avec succès!');
-                // Mettre à jour l'affichage directement sans recharger
-                document.getElementById('display-user-name').innerHTML = `<strong>Nom:</strong> ${result.client.prenom} ${result.client.nom}`;
-                document.getElementById('display-user-email').innerHTML = `<strong>Email:</strong> ${result.client.email}`;
-                document.getElementById('display-user-phone').innerHTML = `<strong>Téléphone:</strong> ${result.client.telephone}`;
-                Object.assign(userData, result.client); // Mettre à jour l'objet JS local
-                clientProfileModal.classList.add('hidden');
-            } else {
-                alert('Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
-                console.error('Update error:', result);
+                if (response.ok && result.success) {
+                    alert('Informations mises à jour avec succès! La page va se recharger pour prendre en compte les changements.');
+                    location.reload(); // Recharger pour que le controleur refasse la vérification
+                } else {
+                    alert('Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
+                    console.error('Update error:', result);
+                }
+            } catch (error) {
+                alert('Une erreur réseau est survenue.');
+                console.error('Network error:', error);
             }
-        } catch (error) {
-            alert('Une erreur réseau est survenue.');
-            console.error('Network error:', error);
-        }
+        });
+
+        // Auto-ouverture de la modale si demandé par le serveur
+        @if(session('open_modal'))
+            openClientProfileModalBtn.click();
+        @endif
     });
 </script>
 

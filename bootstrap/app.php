@@ -11,8 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            'payment/*', // Exclure toutes les routes de retour de paiement
+            'payment/ipn'
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
+use App\Models\PaymentClient; // Ajout du nouveau modèle
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache; // Added
@@ -225,6 +226,33 @@ class PaymentController extends Controller
         Log::info('----------------------------------------------------');
         Log::info('[showPaymentPage] START - Handling /payment route.');
 
+        $user = Auth::guard('client')->user();
+        if (!$user) {
+            Log::error('[showPaymentPage] CRITICAL: Client is not authenticated. Aborting.');
+            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
+        }
+
+        // Re-fetch to ensure we have the absolute latest user data
+        $user = \App\Models\Client::find($user->id);
+        Log::info('[showPaymentPage] Authenticated client found: ' . $user->email);
+
+        // --- NOUVELLE VÉRIFICATION DU PROFIL ---
+        $requiredFields = ['telephone', 'adresse', 'ville', 'codePostal', 'pays'];
+        $missingFields = [];
+        foreach ($requiredFields as $field) {
+            if (empty($user->$field)) {
+                $missingFields[] = $field;
+            }
+        }
+
+        if (!empty($missingFields)) {
+            Log::warning('[showPaymentPage] Profile for client ' . $user->id . ' is incomplete. Missing: ' . implode(', ', $missingFields));
+            // Redirige vers la page de paiement avec une erreur et une instruction
+            return redirect()->route('payment')->with('error', 'Veuillez compléter votre profil pour continuer.')->with('open_modal', true);
+        }
+        Log::info('[showPaymentPage] Client profile is complete.');
+        // --- FIN DE LA VÉRIFICATION ---
+
         $commandeData = Session::get('commande_en_cours');
         if (!$commandeData) {
             Log::error('[showPaymentPage] CRITICAL: commande_en_cours NOT FOUND in session. Aborting.');
@@ -232,20 +260,7 @@ class PaymentController extends Controller
         }
         Log::info('[showPaymentPage] Session data found for commande_en_cours.');
 
-        $user = Auth::guard('client')->user(); // Get the authenticated client
-        if (!$user) {
-            Log::error('[showPaymentPage] CRITICAL: Client is not authenticated. Aborting.');
-            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
-        }
-        
-        $user = \App\Models\Client::find($user->id);
-        if (!$user) {
-            Log::error('[showPaymentPage] CRITICAL: Authenticated client not found in database. Aborting.');
-            return redirect()->route('client.login')->with('error', 'Client introuvable après authentification.');
-        }
-        Log::info('[showPaymentPage] Authenticated client found: ' . $user->email);
-
-        // Ensure commandeData in session is updated with latest client info
+        // La mise à jour des données client dans la session se fait ici pour être sûr que le JSON BDM est correct
         $commandeData['client'] = [
             "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
             "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => $user->nomSociete ?? null,
@@ -321,7 +336,21 @@ class PaymentController extends Controller
                     'invoice_content' => $apiResult['content'] ?? null,
                 ]);
 
+                // Enregistrer les détails du paiement
+                PaymentClient::create([
+                    'client_id' => $client->id,
+                    'commande_id' => $commande->id,
+                    'monetico_order_id' => $request->input('orderId', Session::get('monetico_order_id')),
+                    'monetico_transaction_id' => $request->input('transactionId'), // Assurez-vous que Monetico renvoie ce champ
+                    'amount' => $commande->total_prix_ttc * 100,
+                    'currency' => 'EUR',
+                    'status' => 'paid',
+                    'payment_method' => $request->input('brand'), // ex: VISA, MASTERCARD
+                    'raw_response' => json_encode($request->all()),
+                ]);
+
                 Session::forget('commande_en_cours');
+                Session::forget('monetico_order_id');
                 Session::put('api_payment_result', $apiResult);
                 Session::put('last_commande_id', $commande->id);
 

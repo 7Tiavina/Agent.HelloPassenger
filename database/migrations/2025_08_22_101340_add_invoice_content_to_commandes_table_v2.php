@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('commandes', function (Blueprint $table) {
-            $table->longText('invoice_content')->nullable()->after('details_commande_lignes');
+            // $table->longText('invoice_content')->nullable()->after('details_commande_lignes');
         });
     }
 
