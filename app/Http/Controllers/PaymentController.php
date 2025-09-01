@@ -112,8 +112,11 @@ class PaymentController extends Controller
             Session::put('commande_en_cours', $commandeData);
             Log::info('Commande data stored in session: ' . json_encode($commandeData));
 
+            $responsePayload = ['message' => 'Commande préparée avec succès.', 'redirect_url' => route('payment')];
+            Log::info('[preparePayment] Sending JSON response to browser: ' . json_encode($responsePayload));
+
             // Instead of redirecting, return a success JSON response
-            return response()->json(['message' => 'Commande préparée avec succès.', 'redirect_url' => route('payment')]);
+            return response()->json($responsePayload);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Laravel handles this for AJAX, but we catch it to be explicit
@@ -208,8 +211,8 @@ class PaymentController extends Controller
 
         if ($response->successful()) {
             $paymentData = $response->json();
-            if (isset($paymentData['formToken'])) {
-                return $paymentData['formToken'];
+            if (isset($paymentData['answer']['formToken'])) {
+                return $paymentData['answer']['formToken'];
             }
         } else {
             Log::error('Monetico API error (Basic Auth flow): ' . $response->body());
@@ -219,43 +222,48 @@ class PaymentController extends Controller
 
     public function showPaymentPage()
     {
+        Log::info('----------------------------------------------------');
+        Log::info('[showPaymentPage] START - Handling /payment route.');
+
+        $commandeData = Session::get('commande_en_cours');
+        if (!$commandeData) {
+            Log::error('[showPaymentPage] CRITICAL: commande_en_cours NOT FOUND in session. Aborting.');
+            return redirect()->route('form-consigne')->with('error', 'Votre session a expiré. Veuillez recommencer.');
+        }
+        Log::info('[showPaymentPage] Session data found for commande_en_cours.');
+
         $user = Auth::guard('client')->user(); // Get the authenticated client
         if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour acc%c3%a9der %c3%a0 la page de paiement.');
+            Log::error('[showPaymentPage] CRITICAL: Client is not authenticated. Aborting.');
+            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
         }
-        // Re-fetch client data from database to ensure it's the latest
+        
         $user = \App\Models\Client::find($user->id);
         if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Client introuvable apr%c3%a8s authentification.');
+            Log::error('[showPaymentPage] CRITICAL: Authenticated client not found in database. Aborting.');
+            return redirect()->route('client.login')->with('error', 'Client introuvable après authentification.');
         }
+        Log::info('[showPaymentPage] Authenticated client found: ' . $user->email);
 
         // Ensure commandeData in session is updated with latest client info
-        $commandeData = Session::get('commande_en_cours');
-        if ($commandeData) {
-            // Update client data within commandeData
-            $commandeData['client'] = [
-                "email" => $user->email,
-                "telephone" => $user->telephone,
-                "nom" => $user->nom,
-                "prenom" => $user->prenom,
-                "civilite" => $user->civilite ?? null,
-                "nomSociete" => $user->nomSociete ?? null,
-                "adresse" => $user->adresse ?? null,
-                "complementAdresse" => $user->complementAdresse ?? null,
-                "ville" => $user->ville ?? null,
-                "codePostal" => $user->codePostal ?? null,
-                "pays" => $user->pays ?? null
-            ];
-            Session::put('commande_en_cours', $commandeData);
-            Log::info('Commande data in session updated with latest client info: ' . json_encode($commandeData));
-        }
+        $commandeData['client'] = [
+            "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
+            "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => $user->nomSociete ?? null,
+            "adresse" => $user->adresse ?? null, "complementAdresse" => $user->complementAdresse ?? null, "ville" => $user->ville ?? null,
+            "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
+        ];
+        Session::put('commande_en_cours', $commandeData);
+        Log::info('[showPaymentPage] Session data updated with latest client info.');
 
+        Log::info('[showPaymentPage] Attempting to get Monetico formToken...');
         $formToken = $this->redirectToMonetico();
 
         if ($formToken) {
-            return view('payment', compact('user', 'formToken')); // Pass client data and formToken to the view
+            Log::info('[showPaymentPage] SUCCESS: formToken received. Rendering payment view.');
+            return view('payment', compact('user', 'formToken'));
         } else {
-            return redirect()->route('form-consigne')->with('error', 'Erreur lors de l%c3%a0initialisation du paiement.');
+            Log::error('[showPaymentPage] FAILURE: Did not receive formToken. Redirecting with error.');
+            return redirect()->route('form-consigne')->with('error', 'Erreur lors de l\'initialisation du paiement.');
         }
     }
 
