@@ -31,10 +31,10 @@
 <div class="container mx-auto max-w-5xl my-12 px-4">
 
     <!-- Afficheur de message d'erreur -->
-    @if(session('error'))
+    @if(!$isProfileComplete)
         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
             <p class="font-bold">Action requise</p>
-            <p>{{ session('error') }}</p>
+            <p>Votre profil est incomplet. Veuillez mettre à jour vos informations pour pouvoir procéder au paiement.</p>
         </div>
     @endif
 
@@ -79,7 +79,7 @@
                 <!-- Bloc de paiement -->
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Paiement sécurisé</h2>
-                    @if(!session('open_modal'))
+                    @if($isProfileComplete)
                         <div class="kr-smart-form" kr-form-token="{{ $formToken }}"></div>
                     @else
                         <div class="p-4 bg-gray-100 rounded-md text-center text-gray-600">
@@ -114,6 +114,8 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const isProfileComplete = @json($isProfileComplete);
+
         const clientProfileModal = document.getElementById('clientProfileModal');
         const openClientProfileModalBtn = document.getElementById('openClientProfileModalBtn');
         const closeClientProfileModalBtn = document.getElementById('closeClientProfileModalBtn');
@@ -174,10 +176,10 @@
             }
         });
 
-        // Auto-ouverture de la modale si demandé par le serveur
-        @if(session('open_modal'))
+        // Auto-ouverture de la modale si le profil est incomplet
+        if (!isProfileComplete) {
             openClientProfileModalBtn.click();
-        @endif
+        }
     });
 </script>
 

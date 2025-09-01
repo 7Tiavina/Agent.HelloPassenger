@@ -232,54 +232,50 @@ class PaymentController extends Controller
             return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
         }
 
-        // Re-fetch to ensure we have the absolute latest user data
         $user = \App\Models\Client::find($user->id);
         Log::info('[showPaymentPage] Authenticated client found: ' . $user->email);
 
-        // --- NOUVELLE VÉRIFICATION DU PROFIL ---
+        $isProfileComplete = true;
+        $formToken = null;
+
         $requiredFields = ['telephone', 'adresse', 'ville', 'codePostal', 'pays'];
-        $missingFields = [];
         foreach ($requiredFields as $field) {
             if (empty($user->$field)) {
-                $missingFields[] = $field;
+                $isProfileComplete = false;
+                break;
             }
         }
 
-        if (!empty($missingFields)) {
-            Log::warning('[showPaymentPage] Profile for client ' . $user->id . ' is incomplete. Missing: ' . implode(', ', $missingFields));
-            // Redirige vers la page de paiement avec une erreur et une instruction
-            return redirect()->route('payment')->with('error', 'Veuillez compléter votre profil pour continuer.')->with('open_modal', true);
-        }
-        Log::info('[showPaymentPage] Client profile is complete.');
-        // --- FIN DE LA VÉRIFICATION ---
+        if ($isProfileComplete) {
+            Log::info('[showPaymentPage] Client profile is complete. Proceeding to get formToken.');
+            $commandeData = Session::get('commande_en_cours');
+            if (!$commandeData) {
+                Log::error('[showPaymentPage] CRITICAL: commande_en_cours NOT FOUND in session. Aborting.');
+                return redirect()->route('form-consigne')->with('error', 'Votre session a expiré. Veuillez recommencer.');
+            }
+            Log::info('[showPaymentPage] Session data found for commande_en_cours.');
 
-        $commandeData = Session::get('commande_en_cours');
-        if (!$commandeData) {
-            Log::error('[showPaymentPage] CRITICAL: commande_en_cours NOT FOUND in session. Aborting.');
-            return redirect()->route('form-consigne')->with('error', 'Votre session a expiré. Veuillez recommencer.');
-        }
-        Log::info('[showPaymentPage] Session data found for commande_en_cours.');
+            $commandeData['client'] = [
+                "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
+                "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => $user->nomSociete ?? null,
+                "adresse" => $user->adresse ?? null, "complementAdresse" => $user->complementAdresse ?? null, "ville" => $user->ville ?? null,
+                "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
+            ];
+            Session::put('commande_en_cours', $commandeData);
+            Log::info('[showPaymentPage] Session data updated with latest client info.');
 
-        // La mise à jour des données client dans la session se fait ici pour être sûr que le JSON BDM est correct
-        $commandeData['client'] = [
-            "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
-            "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => $user->nomSociete ?? null,
-            "adresse" => $user->adresse ?? null, "complementAdresse" => $user->complementAdresse ?? null, "ville" => $user->ville ?? null,
-            "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
-        ];
-        Session::put('commande_en_cours', $commandeData);
-        Log::info('[showPaymentPage] Session data updated with latest client info.');
-
-        Log::info('[showPaymentPage] Attempting to get Monetico formToken...');
-        $formToken = $this->redirectToMonetico();
-
-        if ($formToken) {
-            Log::info('[showPaymentPage] SUCCESS: formToken received. Rendering payment view.');
-            return view('payment', compact('user', 'formToken'));
+            $formToken = $this->redirectToMonetico();
+            if ($formToken) {
+                Log::info('[showPaymentPage] SUCCESS: formToken received.');
+            } else {
+                Log::error('[showPaymentPage] FAILURE: Did not receive formToken.');
+                return redirect()->route('form-consigne')->with('error', 'Erreur lors de l\initiation du paiement.');
+            }
         } else {
-            Log::error('[showPaymentPage] FAILURE: Did not receive formToken. Redirecting with error.');
-            return redirect()->route('form-consigne')->with('error', 'Erreur lors de l\'initialisation du paiement.');
+            Log::warning('[showPaymentPage] Profile for client ' . $user->id . ' is incomplete.');
         }
+
+        return view('payment', compact('user', 'formToken', 'isProfileComplete'));
     }
 
     public function paymentSuccess(Request $request)
