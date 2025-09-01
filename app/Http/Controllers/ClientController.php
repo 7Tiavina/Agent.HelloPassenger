@@ -40,7 +40,7 @@ class ClientController extends Controller
             Auth::guard('client')->setUser($client); // Update the authenticated user in the session
 
             Log::info('Client profile updated successfully for client: ' . $client->id);
-            return response()->json(['message' => 'Profile updated successfully!', 'client' => $client]);
+            return response()->json(['success' => true, 'message' => 'Profile updated successfully!', 'client' => $client]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error updating client profile: ' . $e->getMessage(), ['errors' => $e->errors()]);
