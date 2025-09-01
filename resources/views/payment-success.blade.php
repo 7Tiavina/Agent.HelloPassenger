@@ -1,50 +1,63 @@
+@php
+    // Il est préférable de ne pas avoir de logique complexe dans la vue.
+    // Le contenu de la facture est dans $apiResult['content']
+    // L'ID de la commande pour le téléchargement est dans $lastCommandeId
+@endphp
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmation de Paiement - HelloPassenger</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ asset('favicon-hellopassenger.png') }}">
+    <title>Paiement Réussi - HelloPassenger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md text-center">
-        @if (session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <strong class="font-bold">Succès!</strong>
-                <span class="block sm:inline">{{ session('success') }}</span>
-            </div>
-        @endif
+<body class="bg-gray-50">
 
-        @if (session('error'))
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <strong class="font-bold">Erreur!</strong>
-                <span class="block sm:inline">{{ session('error') }}</span>
-            </div>
-        @endif
+@include('Front.header-front')
 
-        <h1 class="text-2xl font-bold mb-4">Confirmation de Paiement</h1>
+<div class="container mx-auto max-w-4xl my-12 px-4">
+    <div class="bg-white p-8 rounded-lg shadow-lg text-center border border-gray-200">
+        
+        <!-- Icône de succès -->
+        <div class="mx-auto bg-green-100 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+            <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+        </div>
 
-        @if ($apiResult && $apiResult['statut'] === 1)
-            <p class="text-green-600 text-lg mb-2">Votre commande a été passée avec succès !</p>
-            <p class="text-gray-700 mb-4">Référence de la commande API : <span class="font-semibold">{{ $apiResult['message'] ?? 'N/A' }}</span></p>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Paiement réussi !</h1>
+        <p class="text-gray-600 mb-6">Votre commande a été confirmée et votre facture a été générée.</p>
 
-            @if ($apiResult['content'])
-                <h2 class="text-xl font-semibold mt-6 mb-2">Facture (Base64) :</h2>
-                <textarea class="w-full h-48 bg-gray-100 p-4 rounded-md text-sm overflow-auto font-mono" readonly>{{ $apiResult['content'] }}</textarea>
-                <p class="text-sm text-gray-600 mt-2">Vous pouvez décoder ce contenu Base64 pour obtenir la facture.</p>
+        <!-- Boutons d'action -->
+        <div class="flex justify-center space-x-4 mb-8">
+            <a href="{{ route('commandes.download-invoice', ['id' => $lastCommandeId]) }}" 
+               class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                Télécharger ma facture
+            </a>
+            <a href="{{ route('mes.reservations') }}" 
+               class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                Voir mes réservations
+            </a>
+        </div>
+
+        <!-- Aperçu de la facture -->
+        <div class="bg-gray-100 p-4 rounded-lg border border-gray-200">
+            <h2 class="text-xl font-semibold text-left mb-4">Aperçu de la facture</h2>
+            @if(isset($apiResult['content']) && !empty($apiResult['content']))
+                <div class="w-full h-[600px] border rounded-md bg-white">
+                    <iframe src="data:application/pdf;base64,{{ $apiResult['content'] }}" class="w-full h-full" frameborder="0"></iframe>
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">L'aperçu de la facture n'est pas disponible.</p>
             @endif
+        </div>
 
-        @else
-            <p class="text-red-600 text-lg mb-2">Échec de la commande.</p>
-            <p class="text-gray-700 mb-4">Message d'erreur : <span class="font-semibold">{{ $apiResult['message'] ?? 'Erreur inconnue' }}</span></p>
-        @endif
-
-        <a href="{{ route('mes.reservations') }}" class="mt-6 inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-            Voir mes réservations
-        </a>
-        <a href="{{ route('form-consigne') }}" class="mt-4 inline-block bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
-            Nouvelle commande
-        </a>
     </div>
+</div>
+
+@include('Front.footer-front')
+
 </body>
 </html>
