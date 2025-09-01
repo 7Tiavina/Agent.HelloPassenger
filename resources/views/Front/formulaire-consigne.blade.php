@@ -647,18 +647,19 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         console.log('Clic sur le total du panier détecté.');
 
         try {
-            const response = await fetch('/check-auth-status', {
+            const authResponse = await fetch('/check-auth-status', {
                 method: 'GET',
                 headers: {
+                    'Accept': 'application/json', // Préciser qu'on attend du JSON
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
             });
-            const data = await response.json();
+            const authData = await authResponse.json();
 
-            if (data.authenticated) {
-                console.log('Utilisateur authentifié. Préparation de la commande et redirection vers la page de paiement.');
+            if (authData.authenticated) {
+                console.log('Utilisateur authentifié. Préparation de la commande...');
 
-                // Collecter les données du formulaire
+                // ... (le reste de la collecte de données reste identique)
                 const airportId = document.getElementById('airport-select').value;
                 const dateDepot = document.getElementById('date-depot').value;
                 const heureDepot = document.getElementById('heure-depot').value;
@@ -677,22 +678,18 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                     }
                 });
 
-                // Construire le tableau 'products' en filtrant globalProductsData et en assurant l'unicité
                 const products = [];
-                const seenProductIds = new Set(); // To track unique product IDs
+                const seenProductIds = new Set();
                 const baggageTypeToLibelleMap = {
-                    'cabin': 'Bagage cabine', // Corrected: removed "en "
-                    'hold': 'Bagage soute',   // Corrected: removed "en "
+                    'cabin': 'Bagage cabine',
+                    'hold': 'Bagage soute',
                     'cloakroom': 'Vestiaire',
-                    // Add other mappings if necessary, matching the backend's map
                 };
 
                 baggages.forEach(baggage => {
                     const expectedLibelle = baggageTypeToLibelleMap[baggage.type];
-                    console.log('handleTotalClick: Processing baggage type:', baggage.type, 'Expected Libelle:', expectedLibelle); // Added log
                     if (expectedLibelle) {
                         const matchingProduct = globalProductsData.find(p => p.libelle === expectedLibelle);
-                        console.log('handleTotalClick: Matching product found:', matchingProduct); // Added log
                         if (matchingProduct && !seenProductIds.has(matchingProduct.id)) {
                             products.push(matchingProduct);
                             seenProductIds.add(matchingProduct.id);
@@ -700,54 +697,51 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                     }
                 });
 
-
                 const formData = {
-                    airportId: airportIds[airportId], // Use the mapped UUID
+                    airportId: airportIds[airportId],
                     dateDepot: dateDepot,
                     heureDepot: heureDepot,
                     dateRecuperation: dateRecuperation,
                     heureRecuperation: heureRecuperation,
                     baggages: baggages,
-                    products: products // Inclure les produits pour le calcul des prix côté serveur
+                    products: products
                 };
 
-                console.log('Sending formData to /prepare-payment:', formData); // Added log
+                console.log('Envoi des données vers /prepare-payment:', formData);
 
-                try {
-                    const prepareResponse = await fetch('/prepare-payment', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify(formData)
-                    });
+                // Appel à /prepare-payment
+                const prepareResponse = await fetch('/prepare-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json', // **LA CORRECTION CLÉ**
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(formData)
+                });
 
-                    if (prepareResponse.ok) {
-                        // Redirection gérée par le contrôleur Laravel après stockage en session
-                        window.location.href = '/payment';
-                    } else {
-                        const errorData = await prepareResponse.json();
-                        alert('Erreur lors de la préparation de la commande: ' + (errorData.message || 'Erreur inconnue'));
-                        console.error('Erreur de préparation:', errorData);
-                    }
-                } catch (error) {
-                    console.error('Erreur réseau lors de la préparation de la commande:', error);
-                    alert('Une erreur réseau est survenue lors de la préparation de votre commande.');
+                const resultData = await prepareResponse.json();
+
+                if (prepareResponse.ok) {
+                    // Redirection basée sur la réponse JSON du serveur
+                    window.location.href = resultData.redirect_url;
+                } else {
+                    // Affichage de l'erreur renvoyée par le serveur
+                    alert('Erreur: ' + (resultData.message || 'Erreur inconnue lors de la préparation de la commande.'));
+                    console.error('Erreur de préparation:', resultData);
                 }
 
             } else {
-                console.log('Utilisateur non authentifié. Ouverture du modal de connexion client.');
+                console.log('Utilisateur non authentifié. Ouverture du modal de connexion.');
                 if (typeof window.openLoginModal === 'function') {
-                    window.openLoginModal(); // Appeler la fonction globale pour ouvrir le modal
+                    window.openLoginModal();
                 } else {
-                    // Fallback si la fonction n'est pas disponible (ex: header-front.blade.php non inclus)
                     window.location.href = '/client/login';
                 }
             }
         } catch (error) {
-            console.error('Erreur lors de la vérification de l\'authentification:', error);
-            alert('Une erreur est survenue lors de la vérification de votre statut de connexion.');
+            console.error('Erreur critique dans handleTotalClick:', error);
+            alert('Une erreur technique est survenue. Veuillez vérifier la console pour plus de détails.');
         }
     }
 

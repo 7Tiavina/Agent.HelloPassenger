@@ -13,123 +13,124 @@ use Illuminate\Support\Facades\Cache; // Added
 class PaymentController extends Controller
 {
     /**
-     * Prépare les données de la commande et les stocke en session avant la redirection vers la page de paiement.
+     * Pr%c3%a8pare les donn%c3%a9es de la commande et les stocke en session avant la redirection vers la page de paiement.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function preparePayment(Request $request)
     {
-        Log::info('Entering preparePayment method.'); // Added very early log
-        // Valider les données reçues du formulaire
-        $validatedData = $request->validate([
-            'airportId' => 'required|string',
-            'dateDepot' => 'required|date',
-            'heureDepot' => 'required|string',
-            'dateRecuperation' => 'required|date',
-            'heureRecuperation' => 'required|string',
-            'baggages' => 'required|array',
-            'baggages.*.type' => 'required|string',
-            'baggages.*.quantity' => 'required|integer|min:1',
-            'products' => 'required|array',
-        ]);
+        try {
+            Log::info('Entering preparePayment method.');
+            $validatedData = $request->validate([
+                'airportId' => 'required|string',
+                'dateDepot' => 'required|date',
+                'heureDepot' => 'required|string',
+                'dateRecuperation' => 'required|date',
+                'heureRecuperation' => 'required|string',
+                'baggages' => 'required|array',
+                'baggages.*.type' => 'required|string',
+                'baggages.*.quantity' => 'required|integer|min:1',
+                'products' => 'required|array',
+            ]);
 
-        Log::info('Received validated data for payment preparation: ' . json_encode($validatedData));
+            Log::info('Received validated data for payment preparation: ' . json_encode($validatedData));
 
-        // Construire les commandeLignes pour l'API externe
-        $commandeLignes = [];
+            $commandeLignes = [];
 
-        // Mapping for baggage types to product libelles
-        $baggageTypeToLibelleMap = [
-            'cabin' => 'Bagage cabine', // Corrected to match API response
-            'soute' => 'Bagage soute',   // Corrected to match API response
-            'vestiaire' => 'Vestiaire',
-            // Add other mappings as needed
-        ];
-
-        foreach ($validatedData['baggages'] as $baggage) {
-            $productPrice = 0;
-            $productId = null;
-            $productLibelle = null;
-            $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
-
-            // Get the expected libelle from the map
-            $expectedLibelle = $baggageTypeToLibelleMap[$baggage['type']] ?? null;
-
-            if (is_null($expectedLibelle)) {
-                throw new \Exception('Unknown baggage type: ' . $baggage['type']);
-            }
-
-            foreach ($validatedData['products'] as $product) {
-                if ($product['libelle'] === $expectedLibelle) { // <--- Modified comparison
-                    $productPrice = $product['prixUnitaire'];
-                    $productId = $product['id'];
-                    $productLibelle = $product['libelle'];
-                    break;
-                }
-            }
-
-            if (is_null($productId) || is_null($productLibelle)) {
-                throw new \Exception('Product details not found for expected libelle: ' . $expectedLibelle);
-            }
-
-            $commandeLignes[] = [
-                "idProduit" => $productId,
-                "idService" => $serviceId,
-                "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
-                "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
-                "prixTTC" => ($productPrice * $baggage['quantity']),
-                "quantite" => $baggage['quantity'],
-                "libelleProduit" => $productLibelle
+            // CORRECTED: Keys now match frontend data-type values ('hold', 'cloakroom')
+            $baggageTypeToLibelleMap = [
+                'cabin' => 'Bagage cabine',
+                'hold' => 'Bagage soute',
+                'cloakroom' => 'Vestiaire',
             ];
+
+            foreach ($validatedData['baggages'] as $baggage) {
+                $productPrice = 0;
+                $productId = null;
+                $productLibelle = null;
+                $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
+
+                $expectedLibelle = $baggageTypeToLibelleMap[$baggage['type']] ?? null;
+
+                if (is_null($expectedLibelle)) {
+                    // This will now be caught by the try-catch block
+                    throw new \Exception('Unknown baggage type: ' . $baggage['type']);
+                }
+
+                foreach ($validatedData['products'] as $product) {
+                    if ($product['libelle'] === $expectedLibelle) {
+                        $productPrice = $product['prixUnitaire'];
+                        $productId = $product['id'];
+                        $productLibelle = $product['libelle'];
+                        break;
+                    }
+                }
+
+                if (is_null($productId) || is_null($productLibelle)) {
+                    // This will also be caught
+                    throw new \Exception('Product details not found for expected libelle: ' . $expectedLibelle);
+                }
+
+                $commandeLignes[] = [
+                    "idProduit" => $productId,
+                    "idService" => $serviceId,
+                    "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
+                    "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
+                    "prixTTC" => ($productPrice * $baggage['quantity']),
+                    "quantite" => $baggage['quantity'],
+                    "libelleProduit" => $productLibelle
+                ];
+            }
+
+            $user = Auth::guard('client')->user();
+            if (!$user) {
+                return response()->json(['message' => 'Client non authentifié.'], 401);
+            }
+            
+            $user = \App\Models\Client::find($user->id);
+            if (!$user) {
+                return response()->json(['message' => 'Client introuvable après authentification.'], 404);
+            }
+
+            $clientData = [
+                "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
+                "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => null,
+                "adresse" => $user->adresse ?? null, "complementAdresse" => null, "ville" => $user->ville ?? null,
+                "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
+            ];
+
+            $commandeData = [
+                'idPlateforme' => $validatedData['airportId'],
+                'commandeLignes' => $commandeLignes,
+                'client' => $clientData,
+                'total_prix_ttc' => array_reduce($commandeLignes, function ($sum, $item) {
+                    return $sum + $item['prixTTC'];
+                }, 0),
+            ];
+
+            Session::put('commande_en_cours', $commandeData);
+            Log::info('Commande data stored in session: ' . json_encode($commandeData));
+
+            // Instead of redirecting, return a success JSON response
+            return response()->json(['message' => 'Commande préparée avec succès.', 'redirect_url' => route('payment')]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Laravel handles this for AJAX, but we catch it to be explicit
+            Log::error('Validation failed in preparePayment: ' . $e->getMessage());
+            return response()->json(['message' => 'Les données fournies sont invalides.', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Catch any other errors and return a JSON response
+            Log::error('Error in preparePayment: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in ' . $e->getFile());
+            return response()->json(['message' => 'Une erreur interne est survenue lors de la préparation du paiement.'], 500);
         }
-
-        // Récupérer les informations du client connecté (modèle Client)
-        $user = Auth::guard('client')->user(); // Ensure we get the Client model
-        if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour continuer.');
-        }
-        // Re-fetch client data from database to ensure it's the latest
-        $user = \App\Models\Client::find($user->id);
-        if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Client introuvable après authentification.');
-        }
-        $clientData = [
-            "email" => $user->email,
-            "telephone" => $user->telephone, // Utilisation directe du champ telephone du modèle Client
-            "nom" => $user->nom, // Utilisation directe du champ nom du modèle Client
-            "prenom" => $user->prenom, // Utilisation directe du champ prenom du modèle Client
-            "civilite" => $user->civilite ?? null, // À adapter si vous avez ce champ dans le formulaire
-            "nomSociete" => null,
-            "adresse" => $user->adresse ?? null, // À adapter si vous avez ce champ dans le formulaire
-            "complementAdresse" => null,
-            "ville" => $user->ville ?? null, // À adapter si vous avez ce champ dans le formulaire
-            "codePostal" => $user->codePostal ?? null, // À adapter si vous avez ce champ dans le formulaire
-            "pays" => $user->pays ?? null
-        ];
-
-        $commandeData = [
-            'idPlateforme' => $validatedData['airportId'],
-            'commandeLignes' => $commandeLignes,
-            'client' => $clientData,
-            'total_prix_ttc' => array_reduce($commandeLignes, function ($sum, $item) {
-                return $sum + $item['prixTTC']; // Ici, on somme directement le prixTTC déjà calculé
-            }, 0),
-        ];
-
-        // Stocker les données de la commande en session
-        Session::put('commande_en_cours', $commandeData);
-        Log::info('Commande data stored in session: ' . json_encode($commandeData)); // Added log
-
-        // Rediriger vers la page de paiement
-        return redirect()->route('payment');
     }
 
     private function getBdmToken(): string
     {
-        // Tente de récupérer le token depuis le cache
+        // Tente de r%c3%a9cup%c3%a9rer le token depuis le cache
         return Cache::remember('bdm_api_token', 3300, function () {
-            Log::info('Cache BDM token expiré. Demande d\'un nouveau token.');
+            Log::info('Cache BDM token expir%c3%a9. Demande d%c3%a0 un nouveau token.');
 
             $response = Http::post(config('services.bdm.base_url') . '/User/Login', [
                 'userName' => config('services.bdm.username'),
@@ -137,115 +138,82 @@ class PaymentController extends Controller
                 'password' => config('services.bdm.password'),
             ]);
 
-            // Lance une exception si la requête HTTP elle-même échoue
+            // Lance une exception si la requ%c3%aate HTTP elle-m%c3%aame %c3%a9choue
             $response->throw();
 
-            // Vérifie si le login a réussi selon la réponse de l'API
+            // V%c3%a9rifie si le login a r%c3%a9ussi selon la r%c3%a9ponse de l'API
             if (!$response->json('isSucceed')) {
-                Log::error('L\'API BDM a refusé la connexion.', ['response' => $response->json()]);
-                throw new \Exception('Authentification API BDM échouée: L\'API a refusé la connexion.');
+                Log::error('L%c3%a0API BDM a refus%c3%a9 la connexion.', ['response' => $response->json()]);
+                throw new \Exception('Authentification API BDM %c3%a9chou%c3%a9e: L%c3%a0API a refus%c3%a9 la connexion.');
             }
 
             $token = $response->json('data.accessToken');
 
             if (!$token) {
-                Log::error('Impossible de récupérer l\'accessToken depuis la réponse de l\'API BDM.', ['response' => $response->json()]);
-                throw new \Exception('Authentification API BDM échouée: token manquant dans la réponse.');
+                Log::error('Impossible de r%c3%a9cup%c3%a9rer l%c3%a0accessToken depuis la r%c3%a9ponse de l%c3%a0API BDM.', ['response' => $response->json()]);
+                throw new \Exception('Authentification API BDM %c3%a9chou%c3%a9e: token manquant dans la r%c3%a9ponse.');
             }
             
-            Log::info('✅ AUTHENTIFICATION API BDM RÉUSSIE. Token obtenu.');
+            Log::info('✅ AUTHENTIFICATION API BDM R%c3%a9USSIE. Token obtenu.');
             Log::info('Nouveau token BDM obtenu et mis en cache.');
             return $token;
         });
     }
 
-    /**
-     * Traite le paiement simulé et enregistre la commande.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function processPayment(Request $request)
+    public function redirectToMonetico()
     {
-        // Récupérer les données de la commande depuis la session
-        $commandeData = Session::get('commande_en_cours');
-        Log::info('Commande data retrieved from session: ' . json_encode($commandeData)); // Added log
+        Log::info('Entering redirectToMonetico method with Basic Auth as per documentation.');
+        $commandeData = session('commande_en_cours');
 
         if (!$commandeData) {
-            return redirect()->route('form-consigne')->with('error', 'Aucune commande en cours. Veuillez recommencer.');
+            Log::error('Monetico redirection failed: Commande data not found in session.');
+            return null;
         }
 
-        $idPlateforme = $commandeData['idPlateforme'];
-        $commandeLignes = $commandeData['commandeLignes'];
-        $clientData = $commandeData['client'];
-        $totalPrixTTC = $commandeData['total_prix_ttc'];
+        $orderId = 'CMD-' . uniqid();
+        Session::put('monetico_order_id', $orderId);
 
-        try {
-            // Appel à l\'API externe
-            $token = $this->getBdmToken();
+        // 1. Préparer les données de la requête
+        $payload = [
+            'shopId' => config('monetico.login'),
+            'amount' => (int)($commandeData['total_prix_ttc'] * 100),
+            'currency' => 'EUR',
+            'orderId' => $orderId,
+            'customer' => [
+                'email' => $commandeData['client']['email'],
+                'firstName' => $commandeData['client']['prenom'],
+                'lastName' => $commandeData['client']['nom'],
+            ],
+            'paymentMethod' => ['type' => 'Card'],
+            'urls' => [
+                'success' => route('payment.success'),
+                'error' => route('payment.error'),
+                'cancel' => route('payment.cancel'),
+                'return' => route('payment.return'),
+            ],
+        ];
 
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
-            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", [
-                'CommandeLignes' => $commandeLignes, // Use exact key from API spec
-                'Client' => $clientData, // Use exact key from API spec
-            ]);
+        // 2. Créer la chaîne d'authentification Basic avec `login` et `secret_key`
+        $authString = base64_encode(config('monetico.login') . ':' . config('monetico.secret_key'));
 
-            Log::info('API Commande response: ' . $response->body());
+        // 3. Appeler l'API avec l'en-tête Authorization: Basic
+        Log::info('Calling Monetico CreatePayment API with correct Basic Auth.');
+        $response = Http::withHeaders([
+            'Authorization' => 'Basic ' . $authString,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])->post(config('monetico.base_url') . '/Charge/CreatePayment', $payload);
 
-            $apiResult = $response->json();
+        Log::info('Monetico API response (Basic Auth flow): ' . $response->body());
 
-            if ($response->successful() && $apiResult['statut'] === 1) {
-                // Succès de l\'API externe, enregistrer dans notre base de données
-                $client = Auth::guard('client')->user();
-                $commande = Commande::create([
-                    'client_id' => $client->id,
-                    'client_email' => $client->email,
-                    'client_nom' => $client->nom,
-                    'client_prenom' => $client->prenom,
-                    'client_telephone' => $client->telephone,
-                    'client_civilite' => $client->civilite,
-                    'client_nom_societe' => $client->nomSociete,
-                    'client_adresse' => $client->adresse,
-                    'client_complement_adresse' => $client->complementAdresse,
-                    'client_ville' => $client->ville,
-                    'client_code_postal' => $client->codePostal,
-                    'client_pays' => $client->pays,
-                    'id_api_commande' => $apiResult['message'] ?? null, // UUID is in 'message' field
-                    'id_plateforme' => $idPlateforme,
-                    'total_prix_ttc' => $totalPrixTTC,
-                    'statut' => 'completed',
-                    'details_commande_lignes' => json_encode($commandeLignes), // Store as JSON
-                    'invoice_content' => $apiResult['content'] ?? null, // Store the base64 content as invoice_content
-                ]);
-
-                Session::forget('commande_en_cours');
-                Session::put('api_payment_result', $apiResult); // Store API result for success page
-                Session::put('last_commande_id', $commande->id); // Store Commande ID for success page
-
-                return response()->json([
-                    'statut' => 1,
-                    'message' => 'Votre commande a été passée avec succès !',
-                    'redirect' => route('payment.success')
-                ]);
-
-            } else {
-                Log::error('API Commande failed. Status: ' . $response->status() . ' Body: ' . $response->body());
-                $errorMessage = $apiResult['message'] ?? 'Erreur inconnue lors de la commande via l\'API externe.';
-                
-                return response()->json([
-                    'statut' => 0,
-                    'message' => $errorMessage
-                ], $response->status()); // Return appropriate HTTP status
+        if ($response->successful()) {
+            $paymentData = $response->json();
+            if (isset($paymentData['formToken'])) {
+                return $paymentData['formToken'];
             }
-
-        } catch (\Exception $e) {
-            Log::error('Technical error during payment processing: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json([
-                'statut' => 0,
-                'message' => 'Une erreur technique est survenue. Veuillez réessayer.'
-            ], 500);
+        } else {
+            Log::error('Monetico API error (Basic Auth flow): ' . $response->body());
+            return null;
         }
     }
 
@@ -253,12 +221,12 @@ class PaymentController extends Controller
     {
         $user = Auth::guard('client')->user(); // Get the authenticated client
         if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
+            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour acc%c3%a9der %c3%a0 la page de paiement.');
         }
         // Re-fetch client data from database to ensure it's the latest
         $user = \App\Models\Client::find($user->id);
         if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Client introuvable après authentification.');
+            return redirect()->route('client.login')->with('error', 'Client introuvable apr%c3%a8s authentification.');
         }
 
         // Ensure commandeData in session is updated with latest client info
@@ -282,7 +250,94 @@ class PaymentController extends Controller
             Log::info('Commande data in session updated with latest client info: ' . json_encode($commandeData));
         }
 
-        return view('payment', compact('user')); // Pass client data to the view
+        $formToken = $this->redirectToMonetico();
+
+        if ($formToken) {
+            return view('payment', compact('user', 'formToken')); // Pass client data and formToken to the view
+        } else {
+            return redirect()->route('form-consigne')->with('error', 'Erreur lors de l%c3%a0initialisation du paiement.');
+        }
+    }
+
+    public function paymentSuccess(Request $request)
+    {
+        // Handle the successful payment return from Monetico
+        // You can add logic here to verify the payment status if needed
+
+        $commandeData = Session::get('commande_en_cours');
+        if (!$commandeData) {
+            return redirect()->route('form-consigne')->with('error', 'Aucune commande en cours. Veuillez recommencer.');
+        }
+
+        $idPlateforme = $commandeData['idPlateforme'];
+        $commandeLignes = $commandeData['commandeLignes'];
+        $clientData = $commandeData['client'];
+        $totalPrixTTC = $commandeData['total_prix_ttc'];
+
+        try {
+            // Call the external API to finalize the order
+            $token = $this->getBdmToken();
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", [
+                'CommandeLignes' => $commandeLignes,
+                'Client' => $clientData,
+            ]);
+
+            Log::info('API Commande response: ' . $response->body());
+
+            $apiResult = $response->json();
+
+            if ($response->successful() && $apiResult['statut'] === 1) {
+                $client = Auth::guard('client')->user();
+                $commande = Commande::create([
+                    'client_id' => $client->id,
+                    'client_email' => $client->email,
+                    'client_nom' => $client->nom,
+                    'client_prenom' => $client->prenom,
+                    'client_telephone' => $client->telephone,
+                    'client_civilite' => $client->civilite,
+                    'client_nom_societe' => $client->nomSociete,
+                    'client_adresse' => $client->adresse,
+                    'client_complement_adresse' => $client->complementAdresse,
+                    'client_ville' => $client->ville,
+                    'client_code_postal' => $client->codePostal,
+                    'client_pays' => $client->pays,
+                    'id_api_commande' => $apiResult['message'] ?? null,
+                    'id_plateforme' => $idPlateforme,
+                    'total_prix_ttc' => $totalPrixTTC,
+                    'statut' => 'completed',
+                    'details_commande_lignes' => json_encode($commandeLignes),
+                    'invoice_content' => $apiResult['content'] ?? null,
+                ]);
+
+                Session::forget('commande_en_cours');
+                Session::put('api_payment_result', $apiResult);
+                Session::put('last_commande_id', $commande->id);
+
+                return redirect()->route('payment.success.show');
+            } else {
+                Log::error('API Commande failed. Status: ' . $response->status() . ' Body: ' . $response->body());
+                $errorMessage = $apiResult['message'] ?? 'Erreur inconnue lors de la commande via l%c3%a0API externe.';
+                return redirect()->route('payment')->with('error', $errorMessage);
+            }
+        } catch (\Exception $e) {
+            Log::error('Technical error during payment processing: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->route('payment')->with('error', 'Une erreur technique est survenue. Veuillez r%c3%a9essayer.');
+        }
+    }
+
+    public function handleIpn(Request $request)
+    {
+        // Handle the IPN from Monetico
+        $data = $request->all();
+        Log::info('Monetico IPN received: ' . json_encode($data));
+
+        // Add your logic to process the IPN data, e.g., update order status
+
+        return response()->json(['status' => 'success']);
     }
 
     public function showPaymentSuccess()
@@ -302,5 +357,24 @@ class PaymentController extends Controller
             'apiResult' => $apiResult,
             'lastCommandeId' => $lastCommandeId
         ]);
+    }
+
+    public function paymentError(Request $request)
+    {
+        Log::error('Payment failed or was rejected by Monetico.', $request->all());
+        return redirect()->route('form-consigne')->with('error', 'Le paiement a échoué ou a été refusé. Veuillez réessayer ou contacter le support.');
+    }
+
+    public function paymentCancel(Request $request)
+    {
+        Log::info('Payment was cancelled by the user.', $request->all());
+        return redirect()->route('form-consigne')->with('info', 'Vous avez annulé le processus de paiement.');
+    }
+
+    public function paymentReturn(Request $request)
+    {
+        // Most of the time, the 'return' URL is called for successful payments.
+        // We redirect to the main success handler which contains the full logic to verify and save the command.
+        return redirect()->route('payment.success', $request->query());
     }
 }

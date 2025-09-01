@@ -78,7 +78,6 @@ Route::post('/api/get-quote', [FrontController::class, 'getQuote'])->name('api.g
 
 
 
-
 Route::get('/link-form', [FrontController::class, 'redirectForm'])->name('form-consigne');
 
 Route::get('/check-auth-status', function () {
@@ -88,11 +87,18 @@ Route::get('/check-auth-status', function () {
 Route::middleware('auth:client')->group(function () { // Spécifier la garde 'client'
     Route::get('/payment', [PaymentController::class, 'showPaymentPage'])->name('payment');
 
-    Route::post('/process-payment', [PaymentController::class, 'processPayment'])->name('process.payment');
     Route::get('/mes-reservations', [CommandeController::class, 'index'])->name('mes.reservations');
     Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
     Route::post('/client/update-profile', [ClientController::class, 'updateProfile'])->name('client.update-profile'); // Point to ClientController
 });
 
-// New route for payment success page
-Route::get('/payment/success', [PaymentController::class, 'showPaymentSuccess'])->name('payment.success');
+// New routes for Monetico payment
+Route::get('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
+Route::get('/payment/error', [PaymentController::class, 'paymentError'])->name('payment.error');
+Route::get('/payment/cancel', [PaymentController::class, 'paymentCancel'])->name('payment.cancel');
+Route::get('/payment/return', [PaymentController::class, 'paymentReturn'])->name('payment.return');
+Route::post('/payment/ipn', [PaymentController::class, 'handleIpn'])->name('payment.ipn');
+Route::get('/payment/success/show', [PaymentController::class, 'showPaymentSuccess'])->name('payment.success.show');
+
+Route::get('/commandes/{id}/download-invoice', [CommandeController::class, 'downloadInvoice'])->name('commandes.download-invoice');
+Route::get('//commandes/{id}', [CommandeController::class, 'show'])->name('commandes.show');

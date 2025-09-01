@@ -1,143 +1,439 @@
------
+Etape 2 : S'authentifier
+Objectif
+Sécuriser les échanges de données.
+I. Récupération des clés
+Connectez-vous au Back Office Marchand
+Récupérez vos clés d'API REST:
+depuis le menu Paramétrage > Boutique, sélectionnez votre boutique puis allez dans l'onglet Clés d'API REST.
 
-### **1. Requête API : Création d'une commande**
+Tableau des clés d'API REST : Pour chaque usage il y a une clé pour le mode TEST et une clé pour le mode Production.
 
-Cette section décrit les paramètres et le corps de la requête pour créer une nouvelle commande via une API.
+NUMERO	NOM DES CLÉS	DESCRIPTION
+1	Utilisateur	Pour les appels aux Web Services REST.
+2	Mot de passe	Pour les appels aux Web Services REST et pour vérifier l'authenticité des données renvoyées dans l'IPN.
+3	Clé publique	Pour construire un formulaire de paiement dans le navigateur du client.
+4	Clé HMAC-SHA-256	Pour vérifier l'authenticité des données renvoyées lors du retour à la boutique.
+Cette action est réalisée par un utilisateur habilité à gérer les clés et les algorithmes de signature. L'accès à l'onglet Clés d'API REST nécessite l'activation d'une fonctionnalité spécifique. Veuillez contacter le service client si vous ne voyez pas cet onglet. Plus d'infos : les clés API REST.
 
-**URL de la requête :**
+II. Phase d'authentification
+Créez une chaine avec l' utilisateur et le mot de passe séparés par deux-points (:)
+le nom d'utilisateur est l'identifiant de la boutique : N° 1 : utilisateur du tableau des clés d'API REST
+le mot de passe, par exemple, pour la boutique de test testpassword_r2nGvYErzd6MVULlLzBfLLac8dk9xH5kDKdmBT0b83cD5 : N° 2: mot de passe du tableau des clés d'API REST
+Encodez la chaine obtenue en base64
+Ajoutez à votre requête le header "Authorization" contenant "Basic" suivi de la chaine encodée en base64:
+html
 
-`POST /api/plateforme/{idPlateforme}/commande`
+1
+    Authorization: Basic Njk4NzYzNTc6dGVzdHBhc3N3b3JkX0RFTU9QUklWQVRFS0VZMjNHNDQ3NXpYWlEyVUE1eDdN
+Par exemple, pour le langage PHP, le header Authorization sera calculé de la façon suivante:
+html
 
-**Paramètres de l'URL (`path`) :**
+1
+$header = "Authorization: Basic " . base64_encode($username . ':' . $password);
+Ci dessous un exemple de requête. Vous avez à votre disposition le SDK de TEST depuis le Playground pour tester votre intégration. La requête HTTP complète ressemblera à l'image ci dessous. Vous avez à votre disposition le SDK de TEST depuis le Playground.
 
-  * `idPlateforme` (`string`): Un identifiant unique (UUID) pour la plateforme.
-      * **Exemple :** `64f00ace-31b6-45b0-bcb2-b562b1ac08d9`
+json
+Request
 
------
+POST 
+https://api.gateway.monetico-retail.com/api-payment/V4/Charge/SDKTest
+Headers
 
-### **2. Corps de la requête (`Request body`)**
+Authorization: 
+MzExMTA3NTU6dGVzdHBhc3N3b3JkX3Iybkd2WUVyemQ2TVZVTGxMekJmTExhYzhkazl4SDVrREtkbUJUMGI4M2NENQ==
+Content-Type: 
+application/json
+Body
 
-Le corps de la requête est au format **JSON** et contient les informations détaillées de la commande.
-
-```json
 {
-  "commandeLignes": [
-    {
-      "idProduit": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
-      "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
-      "dateDebut": "2025-08-22T13:30:00.000Z",
-      "dateFin": "2025-08-25T14:30:00.000Z",
-      "prixTTC": 40,
-      "quantite": 1
+    "value": "my testing value"
+}
+III. Exemples de code
+Des exemples de code, dans différents langages sont disponibles dans le Github.
+
+IV. Exemple simplifié PHP
+Dans le dossier sample, le fichier de cette étape est config.php. Il permet de définir les clés d'authentification. Pour plus de détails, Fichier d'exemple : config.php.
+
+Etape 3 : Créer un formToken
+Objectif
+Générer un formToken.
+Le formToken est une clé générée par la plateforme. Il définit le contexte de paiement (montant, devise, numéro de commande, coordonnées de l'acheteur, etc.).
+
+Le formToken est le résultat de la réponse de l'appel Web Service REST Charge/CreatePayment.
+
+Il est valide pendant 15 minutes. Cette durée est fixe et non modifiable pour des raisons techniques.
+
+I. Requête pour un paiement simple
+Exemple :
+
+montant : 9,90 €.
+commande : "myOrderId-999999",
+email de l'acheteur : "sample@example.com".
+Request
+
+POST 
+https://api.gateway.monetico-retail.com/api-payment/V4/Charge/CreatePayment
+Headers
+
+Authorization: 
+MzExMTA3NTU6dGVzdHBhc3N3b3JkX3Iybkd2WUVyemQ2TVZVTGxMekJmTExhYzhkazl4SDVrREtkbUJUMGI4M2NENQ==
+Content-Type: 
+application/json
+Body
+
+{
+    "amount":   990,
+    "currency": "EUR",
+    "orderId":  "myOrderId-999999",
+    "customer": {
+        "email": "sample@example.com"
     }
-  ],
-  "client": {
-    "email": "client@example.com",
-    "telephone": "0331234567",
-    "nom": "Rabe",
-    "prenom": "Tiavina",
-    "civilite": "M.",
-    "nomSociete": "CamilleSA",
-    "adresse": "12345lop8",
-    "complementAdresse": "I123445",
-    "ville": "Rose Hill",
-    "codePostal": "12345",
-    "pays": "Maurice"
-  }
 }
-```
 
------
+II. Réponse pour un paiement simple
+json
 
-### **3. Exemple de requête `cURL`**
-
-Cet exemple montre comment exécuter la requête depuis un terminal à l'aide de l'outil `cURL`.
-
-```bash
-curl -X 'POST' \
-  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/commande' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzU1ODU4OTE1LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.4hlRr3wbgE8zeCMzrFVb74dHsHSmevE96c__BtNBVT4' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "commandeLignes": [
-      {
-        "idProduit": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
-        "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
-        "dateDebut": "2025-08-22T13:30:00.000Z",
-        "dateFin": "2025-08-25T14:30:00.000Z",
-        "prixTTC": 40,
-        "quantite": 1
-      }
-    ],
-    "client": {
-      "email": "client@example.com",
-      "telephone": "0331234567",
-      "nom": "Rabe",
-      "prenom": "Tiavina",
-      "civilite": "M.",
-      "nomSociete": "CamilleSA",
-      "adresse": "12345lop8",
-      "complementAdresse": "I123445",
-      "ville": "Rose Hill",
-      "codePostal": "12345",
-      "pays": "Maurice"
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+{
+    "status": "SUCCESS",
+    "_type": "V4/WebService/Response",
+    "webService": "Charge/CreatePayment",
+    "applicationProvider": "MONETICO",
+    "version": "V4",
+    "applicationVersion": "4.1.0",
+    "answer": {
+        "formToken": "DEMO-TOKEN-TO-BE-REPLACED",
+        "_type": "V4/Charge/PaymentForm"
     }
-  }'
-```
-
------
-
-### **4. Réponse du serveur (`Server response`)**
-
-Le serveur renvoie une réponse au format **JSON** après l'exécution de la requête.
-
-**Code de statut :** `200 OK`
-
-**Corps de la réponse :**
-
-```json
-{
-  "content": "BASE64invoicetxt",
-  "statut": 1,
-  "message": "667b8b92-cd54-4a65-6826-08dde155c3f3"
 }
-```
+Le formToken généré est Processing...
 
-**En-têtes de la réponse (`Response headers`) :**
+III. Autres cas d'utilisation
+Sélectionner les moyens de paiement
+Payer en plusieurs fois
+Proposer l'enregistrement du moyen de paiement.
+Augmenter les chances de frictionless en 3DS2
+Transmettre des données personnalisées
+D'autres exemples sont disponibles sur cette page : Cas d'utilisation.
 
-  * `content-type`: `application/json; charset=utf-8`
-  * `date`: `Fri, 22 Aug 2025 09:35:45 GMT`
-  * `server`: `Microsoft-IIS/10.0`
-  * `x-powered-by`: `ASP.NET`
+IV. Utilisation du Playground
+Utilisez le Playground Charge/CreatePayment pour connaître l'intégralité des champs disponibles. Cliquez sur le bouton "Testez-moi", créez votre requête puis exécutez l'appel REST pour générer le formToken.
 
------
+V. Exemple simplifié PHP
+Dans le dossier sample, le fichier de cette étape est formToken.php.
 
-### **5. Schémas de réponse**
+Pour plus de détails, Fichier d'exemple : formToken.php.
 
-Cette section présente les structures attendues pour les réponses du serveur en cas de succès et d'échec.
 
-**Code de statut `200` (Succès) :**
+Etape 4 : Afficher le formulaire de paiement
+Objectif
+Afficher l'ensemble des champs de paiement (numéro de carte, date d'expiration, CVV, etc.) sur votre site Web.
+I.Initaliser le formulaire de paiement
+Dans le HEAD,
 
-```json
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-```
+Chargez notre librairie JavaScript dans une balise script.
+Il est impératif que la librairie principale soit chargée très tôt, bien avant les autres librairies JS utilisées sur votre page.
 
-**Code de statut `400` (Requête incorrecte) :**
+html
 
-```json
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-```
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+<head>
+(...)
+<script type="text/javascript"
+src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+        (...)
+>
+ </script>
+(...)
+ </head>
+Pour des raisons de sécurité (contraintes PCI-DSS), vous pouvez intégrer :
+
+le SRI, voir : Intégrer l'intégrité des sous-ressources (SRI)
+les CSP, voir : Paramètres généraux
+Implémentez la clé publique
+Valorisez la clé publique dans le paramètre kr-public-key.
+
+html
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+<head>
+(...)
+<script type="text/javascript"
+        src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+        kr-public-key="31110755:testpublickey_oHRntJsID4Tpkf4WOLacafjJMmdSxWKyJGuYwgQgpFBxL"
+        (...) >
+ </script>
+(...)
+ </head>
+Pour rappel, elle correspond à la
+3 ème clé du tableau
+.
+3. Ajoutez d'autres paramètres d'initialisation
+Ajout de 2 paramètres d'initialisation, par exemple :
+Nom	Description
+kr-post-url-success	URL vers laquelle est redirigé le navigateur de l'acheteur en cas de paiement réussi. (recommandé)
+kr-language	Définit le langage d'affichage du formulaire. Accepte l'iso ISO 639-1 (fr ou fr-FR). Si le paramètre n'est pas défini, le formulaire utilise la langue du navigateur.
+Exemple de code :
+
+html
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+<head>
+(...)
+<script type="text/javascript"
+        src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+        kr-public-key="31110755:testpublickey_oHRntJsID4Tpkf4WOLacafjJMmdSxWKyJGuYwgQgpFBxL"
+        kr-post-url-success="paid.php"
+        kr-language="en-EN">
+ </script>
+(...)
+ </head>
+Référez-vous à ces 2 rubriques Paramètres généraux et Paramètres de personnalisation des "placeholders" pour les autres paramètres.
+
+Après la balise script, choisissez un thème.
+
+4. Choisissez un thème
+Néon est le nouveau thème par défaut. Voici les liens pour charger ce thème.
+html
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+<head>
+(...)
+<link rel="stylesheet" href="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
+  <script
+  src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon.js">
+ </script>
+ (...)
+ </head>
+Plus d'infos : thèmes.
+5. Ajout des fonctions JS (facultatif)
+Dans une autre balise script, intégrez au choix des évènements ou des méthodes JS.
+Pour plus de détails, Présentation des événements et Présentation des méthodes.
+Exemple de code pour le HEAD sans fonction JS
+html
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+<head>
+<!-- STEP :
+1 : load the JS librairy 
+2 : required public key 
+3 : the JS parameters url sucess and langage EN  -->
+<script type="text/javascript"
+        src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+        kr-public-key="31110755:testpublickey_oHRntJsID4Tpkf4WOLacafjJMmdSxWKyJGuYwgQgpFBxL"
+        kr-post-url-success="paid.php"
+        kr-language="en-EN">
+ </script>
+  <!--  theme NEON should be loaded in the HEAD section   -->
+<link rel="stylesheet" href="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
+<script src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon.js">
+ </script>
+ </head>
+II. Définir le mode d'affichage
+Dans le BODY, choisissez le mode d'affichage et valorisez le paramètre kr-form-token avec le formToken généré (Etape 3 : Créer un formToken).
+
+Mode	Description
+liste	Affiche sous forme de liste les moyens de paiement disponibles et compatibles Affichage par défaut.
+pop-in	Affiche un bouton de paiement qui ouvre une pop-in contenant les moyens de paiement disponibles et compatibles.
+liste avec carte embarquée	Affiche les champs embarqués pour le paiement par cartes et les moyens de paiement disponibles et compatibles.
+Mode liste (par défaut)
+Mode Pop-in
+Mode liste avec carte embarquée
+
+
+html
+
+1
+2
+3
+4
+<body>
+    <div class="kr-smart-form" kr-form-token="[GENERATED FORMTOKEN]"></div>
+    (...)
+</body>
+html
+
+1
+2
+3
+4
+<body>
+    <div class="kr-smart-form" kr-popin kr-form-token="[GENERATED FORMTOKEN]"></div>
+    (...)
+</body>
+html
+
+1
+2
+3
+4
+<body>
+    <div class="kr-smart-form" kr-card-form-expanded kr-form-token="[GENERATED FORMTOKEN]"></div>
+    (...)
+</body>
+Plus d'infos : Mode liste
+Plus d'infos : Mode pop-in
+Plus d'infos : Mode liste avec carte embarquée
+Vous avez également le choix :
+
+Mettre en évidence un moyen de paiement;
+Mettre en évidence plusieurs moyens de paiement;
+III. Personnalisation avancée
+Cette étape est facultative. Exemple de personnalisation :
+
+Masquer les logos du paiement par cartes
+Modifier l'ordre d'affichage
+Personnalisation des boutons de paiement
+Personnaliser la mise en page
+IV. Exemple simplifié PHP
+Dans le dossier sample, le fichier de cette étape est smartForm.php.
+
+Pour avoir plus de détails, Fichier d'exemple : smartForm.php
+
+Etape 5 : Analyser le résultat du paiement
+Objectif
+Analyser le résultat du paiement :
+depuis l'IPN (Instant Payment Notification), lors d'un appel de serveur à serveur.
+depuis le retour à la boutique.
+Dans le résultat du paiement, le kr-hash permet de vérifier l'authenticité de la réponse. Sa valeur dépend de la clé.
+
+Pour l'IPN, la clé correspond au Mot de passe de test ou de production. Voir le point 2 de la capture d'écran.
+Pour le retour à la boutique, la clé correspond à la clé HMAC-SHA 256 de test ou de production. Voir le point 4 de la capture d'écran.
+Allez dans l'onglet Clés d'API REST, depuis le menu Paramétrage > Boutique pour récupérer vos clés.
+
+I. Analyser l'IPN (Instant Payment Notification)
+Il est impératif de récupérer et d'analyser les données de paiement de l'IPN.
+
+Récupérer le JSON de l'IPN (Paramètrage de l'IPN)
+Vérifier l'authenticité de la notification avec la valeur du kr-hash (2 ème clé du tableau des clés API REST )
+Vérifier le statut du paiement. Voir : Cycle de vie d'une transaction.
+Plus d'infos: Analyse de l'IPN (URL de notification).
+
+II. Analyser la réponse lors du retour à la boutique
+Implémentez dans le HEAD le paramètre d'initialisation kr-post-url-success pour recevoir le résutat du paiement en cas de paiement réussi (Etape 4 : Afficher le formulaire de paiement).
+
+Si l'acheteur paie avec un moyen de paiement différent de la carte (ou wallet), une fenêtre avec le ticket de paiement s'affiche. Pour masquer cette fenêtre, voir : lien.
+
+Récupérer le JSON posté sur le navigateur
+Vérifier l'authenticité de la notification avec la valeur du kr-hash (4 ème clé du tableau des clés API REST )
+Vérifier le statut du paiement. Voir : Cycle de vie d'une transaction.
+Plus d'infos: Analyse du résultat du paiement via le retour à la boutique.
+
+VI. Exemple simplifié PHP
+Dans le dossier sample, les fichiers d'exemple sont :
+
+ipn.php.
+paid.php.
+Pour avoir des informations complémentaires, cliquez sur: Fichiers d'exemple : ipn.php et paid.php
+
+Etape 6 : Passer en Production
+I. Réaliser les tests obligatoires
+Il est impératif de réaliser les tests obligatoires pour passer en PRODUCTION. Les tests doivent être réalisés avec:
+
+le mot de passe de test
+la clé publique de test
+la clé HMAC-SHA-256 de test
+La liste des tests à réaliser est affichée dans le Back Office Marchand, menu Paramétrage > Boutique > Clés d'API REST.
+
+Vous devez simuler plusieurs paiements en utilisant les cartes de test présentes dans le tableau ci dessous, grâce à la barre de débug.
+L'utilisation d'une carte par ligne est suffisante.
+Les numéros de carte de test sont disponibles depuis la barre de debug, onglet Cartes de test.
+
+Quand le test est validé, l'icône de la colonne "statut du test" passe en vert.
+Une fois les 4 tests validés, le bouton Générer le mot de passe et la clé HMAC-SHA-256 de production devient accessible.
+
+II. Générer les clés de PRODUCTION
+Cliquez sur le bouton "générer le mot de passe et la clé HMAC-SHA-256 de production".
+Pour information, le mode TEST est toujours disponible, même après la génération de la clé de production.
+
+Insérez les clés de PRODUCTION dans votre implémentation :
+le mot de passe de production,
+la clé publique de production,
+la clé HMAC-SHA-256 de production pour calculer la signature contenue dans le champ kr-hash.
+Renseignez correctement l'URL de notification à la fin du paiement en mode PRODUCTION depuis le menu Paramétrage > Règles de notifications. (lien Définir l'URL de notification)
+Stockez les clés.
+Nous vous conseillons de conserver les informations (mot de passe, clé publique, clé HMAC-SHA-256 de production) de manière sécurisée car dès le premier paiement en PRODUCTION, elles seront masquées dans le Back Office Marchand.
+
+III. Réaliser un premier paiement de production
+Effectuez une transaction réelle d'au moins 2 €.
+Cette transaction pourra être annulée par la suite depuis le Back Office Marchand via le menu Gestion > Transactions > onglet Transactions en cours. Cette transaction ne sera donc pas remise en banque.
+
+Vérifiez le bon fonctionnement de l'url de notification à la fin du paiement (IPN)
+Affichez le détail de la transaction dans le Back Office Marchand et vérifiez que le statut de l'URL de notification (Statut URL de notification) est bien Envoyé.
+
+IV. Exemple simplifié PHP
+Le fichier d'exemple est donné à titre indicatif, afin de comprendre le mécanisme d'intégration.
+
+Renseignez les clés d'API REST de Test dans le fichier config.php(lien Fichier d'exemple : config.php).
+Si besoin, modifiez les données du paiement dans le fichier formToken.php(lien Fichier d'exemple : formToken.php).
+Affichez le formulaire de paiement dans un navigateur en utilisant le fichier smartForm.php (lien Fichier d'exemple : smartForm.php).
+Une fois le formulaire affiché, cliquez sur l'onglet Cartes de test de la barre de debug et sélectionnez le type de carte à utiliser.
+Reportez-vous à la liste des tests dans le Back Office Marchand pour identifier le numéro de carte à utiliser.
+Lorsqu'un test est validé, son statut est mis à jour dans la liste. Utilisez le bouton Rafraichir la table si le statut ne s'est pas rafraichi automatiquement.
+Une fois les 4 tests validés, le bouton Générer le mot de passe et la clé HMAC-SHA-256 de production devient accessible.
+Cliquez sur le bouton Générer le mot de passe et la clé HMAC-SHA-256 de production et acceptez les différents messages d'avertissement.
+
