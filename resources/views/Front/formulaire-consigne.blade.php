@@ -199,7 +199,7 @@
                                 QUEL EST LE TYPE DE BAGAGE CONSIGNÉ ? *
                             </label>
                         </div>
-                        <div class="grid grid-cols-3 gap-4 mt-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
                             @if(isset($products) && count($products) > 0)
                                 @php
                                     $product_map = [
@@ -209,22 +209,26 @@
                                         'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
                                         'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M12 14v2" stroke="currentColor" stroke-width="1.5"/></svg>']
                                     ];
+                                    $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
                                 @endphp
                                 @foreach($products as $product)
-                                    @if(isset($product_map[$product['libelle']]))
-                                        @php
-                                            $map_data = $product_map[$product['libelle']];
-                                        @endphp
-                                        <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}">
-                                            <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                                {!! $map_data['icon'] !!}
-                                            </div>
-                                            <span class="text-sm font-medium">{{ $product['libelle'] }}</span>
+                                    @php
+                                        $libelle = $product['libelle'];
+                                        // Utilise le mappage s'il existe, sinon crée une configuration par défaut
+                                        $map_data = $product_map[$libelle] ?? [
+                                            'type' => Illuminate\Support\Str::slug($libelle),
+                                            'icon' => $default_icon
+                                        ];
+                                    @endphp
+                                    <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}">
+                                        <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                            {!! $map_data['icon'] !!}
                                         </div>
-                                    @endif
+                                        <span class="text-sm font-medium text-center">{{ $libelle }}</span>
+                                    </div>
                                 @endforeach
                             @else
-                                <p class="col-span-3 text-center text-gray-500">Aucun type de bagage n'est disponible pour le moment.</p>
+                                <p class="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5 text-center text-gray-500">Aucun type de bagage n'est disponible pour le moment.</p>
                             @endif
                         </div>
 
