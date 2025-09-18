@@ -23,8 +23,93 @@ class FrontController extends Controller
 
     public function redirectForm()
     {
-        return view('Front.formulaire-consigne');
+        try {
+            $plateformes = $this->getPlateformes();
+            
+            // Utilise le premier aéroport pour obtenir une liste de produits par défaut
+            $firstPlateformeId = $plateformes[0]['id'] ?? null;
+            $products = [];
+            if ($firstPlateformeId) {
+                $products = $this->getProducts($firstPlateformeId);
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Erreur lors de la récupération des données pour le formulaire : " . $e->getMessage());
+            return view('Front.formulaire-consigne', [
+                'plateformes' => [],
+                'products' => [],
+                'error' => "Impossible de charger les options de réservation pour le moment. Veuillez réessayer plus tard."
+            ]);
+        }
+
+        return view('Front.formulaire-consigne', [
+            'plateformes' => $plateformes,
+            'products' => $products
+        ]);
     }
+
+    /**
+     * Récupère toutes les plateformes (aéroports) depuis l'API BDM pour le service de consigne.
+     * @return array
+     * @throws \Exception
+     */
+    public function getPlateformes(): array
+    {
+        $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'; // ID du service de consigne
+        Log::info("Récupération de la liste des plateformes pour le service {$serviceId}.");
+        try {
+            $token = $this->getBdmToken();
+            $response = Http::withToken($token)
+                ->withHeaders(['Accept' => 'application/json'])
+                ->get(config('services.bdm.base_url') . "/api/service/{$serviceId}/plateformes");
+
+            $response->throw();
+
+            if ($response->json('statut') === 1 && is_array($response->json('content'))) {
+                Log::info("Plateformes récupérées avec succès.");
+                return $response->json('content');
+            } else {
+                Log::error("La réponse de l'API BDM pour les plateformes est invalide.", ['response' => $response->json()]);
+                throw new \Exception("Réponse invalide de l'API pour les plateformes.");
+            }
+        } catch (\Exception $e) {
+            Log::error("Erreur lors de la récupération des plateformes BDM.", ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Récupère les produits (types de bagages) pour une plateforme donnée avec une durée par défaut.
+     * @param string $idPlateforme
+     * @return array
+     * @throws \Exception
+     */
+    public function getProducts(string $idPlateforme): array
+    {
+        $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'; // ID du service de consigne
+        $defaultDuration = 1; // Durée par défaut en minutes pour obtenir la liste
+        Log::info("Récupération des produits pour la plateforme {$idPlateforme} et le service {$serviceId}.");
+        try {
+            $token = $this->getBdmToken();
+            $response = Http::withToken($token)
+                ->withHeaders(['Accept' => 'application/json'])
+                ->get(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/service/{$serviceId}/{$defaultDuration}/produits");
+
+            $response->throw();
+
+            if ($response->json('statut') === 1 && is_array($response->json('content'))) {
+                Log::info("Produits récupérés avec succès pour la plateforme {$idPlateforme}.");
+                return $response->json('content');
+            } else {
+                Log::error("La réponse de l'API BDM pour les produits est invalide.", ['response' => $response->json()]);
+                throw new \Exception("Réponse invalide de l'API pour les produits.");
+            }
+        } catch (\Exception $e) {
+            Log::error("Erreur lors de la récupération des produits BDM.", ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
 
 
     public function showClientLogin()

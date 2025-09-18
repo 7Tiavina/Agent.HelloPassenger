@@ -183,9 +183,13 @@
                         </label>
                         <select id="airport-select" class="input-style custom-select w-full">
                             <option value="" selected disabled>Sélectionner un aéroport</option>
-                            <option value="cdg">Paris-Charles-de-Gaulle</option>
-                            <option value="orly">Paris-Orly</option>
-                            <option value="beauvais">Paris-Beauvais</option>
+                            @if(isset($plateformes) && count($plateformes) > 0)
+                                @foreach($plateformes as $plateforme)
+                                    <option value="{{ $plateforme['id'] }}">{{ $plateforme['libelle'] }}</option>
+                                @endforeach
+                            @else
+                                <option value="" disabled>Aucun aéroport disponible pour le moment</option>
+                            @endif
                         </select>
                     </div>
 
@@ -196,43 +200,32 @@
                             </label>
                         </div>
                         <div class="grid grid-cols-3 gap-4 mt-3">
-                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cabin">
-                                <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
-                                        <rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
-                                        <circle cx="10" cy="18" r="1" fill="currentColor"/>
-                                        <circle cx="14" cy="18" r="1" fill="currentColor"/>
-                                        <path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/>
-                                    </svg>
-                                </div>
-                                <span class="text-sm font-medium">Bagage en cabine</span>
-                            </div>
-
-                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="hold">
-                                <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
-                                        <rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/>
-                                        <circle cx="9" cy="15" r="1" fill="currentColor"/>
-                                        <circle cx="15" cy="15" r="1" fill="currentColor"/>
-                                    </svg>
-                                </div>
-                                <span class="text-sm font-medium">Bagage en soute</span>
-                            </div>
-
-                            <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="cloakroom">
-                                <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600">
-                                        <path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M12 14v2" stroke="currentColor" stroke-width="1.5"/>
-                                    </svg>
-                                </div>
-                                <span class="text-sm font-medium">Vestiaire</span>
-                            </div>
+                            @if(isset($products) && count($products) > 0)
+                                @php
+                                    $product_map = [
+                                        'Accessoires' => ['type' => 'accessory', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
+                                        'Bagage cabine' => ['type' => 'cabin', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>'],
+                                        'Bagage soute' => ['type' => 'hold', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>'],
+                                        'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
+                                        'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M12 14v2" stroke="currentColor" stroke-width="1.5"/></svg>']
+                                    ];
+                                @endphp
+                                @foreach($products as $product)
+                                    @if(isset($product_map[$product['libelle']]))
+                                        @php
+                                            $map_data = $product_map[$product['libelle']];
+                                        @endphp
+                                        <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}">
+                                            <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                                {!! $map_data['icon'] !!}
+                                            </div>
+                                            <span class="text-sm font-medium">{{ $product['libelle'] }}</span>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            @else
+                                <p class="col-span-3 text-center text-gray-500">Aucun type de bagage n'est disponible pour le moment.</p>
+                            @endif
                         </div>
 
                         <div class="mt-3">
@@ -337,10 +330,7 @@
     // Variables globales
     let airportId;
     const serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
-    const airportIds = {
-        'cdg': '88bb89e0-b966-4420-9ed3-7a6745e4d947',
-        'orly': '64f00ace-31b6-45b0-bcb2-b562b1ac08d9'
-    };
+
     let globalProductsData = []; // New global variable
     
     // Événement pour la sélection de l'aéroport
@@ -502,7 +492,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({
-                idPlateforme: airportIds[airportId],
+                idPlateforme: airportId,
                 dateToCheck: dateToVerify
             })
         });
@@ -541,7 +531,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({
-                idPlateforme: airportIds[airportId],
+                idPlateforme: airportId,
                 idService: serviceId,
                 duree: dureeEnMinutes
             })
