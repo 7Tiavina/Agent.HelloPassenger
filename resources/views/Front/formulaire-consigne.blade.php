@@ -638,7 +638,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
     
     // Fonction pour gérer le clic sur le total du panier
     async function handleTotalClick() {
-        console.log('Clic sur le total du panier détecté.');
+        console.log('Clic sur le total du panier détecté. Début de handleTotalClick.');
 
         try {
             const authResponse = await fetch('/check-auth-status', {
@@ -649,6 +649,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 }
             });
             const authData = await authResponse.json();
+            console.log('Statut d\'authentification: ', authData);
 
             if (authData.authenticated) {
                 console.log('Utilisateur authentifié. Préparation de la commande...');
@@ -659,6 +660,8 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 const heureDepot = document.getElementById('heure-depot').value;
                 const dateRecuperation = document.getElementById('date-recuperation').value;
                 const heureRecuperation = document.getElementById('heure-recuperation').value;
+
+                console.log('Données brutes du formulaire: ', { airportId, dateDepot, heureDepot, dateRecuperation, heureRecuperation });
 
                 const baggages = [];
                 document.querySelectorAll('.baggage-block').forEach(block => {
@@ -671,6 +674,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                         });
                     }
                 });
+                console.log('Objets bagages construits: ', baggages);
 
                 const products = [];
                 const seenProductIds = new Set();
@@ -690,9 +694,10 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                         }
                     }
                 });
+                console.log('Objets produits filtrés et construits: ', products);
 
                 const formData = {
-                    airportId: airportIds[airportId],
+                    airportId: airportId,
                     dateDepot: dateDepot,
                     heureDepot: heureDepot,
                     dateRecuperation: dateRecuperation,
@@ -715,6 +720,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 });
 
                 const resultData = await prepareResponse.json();
+                console.log('Réponse de /prepare-payment (statut: ' + prepareResponse.status + '): ', resultData);
 
                 if (prepareResponse.ok) {
                     // Redirection basée sur la réponse JSON du serveur

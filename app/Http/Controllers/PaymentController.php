@@ -23,6 +23,8 @@ class PaymentController extends Controller
     {
         try {
             Log::info('Entering preparePayment method.');
+            Log::info('Request received: ' . json_encode($request->all()));
+
             $validatedData = $request->validate([
                 'airportId' => 'required|string',
                 'dateDepot' => 'required|date',
@@ -45,17 +47,21 @@ class PaymentController extends Controller
                 'hold' => 'Bagage soute',
                 'cloakroom' => 'Vestiaire',
             ];
+            Log::debug('Initial commandeLignes array: ' . json_encode([]));
+            Log::debug('Baggage type to libelle map: ' . json_encode($baggageTypeToLibelleMap));
 
             foreach ($validatedData['baggages'] as $baggage) {
+                Log::debug('Processing baggage: ' . json_encode($baggage));
                 $productPrice = 0;
                 $productId = null;
                 $productLibelle = null;
                 $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
 
                 $expectedLibelle = $baggageTypeToLibelleMap[$baggage['type']] ?? null;
+                Log::debug('Expected libelle for baggage type ' . $baggage['type'] . ': ' . $expectedLibelle);
 
                 if (is_null($expectedLibelle)) {
-                    // This will now be caught by the try-catch block
+                    Log::error('Unknown baggage type encountered: ' . $baggage['type']);
                     throw new \Exception('Unknown baggage type: ' . $baggage['type']);
                 }
 
@@ -64,12 +70,13 @@ class PaymentController extends Controller
                         $productPrice = $product['prixUnitaire'];
                         $productId = $product['id'];
                         $productLibelle = $product['libelle'];
+                        Log::debug('Product found: ' . json_encode(['id' => $productId, 'libelle' => $productLibelle, 'price' => $productPrice]));
                         break;
                     }
                 }
 
                 if (is_null($productId) || is_null($productLibelle)) {
-                    // This will also be caught
+                    Log::error('Product details not found for expected libelle: ' . $expectedLibelle . '. Available products: ' . json_encode($validatedData['products']));
                     throw new \Exception('Product details not found for expected libelle: ' . $expectedLibelle);
                 }
 
@@ -82,17 +89,24 @@ class PaymentController extends Controller
                     "quantite" => $baggage['quantity'],
                     "libelleProduit" => $productLibelle
                 ];
+                Log::debug('Added commandeLigne: ' . json_encode(end($commandeLignes)));
             }
+
+            Log::info('Final commandeLignes array after processing all baggages: ' . json_encode($commandeLignes));
 
             $user = Auth::guard('client')->user();
             if (!$user) {
+                Log::error('Client not authenticated during preparePayment.');
                 return response()->json(['message' => 'Client non authentifié.'], 401);
             }
+            Log::debug('Authenticated user: ' . json_encode($user));
             
             $user = \App\Models\Client::find($user->id);
             if (!$user) {
+                Log::error('Client not found in database after authentication for ID: ' . $user->id);
                 return response()->json(['message' => 'Client introuvable après authentification.'], 404);
             }
+            Log::debug('Client data from database: ' . json_encode($user));
 
             $clientData = [
                 "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
@@ -100,6 +114,7 @@ class PaymentController extends Controller
                 "adresse" => $user->adresse ?? null, "complementAdresse" => null, "ville" => $user->ville ?? null,
                 "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
             ];
+            Log::debug('Formatted client data for commande: ' . json_encode($clientData));
 
             $commandeData = [
                 'idPlateforme' => $validatedData['airportId'],
@@ -109,6 +124,7 @@ class PaymentController extends Controller
                     return $sum + $item['prixTTC'];
                 }, 0),
             ];
+            Log::info('Commande data prepared before session storage: ' . json_encode($commandeData));
 
             Session::put('commande_en_cours', $commandeData);
             Log::info('Commande data stored in session: ' . json_encode($commandeData));
@@ -120,12 +136,10 @@ class PaymentController extends Controller
             return response()->json($responsePayload);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Laravel handles this for AJAX, but we catch it to be explicit
-            Log::error('Validation failed in preparePayment: ' . $e->getMessage());
+            Log::error('Validation failed in preparePayment: ' . $e->getMessage() . ' Errors: ' . json_encode($e->errors()));
             return response()->json(['message' => 'Les données fournies sont invalides.', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            // Catch any other errors and return a JSON response
-            Log::error('Error in preparePayment: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in ' . $e->getFile());
+            Log::error('Error in preparePayment: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in ' . $e->getFile() . ' Stack trace: ' . $e->getTraceAsString());
             return response()->json(['message' => 'Une erreur interne est survenue lors de la préparation du paiement.'], 500);
         }
     }
