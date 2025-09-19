@@ -794,7 +794,7 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
             newBaggageBlock.querySelector('.remove-baggage-btn').addEventListener('click', function() {
                 newBaggageBlock.remove();
                 // Re-calculate total if needed
-                document.getElementById('get-quote-btn').click();
+                // document.getElementById('get-quote-btn').click(); // Removed automatic call
             });
 
             // Add event listeners for plus/minus buttons in the new block
@@ -802,23 +802,23 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
                 const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
                 let value = parseInt(input.value) || 1;
                 input.value = Math.min(10, value + 1);
-                document.getElementById('get-quote-btn').click(); // Re-calculate total
+                // document.getElementById('get-quote-btn').click(); // Removed automatic call
             });
 
             newBaggageBlock.querySelector('.btn-minus').addEventListener('click', function(e) {
                 const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
                 let value = parseInt(input.value) || 1;
                 input.value = Math.max(1, value - 1);
-                document.getElementById('get-quote-btn').click(); // Re-calculate total
+                // document.getElementById('get-quote-btn').click(); // Removed automatic call
             });
 
             // Add event listener for select change
             newBaggageBlock.querySelector('select[name="baggage_type_additional[]"]').addEventListener('change', function() {
-                document.getElementById('get-quote-btn').click(); // Re-calculate total
+                // document.getElementById('get-quote-btn').click(); // Removed automatic call
             });
 
             // Trigger quote calculation after adding a new baggage type
-            document.getElementById('get-quote-btn').click();
+            // document.getElementById('get-quote-btn').click(); // Removed automatic call
         });
     });
 
