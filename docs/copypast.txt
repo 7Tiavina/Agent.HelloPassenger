@@ -1,346 +1,84 @@
-**Doccumentation **
+**exemple de JSON actuel préparé pour l' envoi de commande contenant plusieurs articles a l' api**ce qui est fausse 
 
-Documentation de l'API de Bagages du Monde pour les Partenaires 
-Introduction 
-Cette documentation est destinée aux partenaires souhaitant intégrer notre API. L'utilisation de cette 
-API permet une interaction fluide et efficace avec nos services, facilitant ainsi l'accès à une gamme 
-étendue de fonctionnalités. L'API propose plusieurs routes pour l’authentification, la récupération des 
-services, des plateformes et des produits, ainsi que l’envoi des commandes. 
-Authentification 
-Route /user/login 
-Méthode : POST 
-Description : Permet aux partenaires de se connecter et d'obtenir un token d'authentification. 
-Paramètres : 
-Email : Adresse e-mail du partenaire. 
-Password : Mot de passe du partenaire. 
-Réponse réussie : Un token JWT (accessToken) pour accéder aux routes suivantes ainsi qu’un token 
-de rafraichissement (refreshToken). 
-Gestion des erreurs : En cas de données invalides, un message d'erreur est renvoyé. 
-Route /user/refreshtoken 
-Méthode : POST 
-Description : Permet de rafraîchir le token d'authentification. 
-Paramètres : 
-AccessToken : Token JWT actuel. 
-RefreshToken : Token de rafraichissement. 
-Réponse réussie : Un nouveau token JWT ainsi qu’un token de rafraichissement. 
-Gestion des erreurs : En cas de token invalide ou expiré, un message d'erreur est renvoyé. 
-Services 
-Route /services 
-Méthode : GET 
-Description : Récupère la liste des services disponibles. 
-Paramètres : 
-Réponse réussie : Liste des services disponibles. 
-Route /plateforme/{idplateforme}/services 
-Méthode : GET 
-Description : Récupère la liste des services disponibles pour la plateforme choisie. 
-Paramètres : idplateforme: Identifiant de la plateforme sélectionné. 
-Réponse réussie : Liste des services disponibles. 
-Gestion des erreurs : idplateforme invalide. 
-Plateformes 
-Route /plateformes 
-Méthode : GET 
-Description : Récupère la liste des plateformes disponibles. 
-Paramètres : 
-Réponse réussie : Liste des plateformes disponibles. 
-Route /service/{idservice}/plateformes 
-Méthode : GET 
-Description : Récupère la liste des plateformes disponibles pour le service choisi. 
-Paramètres : idservice : Identifiant du service sélectionné. 
-Réponse réussie : Liste des plateformes disponibles. 
-Gestion des erreurs : idservice invalide. 
-Route /plateforme/{idplateforme}/date/{datetocheck] 
-Méthode : GET 
-Description : Récupère un boolean de si la plateforme choisi est ouverte à la date donner. 
-Paramètres : 
-idplateforme : Identifiant de la plateforme. 
-datetocheck : date à vérifier (format MM-dd-yyyy HH:mm) 
-Réponse réussie :  
-Boolean de si la plateforme est ouverte ou non. 
-Gestion des erreurs :  
-idplateforme invalide. 
-La datetocheck ne peut pas être antérieure à aujourd'hui. 
-Produits 
-Route /plateforme/{idplateforme}/service/{idservice}/{duree}/produits 
-Méthode : GET 
-Description : Récupère une liste de produits. 
-Paramètres : 
-idplateforme : Identifiant de la plateforme. 
-idservice : Identifiant du service. 
-duree : Nombre en seconde séparent la date début de la date fin. 
-Réponse réussie : Liste de produits disponibles avec prix unitaire. 
-Gestion des erreurs : 
-idplaforme invalide. 
-idservice invalide. 
-Commandes 
-Route /plateforme/{idplateforme}/commande 
-Méthode : POST 
-Description : Permet de créer une commande pour un client. 
-Paramètres :  
-idplateforme : : Identifiant de la plateforme. 
-commandeLignes : Liste de ligne de commande. 
-idProduit : Identification du produit. 
-idService : Identification du service. 
-dateDebut : Date de début (format YYYY-MM-DDTHH:mmZ). 
-dateFin : Date de fin (format YYYY-MM-DDTHH:mmZ). 
-prixTTC : Prix ttc du produit. 
-quantite : quantité du produit commander. 
-client : Information client 
-email : email du client. 
-telephone : numéro de téléphone du client. 
-nom : nom du client. 
-prenom : prénom du client. 
-civilite : civilité du client. 
-nomSociete : nom de la société. 
-adresse : adresse du client. 
-complementAdresse : complement d’adresse. 
-ville : ville du client. 
-codePostal : code postal du client. 
-pays : pays du client. 
-Réponse réussie : 
-Tableau de byte de la facture. 
-idFacture dans le message. 
-Gestion des erreurs :  
-idplaforme invalide. 
-Aucun produit dans la commande. 
-La date de fin ne peut pas être antérieure à la date de début. 
-Partenaire invalide. 
-Problème lors de la création de la facture 
-Conclusion 
-L'intégration de cette API permet aux partenaires d'accéder facilement à nos services, offrant une 
-f
- lexibilité et une efficacité accrues dans la gestion des services, plateformes, produits et commandes. 
-Elle représente une opportunité de simplifier et d'automatiser les interactions, tout en assurant une 
-expérience utilisateur améliorée. 
-
-**donées exmple dans swagger**
-
-
-Plateforme
-
-
-GET
-/api/service/{idService}/plateformes
-Récupère une liste de plateformes en fonction d'un service donné
-
-Parameters
-Cancel
-Name	Description
-idService *
-string($uuid)
-(path)
-l'id du service demandé
-
-dfb8ac1b-8bb1-4957-afb4-1faedaf641b7
-Execute
-Clear
-Responses
-Curl
-
-curl -X 'GET' \
-  'https://bdm.merlytech.com/api/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/plateformes' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzU4MTg0MTg5LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.2D6pJ2fzrPzWrCqaDbWFWoz9RQ_5WuWAme3eGqK1-7g'
-Request URL
-https://bdm.merlytech.com/api/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/plateformes
-Server response
-Code	Details
-200	
-Response body
-Download
 {
-  "content": [
-    {
-      "id": "88bb89e0-b966-4420-9ed3-7a6745e4d947",
-      "libelle": "Charles de Gaulle",
-      "iata": "CDG",
-      "iPv4": "",
-      "idEntrepot": null
+    "idPlateforme": "64f00ace-31b6-45b0-bcb2-b562b1ac08d9",
+    "commandeLignes": [
+        {
+            "idProduit": "01fbbaa3-7fb2-4f24-880f-cfe7d8a50a9b",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+            "dateDebut": "2025-09-19T10:17:00.000Z",
+            "dateFin": "2025-09-20T10:17:00.000Z",
+            "prixTTC": 40,
+            "quantite": 2,
+            "libelleProduit": "Bagage soute"
+        },
+        {
+            "idProduit": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+            "dateDebut": "2025-09-19T10:17:00.000Z",
+            "dateFin": "2025-09-20T10:17:00.000Z",
+            "prixTTC": 30,
+            "quantite": 3,
+            "libelleProduit": "Accessoires"
+        }
+    ],
+    "client": {
+        "email": "setanirinatiavina@gmail.com",
+        "telephone": "55193628",
+        "nom": "Tiavina",
+        "prenom": "ANDRIAMANANTSOA",
+        "civilite": "M.",
+        "nomSociete": "Tiavina",
+        "adresse": "Numero 4 Avenue Anquetil Saint Patrick Rose Hill",
+        "complementAdresse": "I123445",
+        "ville": "Rose Hill",
+        "codePostal": "72345",
+        "pays": "Maurice"
     },
-    {
-      "id": "64f00ace-31b6-45b0-bcb2-b562b1ac08d9",
-      "libelle": "Orly",
-      "iata": "ORY",
-      "iPv4": "82.65.117.130",
-      "idEntrepot": "f819e4c3-0761-4331-a2c2-6a6e8202f1aa"
+    "total_prix_ttc": 70
+}
+
+
+**cequi devrait etre fait**
+⚠️ Par contre, deux points :
+
+La doc ne mentionne pas de champ libelleProduit dans commandeLignes. Tu l’as ajouté, mais il risque d’être ignoré ou de provoquer une erreur si l’API est stricte.
+
+Même chose pour total_prix_ttc, il n’apparaît pas dans la doc. L’API calcule sûrement le total côté serveur à partir des lignes.
+
+👉 Donc si l’API est stricte, la version valide serait :
+
+{
+    "idPlateforme": "64f00ace-31b6-45b0-bcb2-b562b1ac08d9",
+    "commandeLignes": [
+        {
+            "idProduit": "01fbbaa3-7fb2-4f24-880f-cfe7d8a50a9b",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+            "dateDebut": "2025-09-19T10:17:00.000Z",
+            "dateFin": "2025-09-20T10:17:00.000Z",
+            "prixTTC": 40,
+            "quantite": 2
+        },
+        {
+            "idProduit": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+            "dateDebut": "2025-09-19T10:17:00.000Z",
+            "dateFin": "2025-09-20T10:17:00.000Z",
+            "prixTTC": 30,
+            "quantite": 3
+        }
+    ],
+    "client": {
+        "email": "setanirinatiavina@gmail.com",
+        "telephone": "55193628",
+        "nom": "Tiavina",
+        "prenom": "ANDRIAMANANTSOA",
+        "civilite": "M.",
+        "nomSociete": "Tiavina",
+        "adresse": "Numero 4 Avenue Anquetil Saint Patrick Rose Hill",
+        "complementAdresse": "I123445",
+        "ville": "Rose Hill",
+        "codePostal": "72345",
+        "pays": "Maurice"
     }
-  ],
-  "statut": 1,
-  "message": ""
-}
-Response headers
- content-type: application/json; charset=utf-8 
- date: Thu,18 Sep 2025 07:31:02 GMT 
- server: Microsoft-IIS/10.0 
- x-powered-by: ASP.NET 
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-
-
-
-Produit
-
-
-GET
-/api/plateforme/{idPlateforme}/service/{idService}/{duree}/produits
-Permet de récupèrer une liste de produit en fonction d'un service et d'une plateforme
-
-Parameters
-Cancel
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-L'id de la plateforme
-
-64f00ace-31b6-45b0-bcb2-b562b1ac08d9
-idService *
-string($uuid)
-(path)
-L'id du service
-
-dfb8ac1b-8bb1-4957-afb4-1faedaf641b7
-duree *
-integer($int32)
-(path)
-La durée en minutes
-
-234
-lg
-string
-(query)
-fr
-Execute
-Clear
-Responses
-Curl
-
-curl -X 'GET' \
-  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/234/produits?lg=fr' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzU4MTg0MTg5LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.2D6pJ2fzrPzWrCqaDbWFWoz9RQ_5WuWAme3eGqK1-7g'
-Request URL
-https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/234/produits?lg=fr
-Server response
-Code	Details
-200	
-Response body
-Download
-{
-  "content": [
-    {
-      "id": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
-      "libelle": "Accessoires",
-      "prixUnitaire": 5,
-      "referenceInterne": "A",
-      "estOption": false,
-      "produitFamilles": []
-    },
-    {
-      "id": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
-      "libelle": "Bagage cabine",
-      "prixUnitaire": 8,
-      "referenceInterne": "BM",
-      "estOption": false,
-      "produitFamilles": []
-    },
-    {
-      "id": "01fbbaa3-7fb2-4f24-880f-cfe7d8a50a9b",
-      "libelle": "Bagage soute",
-      "prixUnitaire": 10,
-      "referenceInterne": "BS",
-      "estOption": false,
-      "produitFamilles": []
-    },
-    {
-      "id": "868800b2-5635-4da6-a30f-5dbdbc995766",
-      "libelle": "Bagage spécial",
-      "prixUnitaire": 12,
-      "referenceInterne": "HF",
-      "estOption": false,
-      "produitFamilles": []
-    },
-    {
-      "id": "2418a6cf-4426-4402-8374-f0b2bd12ee0a",
-      "libelle": "Vestiaire",
-      "prixUnitaire": 20,
-      "referenceInterne": "DV",
-      "estOption": false,
-      "produitFamilles": []
-    }
-  ],
-  "statut": 1,
-  "message": ""
-}
-Response headers
- content-type: application/json; charset=utf-8 
- date: Thu,18 Sep 2025 07:34:34 GMT 
- server: Microsoft-IIS/10.0 
- x-powered-by: ASP.NET 
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
 }

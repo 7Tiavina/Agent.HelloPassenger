@@ -43,8 +43,10 @@ class PaymentController extends Controller
 
             // CORRECTED: Keys now match frontend data-type values ('hold', 'cloakroom')
             $baggageTypeToLibelleMap = [
+                'accessory' => 'Accessoires',
                 'cabin' => 'Bagage cabine',
                 'hold' => 'Bagage soute',
+                'special' => 'Bagage spécial',
                 'cloakroom' => 'Vestiaire',
             ];
             Log::debug('Initial commandeLignes array: ' . json_encode([]));
