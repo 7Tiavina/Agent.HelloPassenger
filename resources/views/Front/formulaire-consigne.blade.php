@@ -173,108 +173,124 @@
 
     <div class="grid lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <p class="text-sm text-red-500 mb-4">* Tous les champs sont obligatoires</p>
+            <!-- Étape 1: Aéroport et Dates -->
+            <div id="step-1">
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <p class="text-sm text-red-500 mb-4">* Tous les champs sont obligatoires</p>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            DANS QUEL AÉROPORT SOUHAITEZ-VOUS LAISSER VOS BAGAGES ? *
-                        </label>
-                        <select id="airport-select" class="input-style custom-select w-full">
-                            <option value="" selected disabled>Sélectionner un aéroport</option>
-                            @if(isset($plateformes) && count($plateformes) > 0)
-                                @foreach($plateformes as $plateforme)
-                                    <option value="{{ $plateforme['id'] }}">{{ $plateforme['libelle'] }}</option>
-                                @endforeach
-                            @else
-                                <option value="" disabled>Aucun aéroport disponible pour le moment</option>
-                            @endif
-                        </select>
-                    </div>
-
-                    <div class="baggage-block">
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="block text-sm font-medium text-gray-700">
-                                QUEL EST LE TYPE DE BAGAGE CONSIGNÉ ? *
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                DANS QUEL AÉROPORT SOUHAITEZ-VOUS LAISSER VOS BAGAGES ? *
                             </label>
+                            <select id="airport-select" class="input-style custom-select w-full">
+                                <option value="" selected disabled>Sélectionner un aéroport</option>
+                                @if(isset($plateformes) && count($plateformes) > 0)
+                                    @foreach($plateformes as $plateforme)
+                                        <option value="{{ $plateforme['id'] }}">{{ $plateforme['libelle'] }}</option>
+                                    @endforeach
+                                @else
+                                    <option value="" disabled>Aucun aéroport disponible pour le moment</option>
+                                @endif
+                            </select>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
-                            @if(isset($products) && count($products) > 0)
-                                @php
-                                    $product_map = [
-                                        'Accessoires' => ['type' => 'accessory', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
-                                        'Bagage cabine' => ['type' => 'cabin', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>'],
-                                        'Bagage soute' => ['type' => 'hold', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>'],
-                                        'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
-                                        'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>']
-                                    ];
-                                    $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
-                                @endphp
-                                @foreach($products as $product)
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-sm font-medium text-gray-700 mb-4">DATE DE DÉPÔT DES BAGAGES *</h3>
+                        <input type="date" id="date-depot" class="input-style w-full mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">HEURE DE DÉPÔT *</label>
+                        <input type="time" id="heure-depot" class="input-style w-full">
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-sm font-medium text-gray-700 mb-4">DATE DE RÉCUPÉRATION DES BAGAGES *</h3>
+                        <input type="date" id="date-recuperation" class="input-style w-full mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">HEURE DE RÉCUPÉRATION *</label>
+                        <input type="time" id="heure-recuperation" class="input-style w-full">
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="check-availability-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
+                        Interroger les tarifs
+                        <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-availability" style="display: none;"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="baggage-selection-step" class="hidden">
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <div class="space-y-4">
+                        <div class="baggage-block">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    QUEL EST LE TYPE DE BAGAGE CONSIGNÉ ? *
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
+                                @if(isset($products) && count($products) > 0)
                                     @php
-                                        $libelle = $product['libelle'];
-                                        // Utilise le mappage s'il existe, sinon crée une configuration par défaut
-                                        $map_data = $product_map[$libelle] ?? [
-                                            'type' => Illuminate\Support\Str::slug($libelle),
-                                            'icon' => $default_icon
+                                        $product_map = [
+                                            'Accessoires' => ['type' => 'accessory', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
+                                            'Bagage cabine' => ['type' => 'cabin', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>'],
+                                            'Bagage soute' => ['type' => 'hold', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>'],
+                                            'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
+                                            'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>']
                                         ];
+                                        $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
                                     @endphp
-                                    <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}">
-                                        <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                            {!! $map_data['icon'] !!}
+                                    @foreach($products as $product)
+                                        @php
+                                            $libelle = $product['libelle'];
+                                            // Utilise le mappage s'il existe, sinon crée une configuration par défaut
+                                            $map_data = $product_map[$libelle] ?? [
+                                                'type' => Illuminate\Support\Str::slug($libelle),
+                                                'icon' => $default_icon
+                                            ];
+                                        @endphp
+                                        <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}">
+                                            <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                                {!! $map_data['icon'] !!}
+                                            </div>
+                                            <span class="text-sm font-medium text-center">{{ $libelle }}</span>
                                         </div>
-                                        <span class="text-sm font-medium text-center">{{ $libelle }}</span>
-                                    </div>
-                                @endforeach
-                            @else
-                                <p class="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5 text-center text-gray-500">Aucun type de bagage n'est disponible pour le moment.</p>
-                            @endif
+                                    @endforeach
+                                @else
+                                    <p class="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5 text-center text-gray-500">Aucun type de bagage n'est disponible pour le moment.</p>
+                                @endif
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-minus">−</button>
+                                    <input type="text" class="input-style w-16 text-center" value="1" readonly />
+                                    <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-plus">+</button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mt-3">
-                            <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
-                            <div class="flex items-center space-x-2">
-                                <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-minus">−</button>
-                                <input type="text" class="input-style w-16 text-center" value="1" readonly />
-                                <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-plus">+</button>
+                        <div id="additional-baggages-container" class="space-y-6 mt-6"></div>
+
+                        <div class="mt-4">
+                            <div class="add-baggage-btn" id="add-baggage-type">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                <span>AJOUTER UN TYPE DE BAGAGE SUPPLÉMENTAIRE</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <div id="additional-baggages-container" class="space-y-6 mt-6"></div>
-                    
-                    <div class="mt-4">
-                        <div class="add-baggage-btn" id="add-baggage-type">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg>
-                            <span>AJOUTER UN TYPE DE BAGAGE SUPPLÉMENTAIRE</span>
-                        </div>
-                    </div>
                 </div>
-            </div>
 
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-4">DATE DE DÉPÔT DES BAGAGES *</h3>
-                    <input type="date" id="date-depot" class="input-style w-full mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">HEURE DE DÉPÔT *</label>
-                    <input type="time" id="heure-depot" class="input-style w-full">
+                <div class="mt-8 text-center">
+                    <button id="get-quote-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
+                        INTERROGER LES TARIFS
+                        <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-tarifs" style="display: none;"></span>
+                    </button>
                 </div>
-                <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-4">DATE DE RÉCUPÉRATION DES BAGAGES *</h3>
-                    <input type="date" id="date-recuperation" class="input-style w-full mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">HEURE DE RÉCUPÉRATION *</label>
-                    <input type="time" id="heure-recuperation" class="input-style w-full">
-                </div>
-            </div>
-
-            <div class="mt-8 text-center">
-                <button id="get-quote-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
-                    INTERROGER LES TARIFS
-                    <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-tarifs" style="display: none;"></span>
-                </button>
             </div>
 
             <div class="bg-yellow-custom rounded-lg p-6">
@@ -417,41 +433,9 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         return;
     }
 
-    // 2. Vérification de la disponibilité
-    try {
-        console.log('\n--- Étape 2: Vérification de la disponibilité ---');
-        const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
-        const pad = (num) => num.toString().padStart(2, '0');
-        const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
-        console.log(`Formatage de la date pour l'API: ${dateToVerify}`);
-
-        const availabilityResponse = await fetch('/api/check-availability', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                idPlateforme: airportId,
-                dateToCheck: dateToVerify
-            })
-        });
-
-        console.log(`Réponse du serveur pour disponibilité:`, availabilityResponse.status);
-        const availabilityResult = await availabilityResponse.json();
-        console.log('Corps de la réponse:', availabilityResult);
-
-        // L'API renvoie un objet { content: boolean, statut: int, ... }
-        if (availabilityResult.statut !== 1 || availabilityResult.content !== true) {
-            alert('La plateforme est fermée à la date de dépôt sélectionnée.');
-            console.error('❌ La plateforme est fermée ou une erreur est survenue.', availabilityResult);
-            hideLoadingSpinnerTarifs(); // Masquer le spinner en cas d'erreur API
-            return;
-        }
-        console.log('✅ SUCCÈS: La plateforme est disponible.');
-
-        // 3. Récupération des tarifs
-        console.log('\n--- Étape 3: Récupération des tarifs ---');
+            // 2. Récupération des tarifs (la vérification de disponibilité est maintenant faite à l'étape 1)
+            try {
+                console.log('\n--- Étape 2: Récupération des tarifs ---');        console.log('\n--- Étape 3: Récupération des tarifs ---');
         const debut = new Date(`${dateDepot}T${heureDepot}:00`);
         const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
         const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
@@ -822,7 +806,63 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         });
     });
 
- </script>   
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const checkAvailabilityBtn = document.getElementById('check-availability-btn');
+        if(checkAvailabilityBtn) {
+            checkAvailabilityBtn.addEventListener('click', async function () {
+                const spinner = document.getElementById('loading-spinner-availability');
+                spinner.style.display = 'inline-block';
+                this.disabled = true;
+
+                const airportId = document.getElementById('airport-select').value;
+                const dateDepot = document.getElementById('date-depot').value;
+                const heureDepot = document.getElementById('heure-depot').value;
+
+                if (!airportId || !dateDepot || !heureDepot) {
+                    alert('Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
+                    spinner.style.display = 'none';
+                    this.disabled = false;
+                    return;
+                }
+
+                try {
+                    const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
+                    const pad = (num) => num.toString().padStart(2, '0');
+                    const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
+
+                    const availabilityResponse = await fetch('/api/check-availability', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            idPlateforme: airportId,
+                            dateToCheck: dateToVerify
+                        })
+                    });
+
+                    const availabilityResult = await availabilityResponse.json();
+
+                    if (availabilityResult.statut === 1 && availabilityResult.content === true) {
+                        document.getElementById('step-1').style.display = 'none';
+                        document.getElementById('baggage-selection-step').style.display = 'block';
+                    } else {
+                        alert(availabilityResult.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la vérification de disponibilité:', error);
+                    alert('Une erreur technique est survenue lors de la vérification de la disponibilité.');
+                } finally {
+                    spinner.style.display = 'none';
+                    this.disabled = false;
+                }
+            });
+        }
+    });
+</script>   
 
 </body>
 </html>
