@@ -148,7 +148,7 @@ class PaymentController extends Controller
 
     private function getBdmToken(): string
     {
-        // Tente de r%c3%a9cup%c3%a9rer le token depuis le cache
+        // Tente de rcuprer le token depuis le cache
         return Cache::remember('bdm_api_token', 3300, function () {
             Log::info('Cache BDM token expir%c3%a9. Demande d%c3%a0 un nouveau token.');
 

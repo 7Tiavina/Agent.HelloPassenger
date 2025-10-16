@@ -214,7 +214,7 @@
 
                 <div class="mt-8 text-center">
                     <button id="check-availability-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
-                        Interroger les tarifs
+                        VOIR LA DISPONIBILITÉ
                         <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-availability" style="display: none;"></span>
                     </button>
                 </div>
@@ -333,9 +333,9 @@
                     <h3 class="font-bold text-lg text-black mb-4">Votre panier</h3>
                     <div class="panier-content">
                         </div>
-                    <div class="bg-gray-100 rounded p-3 mt-4 flex justify-between items-center summary-total-container">
-                        <p class="text-lg font-bold text-black">Total:</p>
-                        <p class="text-2xl font-bold text-black total-panier">0€</p>
+                    <div class="bg-yellow-custom rounded p-3 mt-4 flex justify-between items-center summary-total-container">
+                        <p class="text-lg font-bold text-gray-dark">Total:</p>
+                        <p class="text-2xl font-bold text-gray-dark total-panier">0€</p>
                     </div>
                 </div>
             </div>
