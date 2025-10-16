@@ -268,24 +268,57 @@ class FrontController extends Controller
             'idService' => 'required|string',
             'duree' => 'required|integer|min:1',
         ]);
-        
-        Log::info('Appel à l\'API BDM pour les tarifs', ['data' => $validated]);
+
+        Log::info('Appel à l\'API BDM pour les tarifs et lieux', ['data' => $validated]);
 
         try {
             $token = $this->getBdmToken();
-            $response = Http::withToken($token)
-                ->withHeaders(['Accept' => 'application/json'])
-                ->get(config('services.bdm.base_url') . "/api/plateforme/{$validated['idPlateforme']}/service/{$validated['idService']}/{$validated['duree']}/produits");
-            
-            Log::info('Réponse de l\'API BDM (tarifs)', ['status' => $response->status(), 'body' => $response->json()]);
+            $baseUrl = config('services.bdm.base_url');
+            $idPlateforme = $validated['idPlateforme'];
+            $idService = $validated['idService'];
+            $duree = $validated['duree'];
 
-            return response()->json($response->json(), $response->status());
+            $responses = Http::pool(fn ($pool) => [
+                $pool->withToken($token)->withHeaders(['Accept' => 'application/json'])->get("{$baseUrl}/api/plateforme/{$idPlateforme}/service/{$idService}/{$duree}/produits"),
+                $pool->withToken($token)->withHeaders(['Accept' => 'application/json'])->get("{$baseUrl}/api/plateforme/{$idPlateforme}/lieux"),
+            ]);
+
+            $productsResponse = $responses[0];
+            $lieuxResponse = $responses[1];
+
+            if ($productsResponse->failed()) {
+                Log::error('API BDM (produits) a échoué', ['status' => $productsResponse->status(), 'body' => $productsResponse->body()]);
+                return response()->json(['message' => 'Erreur lors de la récupération des tarifs.'], $productsResponse->status());
+            }
+
+            $productsResult = $productsResponse->json();
+            Log::info('Réponse de l\'API BDM (produits)', ['status' => $productsResponse->status(), 'body' => $productsResult]);
+
+            $lieux = [];
+            if ($lieuxResponse->successful()) {
+                $lieuxResult = $lieuxResponse->json();
+                if ($lieuxResult['statut'] === 1 && is_array($lieuxResult['content'])) {
+                    $lieux = $lieuxResult['content'];
+                }
+                Log::info('Réponse de l\'API BDM (lieux)', ['status' => $lieuxResponse->status(), 'body' => $lieuxResult]);
+            } else {
+                Log::warning('API BDM (lieux) a échoué', ['status' => $lieuxResponse->status(), 'body' => $lieuxResponse->body()]);
+            }
+
+            return response()->json([
+                'statut' => $productsResult['statut'],
+                'message' => $productsResult['message'] ?? 'Données récupérées',
+                'content' => [
+                    'products' => $productsResult['content'] ?? [],
+                    'lieux' => $lieux,
+                ]
+            ]);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la récupération des tarifs', ['error' => $e->getMessage()]);
+            Log::error('Erreur lors de la récupération des tarifs/lieux', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la récupération des tarifs: ' . $e->getMessage()
+                'message' => 'Erreur technique lors de la récupération des données : ' . $e->getMessage()
             ], 500);
         }
     }

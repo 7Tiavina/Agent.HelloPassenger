@@ -22,8 +22,7 @@ class PaymentController extends Controller
     public function preparePayment(Request $request)
     {
         try {
-            Log::info('Entering preparePayment method.');
-            Log::info('Request received: ' . json_encode($request->all()));
+            Log::info('Entering preparePayment method.', ['request_data' => $request->all()]);
 
             $validatedData = $request->validate([
                 'airportId' => 'required|string',
@@ -32,16 +31,18 @@ class PaymentController extends Controller
                 'dateRecuperation' => 'required|date',
                 'heureRecuperation' => 'required|string',
                 'baggages' => 'required|array',
-                'baggages.*.type' => 'required|string',
-                'baggages.*.quantity' => 'required|integer|min:1',
                 'products' => 'required|array',
+                'options' => 'nullable|array',
+                'options.*.id' => 'required|string',
+                'options.*.lieu_id' => 'nullable|string',
             ]);
 
-            Log::info('Received validated data for payment preparation: ' . json_encode($validatedData));
-
-            $commandeLignes = [];
-
-            // CORRECTED: Keys now match frontend data-type values ('hold', 'cloakroom')
+            // --- Server-side definitions for security ---
+            $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
+            $staticOptions = [
+                'opt_priority' => ['prixUnitaire' => 15, 'libelle' => 'Service Priority'],
+                'opt_premium' => ['prixUnitaire' => 25, 'libelle' => 'Service Premium'],
+            ];
             $baggageTypeToLibelleMap = [
                 'accessory' => 'Accessoires',
                 'cabin' => 'Bagage cabine',
@@ -49,66 +50,58 @@ class PaymentController extends Controller
                 'special' => 'Bagage spécial',
                 'cloakroom' => 'Vestiaire',
             ];
-            Log::debug('Initial commandeLignes array: ' . json_encode([]));
-            Log::debug('Baggage type to libelle map: ' . json_encode($baggageTypeToLibelleMap));
+            // ------------------------------------------
 
+            $commandeLignes = [];
+
+            // 1. Process Baggages
             foreach ($validatedData['baggages'] as $baggage) {
-                Log::debug('Processing baggage: ' . json_encode($baggage));
-                $productPrice = 0;
-                $productId = null;
-                $productLibelle = null;
-                $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
-
                 $expectedLibelle = $baggageTypeToLibelleMap[$baggage['type']] ?? null;
-                Log::debug('Expected libelle for baggage type ' . $baggage['type'] . ': ' . $expectedLibelle);
+                if (!$expectedLibelle) throw new \Exception('Unknown baggage type: ' . $baggage['type']);
 
-                if (is_null($expectedLibelle)) {
-                    Log::error('Unknown baggage type encountered: ' . $baggage['type']);
-                    throw new \Exception('Unknown baggage type: ' . $baggage['type']);
-                }
-
-                foreach ($validatedData['products'] as $product) {
-                    if ($product['libelle'] === $expectedLibelle) {
-                        $productPrice = $product['prixUnitaire'];
-                        $productId = $product['id'];
-                        $productLibelle = $product['libelle'];
-                        Log::debug('Product found: ' . json_encode(['id' => $productId, 'libelle' => $productLibelle, 'price' => $productPrice]));
-                        break;
-                    }
-                }
-
-                if (is_null($productId) || is_null($productLibelle)) {
-                    Log::error('Product details not found for expected libelle: ' . $expectedLibelle . '. Available products: ' . json_encode($validatedData['products']));
-                    throw new \Exception('Product details not found for expected libelle: ' . $expectedLibelle);
-                }
+                $productDetails = collect($validatedData['products'])->firstWhere('libelle', $expectedLibelle);
+                if (!$productDetails) throw new \Exception('Product details not found for: ' . $expectedLibelle);
 
                 $commandeLignes[] = [
-                    "idProduit" => $productId,
+                    "idProduit" => $productDetails['id'],
                     "idService" => $serviceId,
                     "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
                     "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
-                    "prixTTC" => ($productPrice * $baggage['quantity']),
+                    "prixTTC" => ($productDetails['prixUnitaire'] * $baggage['quantity']),
                     "quantite" => $baggage['quantity'],
-                    "libelleProduit" => $productLibelle
+                    "libelleProduit" => $productDetails['libelle']
                 ];
-                Log::debug('Added commandeLigne: ' . json_encode(end($commandeLignes)));
             }
 
-            Log::info('Final commandeLignes array after processing all baggages: ' . json_encode($commandeLignes));
+            // 2. Process Options
+            if (!empty($validatedData['options'])) {
+                foreach ($validatedData['options'] as $selectedOption) {
+                    $optionId = $selectedOption['id'];
+                    if (!isset($staticOptions[$optionId])) {
+                        throw new \Exception('Invalid option ID provided: ' . $optionId);
+                    }
+                    
+                    $optionDetails = $staticOptions[$optionId];
 
+                    $commandeLignes[] = [
+                        "idProduit" => $optionId, // Use the static ID for the command
+                        "idService" => $serviceId,
+                        "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
+                        "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
+                        "prixTTC" => $optionDetails['prixUnitaire'],
+                        "quantite" => 1,
+                        "libelleProduit" => $optionDetails['libelle'],
+                        "idLieu" => $selectedOption['lieu_id'] ?? null,
+                    ];
+                }
+            }
+
+            // 3. Prepare final command data
             $user = Auth::guard('client')->user();
-            if (!$user) {
-                Log::error('Client not authenticated during preparePayment.');
-                return response()->json(['message' => 'Client non authentifié.'], 401);
-            }
-            Log::debug('Authenticated user: ' . json_encode($user));
+            if (!$user) return response()->json(['message' => 'Client non authentifié.'], 401);
             
             $user = \App\Models\Client::find($user->id);
-            if (!$user) {
-                Log::error('Client not found in database after authentication for ID: ' . $user->id);
-                return response()->json(['message' => 'Client introuvable après authentification.'], 404);
-            }
-            Log::debug('Client data from database: ' . json_encode($user));
+            if (!$user) return response()->json(['message' => 'Client introuvable.'], 404);
 
             $clientData = [
                 "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
@@ -116,32 +109,24 @@ class PaymentController extends Controller
                 "adresse" => $user->adresse ?? null, "complementAdresse" => null, "ville" => $user->ville ?? null,
                 "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
             ];
-            Log::debug('Formatted client data for commande: ' . json_encode($clientData));
 
             $commandeData = [
                 'idPlateforme' => $validatedData['airportId'],
                 'commandeLignes' => $commandeLignes,
                 'client' => $clientData,
-                'total_prix_ttc' => array_reduce($commandeLignes, function ($sum, $item) {
-                    return $sum + $item['prixTTC'];
-                }, 0),
+                'total_prix_ttc' => array_reduce($commandeLignes, fn($sum, $item) => $sum + $item['prixTTC'], 0),
             ];
-            Log::info('Commande data prepared before session storage: ' . json_encode($commandeData));
 
             Session::put('commande_en_cours', $commandeData);
-            Log::info('Commande data stored in session: ' . json_encode($commandeData));
+            Log::info('Commande data stored in session.', ['data' => $commandeData]);
 
-            $responsePayload = ['message' => 'Commande préparée avec succès.', 'redirect_url' => route('payment')];
-            Log::info('[preparePayment] Sending JSON response to browser: ' . json_encode($responsePayload));
-
-            // Instead of redirecting, return a success JSON response
-            return response()->json($responsePayload);
+            return response()->json(['message' => 'Commande préparée avec succès.', 'redirect_url' => route('payment')]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation failed in preparePayment: ' . $e->getMessage() . ' Errors: ' . json_encode($e->errors()));
+            Log::error('Validation failed in preparePayment', ['errors' => $e->errors()]);
             return response()->json(['message' => 'Les données fournies sont invalides.', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            Log::error('Error in preparePayment: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in ' . $e->getFile() . ' Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error in preparePayment', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Une erreur interne est survenue lors de la préparation du paiement.'], 500);
         }
     }

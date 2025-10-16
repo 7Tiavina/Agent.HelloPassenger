@@ -293,6 +293,16 @@
                 </div>
             </div>
 
+            <!-- Étape 3: Options additionnelles (initialement masquée) -->
+            <div id="options-step" class="hidden mt-6">
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Souhaitez-vous bénéficier de services additionnels ?</h3>
+                    <div id="options-container" class="space-y-4">
+                        <!-- Les options (Priority, Premium) seront injectées ici par JavaScript -->
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-yellow-custom rounded-lg p-6">
                 <h3 class="font-bold text-black mb-2">ATTENTION !</h3>
                 <p class="text-sm text-black leading-relaxed">
@@ -350,8 +360,15 @@
 
     let airportId = null;
     const serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
-    let globalProductsData = []; // New global variable
-    const initialProducts = @json($products); // Pass PHP products to JavaScript
+    let globalProductsData = [];
+    let globalLieuxData = [];
+    const initialProducts = @json($products);
+
+    // Options sont maintenant statiques, comme demandé.
+    const staticOptions = {
+        priority: { id: 'opt_priority', libelle: 'Service Priority', prixUnitaire: 15 },
+        premium: { id: 'opt_premium', libelle: 'Service Premium', prixUnitaire: 25 }
+    };
 
     // Mappage des libellés aux icônes et types pour JavaScript
     const productMapJs = {
@@ -362,195 +379,209 @@
         'Vestiaire': { type: 'cloakroom', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>' }
     };
     const defaultIconJs = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
-    
-    // Événement pour la sélection de l'aéroport
-    document.getElementById('airport-select').addEventListener('change', function() {
-        airportId = this.value;
-        console.log('✅ Aéroport sélectionné:', airportId);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- EVENT LISTENERS ---
+        document.getElementById('airport-select').addEventListener('change', function() { airportId = this.value; });
+        document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
+        document.getElementById('get-quote-btn').addEventListener('click', getQuoteAndLieux);
+        document.getElementById('add-baggage-type').addEventListener('click', addBaggageType);
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.baggage-option')) {
+                const block = e.target.closest('.baggage-block');
+                block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
+                e.target.closest('.baggage-option').classList.add('selected');
+            }
+            if (e.target.classList.contains('btn-plus')) { e.target.closest('.flex').querySelector('input').value++; }
+            if (e.target.classList.contains('btn-minus') && e.target.closest('.flex').querySelector('input').value > 1) { e.target.closest('.flex').querySelector('input').value--; }
+            if (e.target.closest('.remove-baggage-btn')) { e.target.closest('.baggage-block').remove(); }
+        });
     });
 
-    // Événement pour la sélection du type de bagage
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.baggage-option')) {
-            const baggageType = e.target.closest('.baggage-option').dataset.type;
-            const block = e.target.closest('.baggage-block');
-            block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
-            e.target.closest('.baggage-option').classList.add('selected');
-            console.log('✅ Type de bagage sélectionné:', baggageType);
-        }
-    });
+    async function checkAvailability() {
+        const spinner = document.getElementById('loading-spinner-availability');
+        const btn = this;
+        spinner.style.display = 'inline-block';
+        btn.disabled = true;
 
-    // Incrémentation / décrémentation et suppression
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('btn-plus')) {
-            const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
-            let value = parseInt(input.value) || 1;
-            input.value = Math.min(10, value + 1);
-            console.log('✅ Quantité incrémentée:', input.value);
-        }
-        if (e.target.classList.contains('btn-minus')) {
-            const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
-            let value = parseInt(input.value) || 1;
-            input.value = Math.max(1, value - 1);
-            console.log('✅ Quantité décrémentée:', input.value);
-        }
-        if (e.target.closest('.remove-baggage-btn')) {
-            e.target.closest('.baggage-block').remove();
-            console.log('✅ Type de bagage supprimé.');
-        }
-    });
+        const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
 
-
-
-    // Fonction principale pour interroger les tarifs
-    function showLoadingSpinnerTarifs() {
-        document.getElementById('get-quote-btn').disabled = true;
-        document.getElementById('loading-spinner-tarifs').style.display = 'inline-block';
-    }
-
-    function hideLoadingSpinnerTarifs() {
-        document.getElementById('get-quote-btn').disabled = false;
-        document.getElementById('loading-spinner-tarifs').style.display = 'none';
-    }
-
-document.getElementById('get-quote-btn').addEventListener('click', async function () {
-    showLoadingSpinnerTarifs(); // Afficher le spinner au début
-
-    console.log('--- DÉBUT DE L\'INTERROGATION DES TARIFS ---');
-
-    // 1. Récupération des valeurs du formulaire
-    const dateDepot = document.getElementById('date-depot').value;
-    const heureDepot = document.getElementById('heure-depot').value;
-    const dateRecuperation = document.getElementById('date-recuperation').value;
-    const heureRecuperation = document.getElementById('heure-recuperation').value;
-
-    console.log('Étape 1: Valeurs récupérées', { airportId, dateDepot, heureDepot, dateRecuperation, heureRecuperation });
-
-    if (!airportId || !dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
-        alert('Veuillez remplir tous les champs obligatoires.');
-        console.error('❌ ERREUR: Champs manquants.');
-        hideLoadingSpinnerTarifs(); // Masquer le spinner en cas d'erreur de validation
-        return;
-    }
-
-            // 2. Récupération des tarifs (la vérification de disponibilité est maintenant faite à l'étape 1)
-            try {
-                console.log('\n--- Étape 2: Récupération des tarifs ---');        console.log('\n--- Étape 3: Récupération des tarifs ---');
-        const debut = new Date(`${dateDepot}T${heureDepot}:00`);
-        const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
-        const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
-        console.log(`Calcul de la durée: ${dureeEnMinutes} minutes`);
-
-        if (dureeEnMinutes <= 0) {
-            alert('La date de récupération doit être postérieure à la date de dépôt.');
-            console.error('❌ ERREUR: Durée invalide.');
-            hideLoadingSpinnerTarifs(); // Masquer le spinner en cas d'erreur de validation
+        if (!airportId || !dateDepot || !heureDepot) {
+            alert('Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
+            spinner.style.display = 'none';
+            btn.disabled = false;
             return;
         }
 
-        const productsResponse = await fetch('/api/get-quote', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                idPlateforme: airportId,
-                idService: serviceId,
-                duree: dureeEnMinutes
-            })
-        });
+        try {
+            const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
+            const pad = (num) => num.toString().padStart(2, '0');
+            const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
 
-        console.log(`Réponse du serveur pour les tarifs:`, productsResponse.status);
-        const productsResult = await productsResponse.json();
-        console.log('Corps de la réponse:', productsResult);
+            const response = await fetch('/api/check-availability', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                body: JSON.stringify({ idPlateforme: airportId, dateToCheck: dateToVerify })
+            });
 
-        console.log('DEBUG: productsResult.statut:', productsResult.statut, 'productsResult.content:', productsResult.content);
-        if (productsResult.statut === 1 && Array.isArray(productsResult.content) && productsResult.content.length > 0) {
-            console.log('✅ SUCCÈS: Tarifs récupérés et parsés.');
-            globalProductsData = productsResult.content; // Assign to global variable
-
-            const products = globalProductsData.reduce((acc, curr) => { // Use globalProductsData
-                acc[curr.libelle] = { id: curr.id, prix: curr.prixUnitaire };
-                return acc;
-            }, {});
-
-            updateCart(products);
-        } else {
-            alert('Erreur lors de la récupération des tarifs : ' + (productsResult.message || 'Réponse invalide'));
-            console.error('❌ ERREUR lors de la récupération des tarifs:', productsResult.message);
+            const result = await response.json();
+            if (result.statut === 1 && result.content === true) {
+                document.getElementById('step-1').style.display = 'none';
+                document.getElementById('baggage-selection-step').style.display = 'block';
+            } else {
+                alert(result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la vérification de disponibilité:', error);
+            alert('Une erreur technique est survenue.');
+        } finally {
+            spinner.style.display = 'none';
+            btn.disabled = false;
         }
-    } catch (error) {
-        console.error('❌ ERREUR GLOBALE: Une erreur de connexion ou de script est survenue.', error);
-        alert('Une erreur technique est survenue. Veuillez vérifier la console.');
-    } finally {
-        hideLoadingSpinnerTarifs(); // Masquer le spinner à la fin, qu'il y ait succès ou erreur
     }
-});
 
- 
+    async function getQuoteAndLieux() {
+        const spinner = document.getElementById('loading-spinner-tarifs');
+        const btn = this;
+        spinner.style.display = 'inline-block';
+        btn.disabled = true;
 
-    // Fonction de mise à jour du panier
-    function updateCart(products) {
-        console.log('--- Mise à jour du panier ---');
-        console.log('Products received by updateCart:', products);
-        const allBaggageBlocks = document.querySelectorAll('.baggage-block');
-        console.log('All baggage blocks in updateCart:', allBaggageBlocks);
+        const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
+        const dateRecuperation = document.getElementById('date-recuperation').value;
+        const heureRecuperation = document.getElementById('heure-recuperation').value;
+
+        if (!dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
+            alert('Veuillez remplir les dates et heures de dépôt et de récupération.');
+            spinner.style.display = 'none';
+            btn.disabled = false;
+            return;
+        }
+
+        const debut = new Date(`${dateDepot}T${heureDepot}:00`);
+        const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
+        const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
+
+        if (dureeEnMinutes <= 0) {
+            alert('La date de récupération doit être postérieure à la date de dépôt.');
+            spinner.style.display = 'none';
+            btn.disabled = false;
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/get-quote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                body: JSON.stringify({ idPlateforme: airportId, idService: serviceId, duree: dureeEnMinutes })
+            });
+
+            const result = await response.json();
+            if (result.statut === 1 && result.content) {
+                globalProductsData = result.content.products || [];
+                globalLieuxData = result.content.lieux || [];
+                
+                displayOptions(dureeEnMinutes);
+                recalculateCart();
+            } else {
+                alert('Erreur lors de la récupération des tarifs : ' + (result.message || 'Réponse invalide'));
+            }
+        } catch (error) {
+            console.error('Erreur lors de la récupération des tarifs et lieux:', error);
+            alert('Une erreur technique est survenue.');
+        } finally {
+            spinner.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+
+    function displayOptions(dureeEnMinutes) {
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+        const dureeEnHeures = dureeEnMinutes / 60;
+
+        // Priority Option
+        if (dureeEnHeures < 72) {
+            const option = staticOptions.priority;
+            const optionHtml = `
+                <div class="border rounded-2xl p-5 hover:shadow-md transition bg-white">
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <div>
+                            <input type="checkbox" id="${option.id}" data-option-key="priority" class="option-checkbox mr-3 h-5 w-5 text-yellow-custom border-gray-300 focus:ring-yellow-custom">
+                            <span class="text-lg font-medium">${option.libelle}</span>
+                        </div>
+                        <span class="text-yellow-custom font-semibold">+${option.prixUnitaire} €</span>
+                    </label>
+                    <p class="text-gray-500 text-sm mt-2">Bénéficiez d’un traitement prioritaire pour vos bagages.</p>
+                    <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
+                        <label class="block text-sm font-medium">Lieu</label>
+                        <select class="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-yellow-custom focus:border-yellow-custom"></select>
+                    </div>
+                </div>`;
+            optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
+        }
+
+        // Premium Option
+        if (globalLieuxData.length > 0) {
+            const option = staticOptions.premium;
+            const lieuxOptions = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+            const optionHtml = `
+                <div class="border rounded-2xl p-5 hover:shadow-md transition bg-white">
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <div>
+                            <input type="checkbox" id="${option.id}" data-option-key="premium" class="option-checkbox mr-3 h-5 w-5 text-yellow-custom border-gray-300 focus:ring-yellow-custom">
+                            <span class="text-lg font-medium">${option.libelle}</span>
+                        </div>
+                        <span class="text-yellow-custom font-semibold">+${option.prixUnitaire} €</span>
+                    </label>
+                    <p class="text-gray-500 text-sm mt-2">Accédez à un service complet de gestion de vos bagages de bout en bout.</p>
+                    <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
+                        <label class="block text-sm font-medium">Lieu de rendez-vous *</label>
+                        <select name="option_lieu_${option.id}" class="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-yellow-custom focus:border-yellow-custom">${lieuxOptions}</select>
+                    </div>
+                </div>`;
+            optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
+        }
+
+        if (optionsContainer.innerHTML !== '') {
+            document.getElementById('options-step').style.display = 'block';
+            optionsContainer.querySelectorAll('.option-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    document.getElementById(`details-${e.target.id}`).classList.toggle('hidden', !e.target.checked);
+                    recalculateCart();
+                });
+            });
+        }
+    }
+
+    function recalculateCart() {
         let total = 0;
         let cartContent = '';
-        const itemsInCart = [];
 
-        allBaggageBlocks.forEach(block => {
-            let type = null;
-            let baggageLabel = null;
-            let quantity = 0;
-            let productId = null;
-
-            // Check for initial baggage selection (div.baggage-option)
-            const initialSelectedOption = block.querySelector('.baggage-option.selected');
-            if (initialSelectedOption) {
-                type = initialSelectedOption.dataset.type;
-                baggageLabel = initialSelectedOption.querySelector('span').textContent;
-                quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
-                productId = initialSelectedOption.dataset.productId;
-            } else {
-                // Check for dynamically added baggage selection (select[name="baggage_type_additional[]"])
-                const additionalSelect = block.querySelector('select[name="baggage_type_additional[]"]');
-                const additionalQuantityInput = block.querySelector('input[name="baggage_quantity_additional[]"]');
-                
-                if (additionalSelect && additionalQuantityInput) {
-                    const selectedOptionElement = additionalSelect.options[additionalSelect.selectedIndex];
-                    type = selectedOptionElement.value; // The value is the type (e.g., 'cabin')
-                    baggageLabel = selectedOptionElement.textContent; // The text is the libelle (e.g., 'Bagage cabine')
-                    quantity = parseInt(additionalQuantityInput.value) || 0;
-                    productId = selectedOptionElement.dataset.productId;
+        document.querySelectorAll('.baggage-block').forEach(block => {
+            const selectedBaggage = block.querySelector('.baggage-option.selected');
+            if (selectedBaggage) {
+                const quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
+                const productId = selectedBaggage.dataset.productId;
+                const product = globalProductsData.find(p => p.id == productId);
+                if (product && quantity > 0) {
+                    const itemTotal = product.prixUnitaire * quantity;
+                    total += itemTotal;
+                    cartContent += `<div class="flex justify-between items-center mb-2"><span>${quantity} x ${product.libelle}</span><span>${itemTotal.toFixed(2)} €</span></div>`;
                 }
-            }
-
-            if (type && quantity > 0) {
-                let price = 0;
-                // Find the product in globalProductsData based on productId
-                const matchingProduct = globalProductsData.find(p => p.id == productId);
-                if (matchingProduct) {
-                    price = matchingProduct.prixUnitaire;
-                }
-                
-                console.log(`Processing baggage type: ${type} (${baggageLabel}), quantity: ${quantity}, price found: ${price}`);
-                
-                total += price * quantity;
-                itemsInCart.push({ type, quantity, price, totalItem: price * quantity, libelle: baggageLabel, productId: productId });
-                
-                cartContent += `
-                    <div class="flex justify-between items-center mb-2">
-                        <span>${quantity} x ${baggageLabel}</span>
-                        <span>${(price * quantity).toFixed(2)} €</span>
-                    </div>
-                `;
             }
         });
 
-        console.log('⏩ Contenu du panier à mettre à jour:', itemsInCart);
-        console.log('⏩ Total du panier:', total);
+        document.querySelectorAll('.option-checkbox:checked').forEach(checkbox => {
+            const optionKey = checkbox.dataset.optionKey;
+            const option = staticOptions[optionKey];
+            if (option) {
+                total += option.prixUnitaire;
+                cartContent += `<div class="flex justify-between items-center mb-2 text-sm text-gray-600"><span>+ ${option.libelle}</span><span>${option.prixUnitaire.toFixed(2)} €</span></div>`;
+            }
+        });
 
         const cartElement = document.getElementById('cart-summary');
         const emptyCartElement = document.getElementById('empty-cart');
@@ -562,160 +593,109 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
             document.querySelector('#cart-summary .panier-content').innerHTML = cartContent;
             document.querySelector('#cart-summary .total-panier').textContent = `${total.toFixed(2)}€`;
             summaryPriceElement.textContent = `${total.toFixed(2)} €`;
-            console.log('✅ Panier affiché et mis à jour.');
-
-            const totalContainer = document.querySelector('.summary-total-container');
-            totalContainer.classList.add('cursor-pointer');
-            totalContainer.onclick = handleTotalClick;
-
+            document.querySelector('.summary-total-container').onclick = handleTotalClick;
         } else {
             cartElement.style.display = 'none';
             emptyCartElement.style.display = 'block';
             summaryPriceElement.textContent = `0 €`;
-            console.log('⚠️ Le panier est vide, affichage du message de panier vide.');
         }
     }
     
-    // Fonction pour gérer le clic sur le total du panier
     async function handleTotalClick() {
-        console.log('Clic sur le total du panier détecté. Début de handleTotalClick.');
-        console.log('Global airportId:', airportId);
-        console.log('Airport select element:', document.getElementById('airport-select'));
-
         try {
-            const authResponse = await fetch('/check-auth-status', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json', // Préciser qu'on attend du JSON
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            });
+            const authResponse = await fetch('/check-auth-status');
             const authData = await authResponse.json();
-            console.log('Statut d\'authentification: ', authData);
 
             if (authData.authenticated) {
-                console.log('Utilisateur authentifié. Préparation de la commande...');
-
-                // ... (le reste de la collecte de données reste identique)
-                // const airportId = document.getElementById('airport-select').value; // Removed local declaration
-                const dateDepot = document.getElementById('date-depot').value;
-                const heureDepot = document.getElementById('heure-depot').value;
-                const dateRecuperation = document.getElementById('date-recuperation').value;
-                const heureRecuperation = document.getElementById('heure-recuperation').value;
-
-                console.log('Données brutes du formulaire: ', { airportId, dateDepot, heureDepot, dateRecuperation, heureRecuperation });
-
                 const baggages = [];
                 document.querySelectorAll('.baggage-block').forEach(block => {
-                    let type = null;
-                    let quantity = 0;
-
-                    const initialSelectedOption = block.querySelector('.baggage-option.selected');
-                    if (initialSelectedOption) {
-                        type = initialSelectedOption.dataset.type;
-                        quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
-                    } else {
-                        const additionalSelect = block.querySelector('select[name="baggage_type_additional[]"]');
-                        const additionalQuantityInput = block.querySelector('input[name="baggage_quantity_additional[]"]');
-                        if (additionalSelect && additionalQuantityInput) {
-                            type = additionalSelect.value;
-                            quantity = parseInt(additionalQuantityInput.value) || 0;
-                        }
-                    }
-
-                    if (type && quantity > 0) {
-                        baggages.push({
-                            type: type,
-                            quantity: quantity
-                        });
+                    const selectedBaggage = block.querySelector('.baggage-option.selected');
+                    if (selectedBaggage) {
+                        const quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
+                        if (quantity > 0) { baggages.push({ type: selectedBaggage.dataset.type, quantity: quantity }); }
                     }
                 });
-                console.log('Objets bagages construits: ', baggages);
 
-                const products = [];
-                const seenProductIds = new Set();
-                const baggageTypeToLibelleMap = {
-                    'accessory': 'Accessoires',
-                    'cabin': 'Bagage cabine',
-                    'hold': 'Bagage soute',
-                    'special': 'Bagage spécial',
-                    'cloakroom': 'Vestiaire',
-                };
-
-                baggages.forEach(baggage => {
-                    const expectedLibelle = baggageTypeToLibelleMap[baggage.type];
-                    if (expectedLibelle) {
-                        const matchingProduct = globalProductsData.find(p => p.libelle === expectedLibelle);
-                        if (matchingProduct && !seenProductIds.has(matchingProduct.id)) {
-                            products.push(matchingProduct);
-                            seenProductIds.add(matchingProduct.id);
-                        }
+                const options = [];
+                document.querySelectorAll('.option-checkbox:checked').forEach(checkbox => {
+                    const optionKey = checkbox.dataset.optionKey;
+                    const option = staticOptions[optionKey];
+                    let lieuId = null;
+                    if (optionKey === 'premium') {
+                        const detailsDiv = document.getElementById(`details-${option.id}`);
+                        lieuId = detailsDiv.querySelector('select').value;
                     }
+                    options.push({ id: option.id, lieu_id: lieuId });
                 });
-                console.log('Objets produits filtrés et construits: ', products);
 
                 const formData = {
                     airportId: airportId,
-                    dateDepot: dateDepot,
-                    heureDepot: heureDepot,
-                    dateRecuperation: dateRecuperation,
-                    heureRecuperation: heureRecuperation,
+                    dateDepot: document.getElementById('date-depot').value,
+                    heureDepot: document.getElementById('heure-depot').value,
+                    dateRecuperation: document.getElementById('date-recuperation').value,
+                    heureRecuperation: document.getElementById('heure-recuperation').value,
                     baggages: baggages,
-                    products: products
+                    products: globalProductsData,
+                    options: options
                 };
 
-                console.log('Envoi des données vers /prepare-payment:', formData);
-
-                // Appel à /prepare-payment
                 const prepareResponse = await fetch('/prepare-payment', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json', // **LA CORRECTION CLÉ**
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
                     body: JSON.stringify(formData)
                 });
 
                 const resultData = await prepareResponse.json();
-                console.log('Réponse de /prepare-payment (statut: ' + prepareResponse.status + '): ', resultData);
-
                 if (prepareResponse.ok) {
-                    // Redirection basée sur la réponse JSON du serveur
                     window.location.href = resultData.redirect_url;
                 } else {
-                    // Affichage de l'erreur renvoyée par le serveur
-                    alert('Erreur: ' + (resultData.message || 'Erreur inconnue lors de la préparation de la commande.'));
-                    console.error('Erreur de préparation:', resultData);
+                    alert('Erreur: ' + (resultData.message || 'Erreur inconnue.'));
                 }
-
             } else {
-                console.log('Utilisateur non authentifié. Ouverture du modal de connexion.');
-                if (typeof window.openLoginModal === 'function') {
-                    window.openLoginModal();
-                } else {
-                    window.location.href = '/client/login';
-                }
+                if (typeof window.openLoginModal === 'function') { window.openLoginModal(); } else { window.location.href = '/client/login'; }
             }
         } catch (error) {
             console.error('Erreur critique dans handleTotalClick:', error);
-            alert('Une erreur technique est survenue. Veuillez vérifier la console pour plus de détails.');
+            alert('Une erreur technique est survenue.');
         }
+    }
+
+    function addBaggageType() {
+        const container = document.getElementById('additional-baggages-container');
+        const newBaggageBlock = document.createElement('div');
+        newBaggageBlock.classList.add('baggage-block', 'bg-white', 'border', 'border-gray-200', 'rounded-lg', 'p-6', 'mt-4');
+        newBaggageBlock.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-sm font-medium text-gray-700">TYPE DE BAGAGE SUPPLÉMENTAIRE *</label>
+                <button type="button" class="remove-baggage-btn w-6 h-6 border rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-50">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
+                ${initialProducts.map(product => {
+                    const map_data = productMapJs[product.libelle] || { type: product.libelle.toLowerCase().replace(/ /g, '-'), icon: defaultIconJs };
+                    return `
+                        <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="${map_data.type}" data-product-id="${product.id}">
+                            <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">${map_data.icon}</div>
+                            <span class="text-sm font-medium text-center">${product.libelle}</span>
+                        </div>`;
+                }).join('')}
+            </div>
+            <div class="mt-3">
+                <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
+                <div class="flex items-center space-x-2">
+                    <button type="button" class="w-8 h-8 border rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-minus">−</button>
+                    <input type="text" class="input-style w-16 text-center" value="1" readonly />
+                    <button type="button" class="w-8 h-8 border rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-plus">+</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(newBaggageBlock);
     }
 
 </script>
 <script>
-    // Fonction pour gérer le style des champs complétés
-    function handleInputCompletion(event) {
-        const input = event.target;
-        if (input.value.trim() !== '') {
-            input.classList.add('input-completed');
-        } else {
-            input.classList.remove('input-completed');
-        }
-    }
-
-    // Attacher les écouteurs d'événements aux champs concernés
+    // Second script block for completion styles etc.
     document.addEventListener('DOMContentLoaded', () => {
         const fields = [
             document.getElementById('airport-select'),
@@ -726,143 +706,24 @@ document.getElementById('get-quote-btn').addEventListener('click', async functio
         ];
 
         fields.forEach(field => {
-            if (field) { // Vérifier si l'élément existe
+            if (field) {
                 field.addEventListener('change', handleInputCompletion);
-                field.addEventListener('input', handleInputCompletion); // Pour les inputs textuels
-                // Appliquer le style au chargement si le champ est déjà rempli (ex: après un rechargement de page avec des valeurs pré-remplies)
+                field.addEventListener('input', handleInputCompletion);
                 handleInputCompletion({ target: field });
             }
         });
-
-        const addBaggageTypeBtn = document.getElementById('add-baggage-type');
-        const additionalBaggagesContainer = document.getElementById('additional-baggages-container');
-        let baggageBlockCount = 0; // To ensure unique IDs if needed, though not strictly necessary for name[]
-
-        addBaggageTypeBtn.addEventListener('click', function() {
-            baggageBlockCount++;
-            const newBaggageBlock = document.createElement('div');
-            newBaggageBlock.classList.add('baggage-block', 'bg-white', 'border', 'border-gray-200', 'rounded-lg', 'p-6', 'mt-4');
-            newBaggageBlock.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <label class="block text-sm font-medium text-gray-700">
-                        TYPE DE BAGAGE SUPPLÉMENTAIRE *
-                    </label>
-                    <button type="button" class="remove-baggage-btn w-6 h-6 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 gap-4 mt-3">
-                    <select name="baggage_type_additional[]" class="input-style custom-select w-full">
-                        ${initialProducts.map(product => {
-                            const map_data = productMapJs[product.libelle] || { type: product.libelle.toLowerCase().replace(/ /g, '-'), icon: defaultIconJs };
-                            return `<option value="${map_data.type}" data-product-id="${product.id}">${product.libelle}</option>`;
-                        }).join('')}
-                    </select>
-                </div>
-                <div class="mt-3">
-                    <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
-                    <div class="flex items-center space-x-2">
-                        <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-minus">−
-                        </button>
-                        <input type="text" name="baggage_quantity_additional[]" class="input-style w-16 text-center" value="1" readonly />
-                        <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-plus">+
-                        </button>
-                    </div>
-                </div>
-            `;
-            additionalBaggagesContainer.appendChild(newBaggageBlock);
-
-            // Add event listener for the new remove button
-            newBaggageBlock.querySelector('.remove-baggage-btn').addEventListener('click', function() {
-                newBaggageBlock.remove();
-                // Re-calculate total if needed
-                // document.getElementById('get-quote-btn').click(); // Removed automatic call
-            });
-
-            // Add event listeners for plus/minus buttons in the new block
-            newBaggageBlock.querySelector('.btn-plus').addEventListener('click', function(e) {
-                const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
-                let value = parseInt(input.value) || 1;
-                input.value = Math.min(10, value + 1);
-                // document.getElementById('get-quote-btn').click(); // Removed automatic call
-            });
-
-            newBaggageBlock.querySelector('.btn-minus').addEventListener('click', function(e) {
-                const input = e.target.closest('.flex.items-center.space-x-2').querySelector('input');
-                let value = parseInt(input.value) || 1;
-                input.value = Math.max(1, value - 1);
-                // document.getElementById('get-quote-btn').click(); // Removed automatic call
-            });
-
-            // Add event listener for select change
-            newBaggageBlock.querySelector('select[name="baggage_type_additional[]"]').addEventListener('change', function() {
-                // document.getElementById('get-quote-btn').click(); // Removed automatic call
-            });
-
-            // Trigger quote calculation after adding a new baggage type
-            // document.getElementById('get-quote-btn').click(); // Removed automatic call
-        });
     });
 
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const checkAvailabilityBtn = document.getElementById('check-availability-btn');
-        if(checkAvailabilityBtn) {
-            checkAvailabilityBtn.addEventListener('click', async function () {
-                const spinner = document.getElementById('loading-spinner-availability');
-                spinner.style.display = 'inline-block';
-                this.disabled = true;
-
-                const airportId = document.getElementById('airport-select').value;
-                const dateDepot = document.getElementById('date-depot').value;
-                const heureDepot = document.getElementById('heure-depot').value;
-
-                if (!airportId || !dateDepot || !heureDepot) {
-                    alert('Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
-                    spinner.style.display = 'none';
-                    this.disabled = false;
-                    return;
-                }
-
-                try {
-                    const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
-                    const pad = (num) => num.toString().padStart(2, '0');
-                    const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
-
-                    const availabilityResponse = await fetch('/api/check-availability', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            idPlateforme: airportId,
-                            dateToCheck: dateToVerify
-                        })
-                    });
-
-                    const availabilityResult = await availabilityResponse.json();
-
-                    if (availabilityResult.statut === 1 && availabilityResult.content === true) {
-                        document.getElementById('step-1').style.display = 'none';
-                        document.getElementById('baggage-selection-step').style.display = 'block';
-                    } else {
-                        alert(availabilityResult.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
-                    }
-                } catch (error) {
-                    console.error('Erreur lors de la vérification de disponibilité:', error);
-                    alert('Une erreur technique est survenue lors de la vérification de la disponibilité.');
-                } finally {
-                    spinner.style.display = 'none';
-                    this.disabled = false;
-                }
-            });
+    function handleInputCompletion(event) {
+        const input = event.target;
+        if (input.value.trim() !== '') {
+            input.classList.add('input-completed');
+        } else {
+            input.classList.remove('input-completed');
         }
-    });
-</script>   
+    }
+</script>
+   
 
 </body>
 </html>
