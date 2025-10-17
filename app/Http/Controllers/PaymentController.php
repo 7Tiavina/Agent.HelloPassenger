@@ -35,6 +35,8 @@ class PaymentController extends Controller
                 'options' => 'nullable|array',
                 'options.*.id' => 'required|string',
                 'options.*.lieu_id' => 'nullable|string',
+                'options.*.informations_complementaires' => 'nullable|string|max:255',
+                'options.*.commentaire' => 'nullable|string',
             ]);
 
             // --- Server-side definitions for security ---
@@ -92,6 +94,8 @@ class PaymentController extends Controller
                         "quantite" => 1,
                         "libelleProduit" => $optionDetails['libelle'],
                         "idLieu" => $selectedOption['lieu_id'] ?? null,
+                        "informationsComplementaires" => $selectedOption['informations_complementaires'] ?? null,
+                        "commentaire" => $selectedOption['commentaire'] ?? null,
                     ];
                 }
             }

@@ -153,9 +153,20 @@
         box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2) !important; /* Ombre jaune */
         background-color: #fef9e7 !important; /* Fond légèrement jaune, comme les bagages sélectionnés */
     }
+
+    #baggage-tooltip {
+        transition: opacity 0.3s;
+        pointer-events: none; /* Allows mouse events to pass through to elements below */
+        max-width: 200px; /* Set a max-width for better readability */
+        text-align: center;
+    }
     </style>
 </head>
 <body class="min-h-screen bg-white">
+
+<div id="baggage-tooltip" class="hidden absolute z-10 p-2 text-sm font-medium text-white bg-gray-800 rounded-lg shadow-sm" role="tooltip">
+    <!-- Tooltip content will be injected here -->
+</div>
 
 @include('Front.header-front')
 
@@ -372,11 +383,11 @@
 
     // Mappage des libellés aux icônes et types pour JavaScript
     const productMapJs = {
-        'Accessoires': { type: 'accessory', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' },
-        'Bagage cabine': { type: 'cabin', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>' },
-        'Bagage soute': { type: 'hold', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>' },
-        'Bagage spécial': { type: 'special', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' },
-        'Vestiaire': { type: 'cloakroom', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>' }
+        'Accessoires': { type: 'accessory', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Petits objets comme un sac à main, un ordinateur portable ou un casque.' },
+        'Bagage cabine': { type: 'cabin', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>', description: 'Valise de taille cabine, généralement jusqu\'à 55x35x25 cm.' },
+        'Bagage soute': { type: 'hold', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>', description: 'Grande valise enregistrée en soute.' },
+        'Bagage spécial': { type: 'special', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Objets volumineux ou hors format comme un équipement de sport ou un instrument de musique.' },
+        'Vestiaire': { type: 'cloakroom', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>', description: 'Pour les manteaux, vestes ou autres vêtements sur cintre.' }
     };
     const defaultIconJs = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
 
@@ -387,6 +398,19 @@
         document.getElementById('get-quote-btn').addEventListener('click', getQuoteAndLieux);
         document.getElementById('add-baggage-type').addEventListener('click', addBaggageType);
 
+        const dateDepotInput = document.getElementById('date-depot');
+        const dateRecuperationInput = document.getElementById('date-recuperation');
+
+        dateDepotInput.addEventListener('change', function() {
+            if (this.value) {
+                dateRecuperationInput.min = this.value;
+                // If the current retrieval date is now invalid, clear it
+                if (dateRecuperationInput.value < this.value) {
+                    dateRecuperationInput.value = '';
+                }
+            }
+        });
+
         document.addEventListener('click', function(e) {
             if (e.target.closest('.baggage-option')) {
                 const block = e.target.closest('.baggage-block');
@@ -396,6 +420,44 @@
             if (e.target.classList.contains('btn-plus')) { e.target.closest('.flex').querySelector('input').value++; }
             if (e.target.classList.contains('btn-minus') && e.target.closest('.flex').querySelector('input').value > 1) { e.target.closest('.flex').querySelector('input').value--; }
             if (e.target.closest('.remove-baggage-btn')) { e.target.closest('.baggage-block').remove(); }
+        });
+
+        // --- TOOLTIP LOGIC ---
+        const tooltip = document.getElementById('baggage-tooltip');
+        const baggageSelectionStep = document.getElementById('baggage-selection-step');
+
+        baggageSelectionStep.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('.baggage-option');
+            if (!target) return;
+
+            const baggageLibelle = target.querySelector('span').textContent;
+            const productData = productMapJs[baggageLibelle];
+            
+            if (productData && productData.description) {
+                tooltip.textContent = productData.description;
+                tooltip.classList.remove('hidden');
+
+                const rect = target.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+
+                // Position tooltip centered above the target
+                let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                let top = rect.top - tooltipRect.height - 10; // 10px above
+
+                // Adjust if tooltip goes off-screen
+                if (left < 0) left = 5;
+                if (top < 0) top = rect.bottom + 10;
+
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+            }
+        });
+
+        baggageSelectionStep.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('.baggage-option');
+            if (!target) return;
+            
+            tooltip.classList.add('hidden');
         });
     });
 
@@ -516,8 +578,10 @@
                     </label>
                     <p class="text-gray-500 text-sm mt-2">Bénéficiez d’un traitement prioritaire pour vos bagages.</p>
                     <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
-                        <label class="block text-sm font-medium">Lieu</label>
-                        <select class="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-yellow-custom focus:border-yellow-custom"></select>
+                        <label class="block text-sm font-medium">Informations complémentaires</label>
+                        <input type="text" name="option_info_${option.id}" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
+                        <label class="block text-sm font-medium">Commentaire</label>
+                        <textarea name="option_comment_${option.id}" class="input-style w-full" rows="3" placeholder="Ajoutez un commentaire..."></textarea>
                     </div>
                 </div>`;
             optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
@@ -539,7 +603,11 @@
                     <p class="text-gray-500 text-sm mt-2">Accédez à un service complet de gestion de vos bagages de bout en bout.</p>
                     <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
                         <label class="block text-sm font-medium">Lieu de rendez-vous *</label>
-                        <select name="option_lieu_${option.id}" class="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-yellow-custom focus:border-yellow-custom">${lieuxOptions}</select>
+                        <select name="option_lieu_${option.id}" class="input-style custom-select w-full">${lieuxOptions}</select>
+                        <label class="block text-sm font-medium">Informations complémentaires</label>
+                        <input type="text" name="option_info_${option.id}" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
+                        <label class="block text-sm font-medium">Commentaire</label>
+                        <textarea name="option_comment_${option.id}" class="input-style w-full" rows="3" placeholder="Ajoutez un commentaire..."></textarea>
                     </div>
                 </div>`;
             optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
@@ -620,12 +688,22 @@
                 document.querySelectorAll('.option-checkbox:checked').forEach(checkbox => {
                     const optionKey = checkbox.dataset.optionKey;
                     const option = staticOptions[optionKey];
+                    const detailsDiv = document.getElementById(`details-${option.id}`);
+                    
                     let lieuId = null;
                     if (optionKey === 'premium') {
-                        const detailsDiv = document.getElementById(`details-${option.id}`);
-                        lieuId = detailsDiv.querySelector('select').value;
+                        lieuId = detailsDiv.querySelector('select[name^="option_lieu_"]').value;
                     }
-                    options.push({ id: option.id, lieu_id: lieuId });
+
+                    const infoComplementaires = detailsDiv.querySelector('input[name^="option_info_"]').value;
+                    const commentaire = detailsDiv.querySelector('textarea[name^="option_comment_"]').value;
+
+                    options.push({ 
+                        id: option.id, 
+                        lieu_id: lieuId,
+                        informations_complementaires: infoComplementaires,
+                        commentaire: commentaire
+                    });
                 });
 
                 const formData = {
