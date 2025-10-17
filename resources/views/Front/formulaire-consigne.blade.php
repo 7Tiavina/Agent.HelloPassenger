@@ -64,29 +64,6 @@
             box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
         }
 
-        .checkbox-custom {
-            width: 1.25rem;
-            height: 1.25rem;
-            border: 2px solid #9ca3af;
-            border-radius: 0.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .checkbox-custom.checked {
-            background-color: #FFC107;
-            border-color: #FFC107;
-        }
-
-        .checkbox-custom.checked::after {
-            content: "✓";
-            color: white;
-            font-size: 0.875rem;
-        }
-
         .custom-select {
             appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -95,41 +72,6 @@
             background-size: 1.5em 1.5em;
         }
         
-        .add-baggage-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #FFC107;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        
-        .add-baggage-btn:hover {
-            color: #FFB300;
-        }
-        
-        .remove-baggage-btn {
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .remove-baggage-btn:hover {
-            background: #e9ecef;
-        }
-
-        /* Styles pour le panier dynamique */
-        #cart-summary {
-            display: none;
-        }
-
     /* Styles pour le spinner */
     .custom-spinner {
         border: 4px solid rgba(0, 0, 0, 0.1);
@@ -138,7 +80,7 @@
         width: 1.5em;
         height: 1.5em;
         animation: spin 1s linear infinite;
-        display: inline-block; /* Pour qu'il soit visible */
+        display: inline-block; /* Pour qu\'il soit visible */
         vertical-align: middle; /* Alignement vertical */
         margin-left: 0.5em; /* Espacement avec le texte */
     }
@@ -154,11 +96,27 @@
         background-color: #fef9e7 !important; /* Fond légèrement jaune, comme les bagages sélectionnés */
     }
 
+    .delete-item-btn {
+        background: none;
+        border: none;
+        color: #ef4444; /* red-500 */
+        cursor: pointer;
+    }
+    .delete-item-btn:hover {
+        color: #dc2626; /* red-600 */
+    }
+
     #baggage-tooltip {
         transition: opacity 0.3s;
         pointer-events: none; /* Allows mouse events to pass through to elements below */
         max-width: 200px; /* Set a max-width for better readability */
         text-align: center;
+    }
+    .option-header .chevron-icon {
+        transition: transform 0.3s ease;
+    }
+    .option-header.open .chevron-icon {
+        transform: rotate(180deg);
     }
     </style>
 </head>
@@ -232,84 +190,68 @@
             </div>
 
             <div id="baggage-selection-step" class="hidden">
+                <!-- Section for selecting baggage -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <div class="space-y-4">
-                        <div class="baggage-block">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="block text-sm font-medium text-gray-700">
-                                    QUEL EST LE TYPE DE BAGAGE CONSIGNÉ ? *
-                                </label>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
-                                @if(isset($products) && count($products) > 0)
-                                    @php
-                                        $product_map = [
-                                            'Accessoires' => ['type' => 'accessory', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
-                                            'Bagage cabine' => ['type' => 'cabin', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>'],
-                                            'Bagage soute' => ['type' => 'hold', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>'],
-                                            'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
-                                            'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>']
-                                        ];
-                                        $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
-                                    @endphp
-                                    @foreach($products as $product)
-                                        @php
-                                            $libelle = $product['libelle'];
-                                            // Utilise le mappage s'il existe, sinon crée une configuration par défaut
-                                            $map_data = $product_map[$libelle] ?? [
-                                                'type' => Illuminate\Support\Str::slug($libelle),
-                                                'icon' => $default_icon
-                                            ];
-                                        @endphp
-                                        <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}">
-                                            <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                                {!! $map_data['icon'] !!}
-                                            </div>
-                                            <span class="text-sm font-medium text-center">{{ $libelle }}</span>
-                                        </div>
-                                    @endforeach
-                                @else
-                                    <p class="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5 text-center text-gray-500">Aucun type de bagage n'est disponible pour le moment.</p>
-                                @endif
-                            </div>
-
-                            <div class="mt-3">
-                                <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
-                                <div class="flex items-center space-x-2">
-                                    <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-minus">−</button>
-                                    <input type="text" class="input-style w-16 text-center" value="1" readonly />
-                                    <button type="button" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover btn-plus">+</button>
+                    <label class="block text-sm font-medium text-gray-700">
+                        1. Choisissez un type de bagage
+                    </label>
+                    <div id="baggage-types-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
+                        @if(isset($products) && count($products) > 0)
+                            @php
+                                $product_map = [
+                                    'Accessoires' => ['type' => 'accessory', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
+                                    'Bagage cabine' => ['type' => 'cabin', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>'],
+                                    'Bagage soute' => ['type' => 'hold', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>'],
+                                    'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
+                                    'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>']
+                                ];
+                                $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
+                            @endphp
+                            @foreach($products as $product)
+                                @php
+                                    $libelle = $product['libelle'];
+                                    $map_data = $product_map[$libelle] ?? ['type' => Illuminate\Support\Str::slug($libelle), 'icon' => $default_icon];
+                                @endphp
+                                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}" data-libelle="{{ $product['libelle'] }}">
+                                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                        {!! $map_data['icon'] !!}
+                                    </div>
+                                    <span class="text-sm font-medium text-center">{{ $libelle }}</span>
                                 </div>
+                            @endforeach
+                        @else
+                            <p class="col-span-full text-center text-gray-500">Aucun type de bagage disponible pour le moment.</p>
+                        @endif
+                    </div>
+
+                    <div class="mt-6 flex items-center gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">2. Choisissez une quantité</label>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" id="quantity-minus" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover">−</button>
+                                <input type="text" id="quantity-input" class="input-style w-16 text-center" value="1" readonly />
+                                <button type="button" id="quantity-plus" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover">+</button>
                             </div>
                         </div>
-
-                        <div id="additional-baggages-container" class="space-y-6 mt-6"></div>
-
-                        <div class="mt-4">
-                            <div class="add-baggage-btn" id="add-baggage-type">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
-                                <span>AJOUTER UN TYPE DE BAGAGE SUPPLÉMENTAIRE</span>
-                            </div>
+                        <div class="self-end">
+                            <button id="add-to-cart-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-6 rounded-full btn-hover">
+                                Ajouter au panier
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-8 text-center">
-                    <button id="get-quote-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">
-                        INTERROGER LES TARIFS
-                        <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-tarifs" style="display: none;"></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Étape 3: Options additionnelles (initialement masquée) -->
-            <div id="options-step" class="hidden mt-6">
-                <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Souhaitez-vous bénéficier de services additionnels ?</h3>
-                    <div id="options-container" class="space-y-4">
-                        <!-- Les options (Priority, Premium) seront injectées ici par JavaScript -->
+                <!-- Section for additional options -->
+                <div id="options-step" class="mt-6">
+                    <div class="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">3. Souhaitez-vous bénéficier de services additionnels ?</h3>
+                        <div id="options-container" class="space-y-4">
+                            <!-- Options will be injected here -->
+                            <div class="text-center text-gray-500">
+                                <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-options"></span>
+                                Chargement des options...
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -334,8 +276,7 @@
         <div class="w-full lg:w-full relative" id="sticky-wrapper">
             <div id="sticky-summary" class="space-y-6">
                 <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center">
-                    <p class="text-sm text-gray-600 mb-2">Notre tarif :</p>
-                    <p class="text-xs text-gray-500 mb-4">Pour la durée sélectionnée (TVA incluse)</p>
+                    <p class="text-lg font-bold text-gray-800 mb-2">Tarif TOTAL</p>
                     <div id="summary-price" class="text-4xl font-bold text-gray-800">0 €</div>
                 </div>
                 <div id="empty-cart" class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm text-center">
@@ -350,13 +291,16 @@
                         <p class="text-2xl font-bold text-black total-panier">0€</p>
                     </div>
                 </div>
-                <div id="cart-summary" class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm">
-                    <h3 class="font-bold text-lg text-black mb-4">Votre panier</h3>
-                    <div class="panier-content">
-                        </div>
-                    <div class="bg-yellow-custom rounded p-3 mt-4 flex justify-between items-center summary-total-container">
-                        <p class="text-lg font-bold text-gray-dark">Total:</p>
-                        <p class="text-2xl font-bold text-gray-dark total-panier">0€</p>
+                <div id="cart-summary" class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm" style="display: none;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-black">Votre panier</h3>
+                        <div class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-cart" style="display: none;"></div>
+                    </div>
+                    <div id="cart-items-container" class="panier-content divide-y divide-gray-200">
+                        <!-- Cart items will be injected here -->
+                    </div>
+                    <div class="bg-yellow-custom rounded p-3 mt-4 flex justify-center items-center summary-total-container">
+                        <span class="text-lg font-bold text-gray-dark">Procéder au paiement</span>
                     </div>
                 </div>
             </div>
@@ -374,14 +318,13 @@
     let globalProductsData = [];
     let globalLieuxData = [];
     const initialProducts = @json($products);
+    let cartItems = []; // Unified state management for the cart
 
-    // Options sont maintenant statiques, comme demandé.
     const staticOptions = {
         priority: { id: 'opt_priority', libelle: 'Service Priority', prixUnitaire: 15 },
         premium: { id: 'opt_premium', libelle: 'Service Premium', prixUnitaire: 25 }
     };
 
-    // Mappage des libellés aux icônes et types pour JavaScript
     const productMapJs = {
         'Accessoires': { type: 'accessory', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Petits objets comme un sac à main, un ordinateur portable ou un casque.' },
         'Bagage cabine': { type: 'cabin', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>', description: 'Valise de taille cabine, généralement jusqu\'à 55x35x25 cm.' },
@@ -395,8 +338,42 @@
         // --- EVENT LISTENERS ---
         document.getElementById('airport-select').addEventListener('change', function() { airportId = this.value; });
         document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
-        document.getElementById('get-quote-btn').addEventListener('click', getQuoteAndLieux);
-        document.getElementById('add-baggage-type').addEventListener('click', addBaggageType);
+        
+        document.getElementById('add-to-cart-btn').addEventListener('click', handleBaggageAddToCart);
+        document.getElementById('quantity-plus').addEventListener('click', () => updateQuantity(1));
+        document.getElementById('quantity-minus').addEventListener('click', () => updateQuantity(-1));
+
+        document.getElementById('baggage-types-grid').addEventListener('click', (e) => {
+            const target = e.target.closest('.baggage-option');
+            if (target) {
+                document.querySelectorAll('#baggage-types-grid .baggage-option').forEach(el => el.classList.remove('selected'));
+                target.classList.add('selected');
+            }
+        });
+
+        document.getElementById('cart-items-container').addEventListener('click', (e) => {
+            const target = e.target.closest('.delete-item-btn');
+            if (target) {
+                const index = parseInt(target.dataset.index, 10);
+                cartItems.splice(index, 1);
+                updateCartDisplay();
+            }
+        });
+
+        document.getElementById('options-container').addEventListener('click', (e) => {
+            const header = e.target.closest('.option-header');
+            const addButton = e.target.closest('.add-option-btn');
+
+            if (header) {
+                header.classList.toggle('open');
+                const details = header.nextElementSibling;
+                details.classList.toggle('hidden');
+            }
+
+            if(addButton && !addButton.disabled) {
+                handleOptionAddToCart(addButton.dataset.optionKey);
+            }
+        });
 
         const dateDepotInput = document.getElementById('date-depot');
         const dateRecuperationInput = document.getElementById('date-recuperation');
@@ -404,22 +381,10 @@
         dateDepotInput.addEventListener('change', function() {
             if (this.value) {
                 dateRecuperationInput.min = this.value;
-                // If the current retrieval date is now invalid, clear it
                 if (dateRecuperationInput.value < this.value) {
                     dateRecuperationInput.value = '';
                 }
             }
-        });
-
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.baggage-option')) {
-                const block = e.target.closest('.baggage-block');
-                block.querySelectorAll('.baggage-option').forEach(el => el.classList.remove('selected'));
-                e.target.closest('.baggage-option').classList.add('selected');
-            }
-            if (e.target.classList.contains('btn-plus')) { e.target.closest('.flex').querySelector('input').value++; }
-            if (e.target.classList.contains('btn-minus') && e.target.closest('.flex').querySelector('input').value > 1) { e.target.closest('.flex').querySelector('input').value--; }
-            if (e.target.closest('.remove-baggage-btn')) { e.target.closest('.baggage-block').remove(); }
         });
 
         // --- TOOLTIP LOGIC ---
@@ -430,7 +395,7 @@
             const target = e.target.closest('.baggage-option');
             if (!target) return;
 
-            const baggageLibelle = target.querySelector('span').textContent;
+            const baggageLibelle = target.dataset.libelle;
             const productData = productMapJs[baggageLibelle];
             
             if (productData && productData.description) {
@@ -440,11 +405,9 @@
                 const rect = target.getBoundingClientRect();
                 const tooltipRect = tooltip.getBoundingClientRect();
 
-                // Position tooltip centered above the target
-                let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-                let top = rect.top - tooltipRect.height - 10; // 10px above
+                let left = rect.left + window.scrollX + (rect.width / 2) - (tooltipRect.width / 2);
+                let top = rect.top + window.scrollY - tooltipRect.height - 10;
 
-                // Adjust if tooltip goes off-screen
                 if (left < 0) left = 5;
                 if (top < 0) top = rect.bottom + 10;
 
@@ -455,9 +418,9 @@
 
         baggageSelectionStep.addEventListener('mouseout', (e) => {
             const target = e.target.closest('.baggage-option');
-            if (!target) return;
-            
-            tooltip.classList.add('hidden');
+            if (target) {
+                tooltip.classList.add('hidden');
+            }
         });
     });
 
@@ -492,6 +455,7 @@
             if (result.statut === 1 && result.content === true) {
                 document.getElementById('step-1').style.display = 'none';
                 document.getElementById('baggage-selection-step').style.display = 'block';
+                getQuoteAndDisplay();
             } else {
                 alert(result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
             }
@@ -504,11 +468,65 @@
         }
     }
 
-    async function getQuoteAndLieux() {
-        const spinner = document.getElementById('loading-spinner-tarifs');
-        const btn = this;
-        spinner.style.display = 'inline-block';
-        btn.disabled = true;
+    function updateQuantity(amount) {
+        const input = document.getElementById('quantity-input');
+        let currentValue = parseInt(input.value, 10);
+        currentValue += amount;
+        if (currentValue < 1) currentValue = 1;
+        input.value = currentValue;
+    }
+
+    function handleBaggageAddToCart() {
+        const selectedBaggageEl = document.querySelector('#baggage-types-grid .baggage-option.selected');
+        if (!selectedBaggageEl) {
+            alert('Veuillez sélectionner un type de bagage.');
+            return;
+        }
+
+        const productId = selectedBaggageEl.dataset.productId;
+        const libelle = selectedBaggageEl.dataset.libelle;
+        const type = selectedBaggageEl.dataset.type;
+        const quantity = parseInt(document.getElementById('quantity-input').value, 10);
+
+        const existingItem = cartItems.find(item => item.itemCategory === 'baggage' && item.productId === productId);
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            cartItems.push({ itemCategory: 'baggage', productId, libelle, type, quantity });
+        }
+        updateCartDisplay();
+    }
+    
+    function handleOptionAddToCart(optionKey) {
+        const option = staticOptions[optionKey];
+        const detailsDiv = document.getElementById(`details-${option.id}`);
+        
+        const infoComplementaires = detailsDiv.querySelector('input[name^="option_info_"]').value;
+        const commentaire = detailsDiv.querySelector('textarea[name^="option_comment_"]').value;
+        let lieuId = null;
+        if (optionKey === 'premium') {
+            const select = detailsDiv.querySelector('select[name^="option_lieu_"]');
+            if(select) lieuId = select.value;
+        }
+
+        cartItems.push({
+            itemCategory: 'option', 
+            id: option.id, 
+            key: optionKey,
+            libelle: option.libelle,
+            prix: option.prixUnitaire,
+            lieu_id: lieuId,
+            informations_complementaires: infoComplementaires,
+            commentaire: commentaire
+        });
+        updateCartDisplay();
+    }
+
+    async function getQuoteAndDisplay() {
+        const cartSpinner = document.getElementById('loading-spinner-cart');
+        const optionsSpinner = document.getElementById('loading-spinner-options');
+        if(cartSpinner) cartSpinner.style.display = 'inline-block';
+        if(optionsSpinner) optionsSpinner.style.display = 'inline-block';
 
         const dateDepot = document.getElementById('date-depot').value;
         const heureDepot = document.getElementById('heure-depot').value;
@@ -516,9 +534,9 @@
         const heureRecuperation = document.getElementById('heure-recuperation').value;
 
         if (!dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
-            alert('Veuillez remplir les dates et heures de dépôt et de récupération.');
-            spinner.style.display = 'none';
-            btn.disabled = false;
+            alert('Veuillez vérifier les dates et heures de dépôt et de récupération.');
+            if(cartSpinner) cartSpinner.style.display = 'none';
+            if(optionsSpinner) optionsSpinner.style.display = 'none';
             return;
         }
 
@@ -528,8 +546,8 @@
 
         if (dureeEnMinutes <= 0) {
             alert('La date de récupération doit être postérieure à la date de dépôt.');
-            spinner.style.display = 'none';
-            btn.disabled = false;
+            if(cartSpinner) cartSpinner.style.display = 'none';
+            if(optionsSpinner) optionsSpinner.style.display = 'none';
             return;
         }
 
@@ -546,7 +564,7 @@
                 globalLieuxData = result.content.lieux || [];
                 
                 displayOptions(dureeEnMinutes);
-                recalculateCart();
+                updateCartDisplay();
             } else {
                 alert('Erreur lors de la récupération des tarifs : ' + (result.message || 'Réponse invalide'));
             }
@@ -554,8 +572,8 @@
             console.error('Erreur lors de la récupération des tarifs et lieux:', error);
             alert('Une erreur technique est survenue.');
         } finally {
-            spinner.style.display = 'none';
-            btn.disabled = false;
+            if(cartSpinner) cartSpinner.style.display = 'none';
+            if(optionsSpinner) optionsSpinner.parentElement.style.display = 'none';
         }
     }
 
@@ -564,147 +582,137 @@
         optionsContainer.innerHTML = '';
         const dureeEnHeures = dureeEnMinutes / 60;
 
-        // Priority Option
-        if (dureeEnHeures < 72) {
-            const option = staticOptions.priority;
-            const optionHtml = `
-                <div class="border rounded-2xl p-5 hover:shadow-md transition bg-white">
-                    <label class="flex items-center justify-between cursor-pointer">
+        const createOptionHTML = (optionKey, isEnabled, lieuxHTML = '') => {
+            const option = staticOptions[optionKey];
+            const isAlreadyInCart = cartItems.some(item => item.itemCategory === 'option' && item.key === optionKey);
+            return `
+                <div class="border rounded-2xl p-5 bg-white ${!isEnabled ? 'opacity-50' : ''}">
+                    <div class="option-header flex items-center justify-between cursor-pointer">
                         <div>
-                            <input type="checkbox" id="${option.id}" data-option-key="priority" class="option-checkbox mr-3 h-5 w-5 text-yellow-custom border-gray-300 focus:ring-yellow-custom">
                             <span class="text-lg font-medium">${option.libelle}</span>
+                            <p class="text-gray-500 text-sm mt-1">${optionKey === 'priority' ? 'Bénéficiez d’un traitement prioritaire pour vos bagages.' : 'Accédez à un service complet de gestion de vos bagages de bout en bout.'}</p>
                         </div>
-                        <span class="text-yellow-custom font-semibold">+${option.prixUnitaire} €</span>
-                    </label>
-                    <p class="text-gray-500 text-sm mt-2">Bénéficiez d’un traitement prioritaire pour vos bagages.</p>
+                        <div class="flex items-center">
+                            <span class="text-yellow-custom font-semibold text-lg mr-4">+${option.prixUnitaire} €</span>
+                            <svg class="chevron-icon w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                    </div>
                     <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
+                        ${lieuxHTML}
                         <label class="block text-sm font-medium">Informations complémentaires</label>
                         <input type="text" name="option_info_${option.id}" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
                         <label class="block text-sm font-medium">Commentaire</label>
                         <textarea name="option_comment_${option.id}" class="input-style w-full" rows="3" placeholder="Ajoutez un commentaire..."></textarea>
+                        <button type="button" data-option-key="${optionKey}" class="add-option-btn bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover w-full mt-3" ${!isEnabled || isAlreadyInCart ? 'disabled' : ''}>
+                            ${isAlreadyInCart ? 'Ajouté au panier' : 'Ajouter au panier'}
+                        </button>
                     </div>
                 </div>`;
-            optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
-        }
+        };
 
-        // Premium Option
-        if (globalLieuxData.length > 0) {
-            const option = staticOptions.premium;
-            const lieuxOptions = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
-            const optionHtml = `
-                <div class="border rounded-2xl p-5 hover:shadow-md transition bg-white">
-                    <label class="flex items-center justify-between cursor-pointer">
-                        <div>
-                            <input type="checkbox" id="${option.id}" data-option-key="premium" class="option-checkbox mr-3 h-5 w-5 text-yellow-custom border-gray-300 focus:ring-yellow-custom">
-                            <span class="text-lg font-medium">${option.libelle}</span>
-                        </div>
-                        <span class="text-yellow-custom font-semibold">+${option.prixUnitaire} €</span>
-                    </label>
-                    <p class="text-gray-500 text-sm mt-2">Accédez à un service complet de gestion de vos bagages de bout en bout.</p>
-                    <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
-                        <label class="block text-sm font-medium">Lieu de rendez-vous *</label>
-                        <select name="option_lieu_${option.id}" class="input-style custom-select w-full">${lieuxOptions}</select>
-                        <label class="block text-sm font-medium">Informations complémentaires</label>
-                        <input type="text" name="option_info_${option.id}" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
-                        <label class="block text-sm font-medium">Commentaire</label>
-                        <textarea name="option_comment_${option.id}" class="input-style w-full" rows="3" placeholder="Ajoutez un commentaire..."></textarea>
-                    </div>
-                </div>`;
-            optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
-        }
+        const isPriorityEnabled = dureeEnHeures < 72;
+        optionsContainer.innerHTML += createOptionHTML('priority', isPriorityEnabled);
 
-        if (optionsContainer.innerHTML !== '') {
-            document.getElementById('options-step').style.display = 'block';
-            optionsContainer.querySelectorAll('.option-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => {
-                    document.getElementById(`details-${e.target.id}`).classList.toggle('hidden', !e.target.checked);
-                    recalculateCart();
-                });
-            });
-        }
+        const isPremiumEnabled = globalLieuxData.length > 0;
+        const lieuxOptionsHTML = isPremiumEnabled ? globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('') : '';
+        const premiumLieuxHTML = `<label class="block text-sm font-medium">Lieu de rendez-vous *</label><select name="option_lieu_opt_premium" class="input-style custom-select w-full">${lieuxOptionsHTML}</select>`;
+        optionsContainer.innerHTML += createOptionHTML('premium', isPremiumEnabled, premiumLieuxHTML);
     }
 
-    function recalculateCart() {
-        let total = 0;
-        let cartContent = '';
-
-        document.querySelectorAll('.baggage-block').forEach(block => {
-            const selectedBaggage = block.querySelector('.baggage-option.selected');
-            if (selectedBaggage) {
-                const quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
-                const productId = selectedBaggage.dataset.productId;
-                const product = globalProductsData.find(p => p.id == productId);
-                if (product && quantity > 0) {
-                    const itemTotal = product.prixUnitaire * quantity;
-                    total += itemTotal;
-                    cartContent += `<div class="flex justify-between items-center mb-2"><span>${quantity} x ${product.libelle}</span><span>${itemTotal.toFixed(2)} €</span></div>`;
-                }
-            }
-        });
-
-        document.querySelectorAll('.option-checkbox:checked').forEach(checkbox => {
-            const optionKey = checkbox.dataset.optionKey;
-            const option = staticOptions[optionKey];
-            if (option) {
-                total += option.prixUnitaire;
-                cartContent += `<div class="flex justify-between items-center mb-2 text-sm text-gray-600"><span>+ ${option.libelle}</span><span>${option.prixUnitaire.toFixed(2)} €</span></div>`;
-            }
-        });
-
+    function updateCartDisplay() {
+        const cartItemsContainer = document.getElementById('cart-items-container');
         const cartElement = document.getElementById('cart-summary');
         const emptyCartElement = document.getElementById('empty-cart');
+        cartItemsContainer.innerHTML = '';
+        let total = 0;
+
+        cartItems.forEach((item, index) => {
+            let itemTotal = 0;
+            if (item.itemCategory === 'baggage') {
+                const product = globalProductsData.find(p => p.id === item.productId);
+                const itemPrice = product ? product.prixUnitaire : 0;
+                itemTotal = itemPrice * item.quantity;
+                cartItemsContainer.innerHTML += `
+                    <div class="py-2 flex justify-between items-center">
+                        <div>
+                            <span class="font-medium">${item.quantity} x ${item.libelle}</span>
+                            <span class="block text-xs text-gray-500">${itemPrice.toFixed(2)} € / unité</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-semibold">${itemTotal.toFixed(2)} €</span>
+                            <button type="button" class="delete-item-btn" data-index="${index}" title="Supprimer">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                            </button>
+                        </div>
+                    </div>`;
+            } else if (item.itemCategory === 'option') {
+                itemTotal = item.prix;
+                cartItemsContainer.innerHTML += `
+                    <div class="py-2 flex justify-between items-center text-sm">
+                        <div>
+                            <span class="font-medium">+ ${item.libelle}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-semibold">${itemTotal.toFixed(2)} €</span>
+                            <button type="button" class="delete-item-btn" data-index="${index}" title="Supprimer">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                            </button>
+                        </div>
+                    </div>`;
+            }
+            total += itemTotal;
+        });
+
+        // Update UI
         const summaryPriceElement = document.getElementById('summary-price');
-        
-        if (total > 0) {
+        const totalPanierElements = document.querySelectorAll('.total-panier');
+
+        if (cartItems.length > 0) {
             cartElement.style.display = 'block';
             emptyCartElement.style.display = 'none';
-            document.querySelector('#cart-summary .panier-content').innerHTML = cartContent;
-            document.querySelector('#cart-summary .total-panier').textContent = `${total.toFixed(2)}€`;
-            summaryPriceElement.textContent = `${total.toFixed(2)} €`;
-            document.querySelector('.summary-total-container').onclick = handleTotalClick;
         } else {
             cartElement.style.display = 'none';
             emptyCartElement.style.display = 'block';
-            summaryPriceElement.textContent = `0 €`;
         }
+        
+        summaryPriceElement.textContent = `${total.toFixed(2)} €`;
+        totalPanierElements.forEach(el => el.textContent = `${total.toFixed(2)}€`);
+        
+        const payButton = document.querySelector('.summary-total-container');
+        if (total > 0) {
+            payButton.style.cursor = 'pointer';
+            payButton.onclick = handleTotalClick;
+        } else {
+            payButton.style.cursor = 'default';
+            payButton.onclick = null;
+        }
+        
+        // Disable option buttons if already in cart
+        document.querySelectorAll('.add-option-btn').forEach(btn => {
+            const isAlreadyInCart = cartItems.some(item => item.itemCategory === 'option' && item.key === btn.dataset.optionKey);
+            btn.disabled = isAlreadyInCart;
+            if(isAlreadyInCart) btn.textContent = 'Ajouté au panier';
+        });
     }
     
     async function handleTotalClick() {
+        if (cartItems.length === 0) {
+            alert("Votre panier est vide.");
+            return;
+        }
+
         try {
             const authResponse = await fetch('/check-auth-status');
             const authData = await authResponse.json();
 
             if (authData.authenticated) {
-                const baggages = [];
-                document.querySelectorAll('.baggage-block').forEach(block => {
-                    const selectedBaggage = block.querySelector('.baggage-option.selected');
-                    if (selectedBaggage) {
-                        const quantity = parseInt(block.querySelector('input[type="text"]').value) || 0;
-                        if (quantity > 0) { baggages.push({ type: selectedBaggage.dataset.type, quantity: quantity }); }
-                    }
-                });
-
-                const options = [];
-                document.querySelectorAll('.option-checkbox:checked').forEach(checkbox => {
-                    const optionKey = checkbox.dataset.optionKey;
-                    const option = staticOptions[optionKey];
-                    const detailsDiv = document.getElementById(`details-${option.id}`);
-                    
-                    let lieuId = null;
-                    if (optionKey === 'premium') {
-                        lieuId = detailsDiv.querySelector('select[name^="option_lieu_"]').value;
-                    }
-
-                    const infoComplementaires = detailsDiv.querySelector('input[name^="option_info_"]').value;
-                    const commentaire = detailsDiv.querySelector('textarea[name^="option_comment_"]').value;
-
-                    options.push({ 
-                        id: option.id, 
-                        lieu_id: lieuId,
-                        informations_complementaires: infoComplementaires,
-                        commentaire: commentaire
-                    });
-                });
+                const baggages = cartItems.filter(i => i.itemCategory === 'baggage').map(item => ({ type: item.type, quantity: item.quantity }));
+                const options = cartItems.filter(i => i.itemCategory === 'option').map(item => ({
+                    id: item.id,
+                    lieu_id: item.lieu_id,
+                    informations_complementaires: item.informations_complementaires,
+                    commentaire: item.commentaire
+                }));
 
                 const formData = {
                     airportId: airportId,
@@ -730,45 +738,12 @@
                     alert('Erreur: ' + (resultData.message || 'Erreur inconnue.'));
                 }
             } else {
-                if (typeof window.openLoginModal === 'function') { window.openLoginModal(); } else { window.location.href = '/client/login'; }
+                if (typeof window.openLoginModal === 'function') { window.openLoginModal(); } else { window.location.href = '/client/login'; } 
             }
         } catch (error) {
             console.error('Erreur critique dans handleTotalClick:', error);
             alert('Une erreur technique est survenue.');
         }
-    }
-
-    function addBaggageType() {
-        const container = document.getElementById('additional-baggages-container');
-        const newBaggageBlock = document.createElement('div');
-        newBaggageBlock.classList.add('baggage-block', 'bg-white', 'border', 'border-gray-200', 'rounded-lg', 'p-6', 'mt-4');
-        newBaggageBlock.innerHTML = `
-            <div class="flex justify-between items-center mb-2">
-                <label class="block text-sm font-medium text-gray-700">TYPE DE BAGAGE SUPPLÉMENTAIRE *</label>
-                <button type="button" class="remove-baggage-btn w-6 h-6 border rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-50">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
-                ${initialProducts.map(product => {
-                    const map_data = productMapJs[product.libelle] || { type: product.libelle.toLowerCase().replace(/ /g, '-'), icon: defaultIconJs };
-                    return `
-                        <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="${map_data.type}" data-product-id="${product.id}">
-                            <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">${map_data.icon}</div>
-                            <span class="text-sm font-medium text-center">${product.libelle}</span>
-                        </div>`;
-                }).join('')}
-            </div>
-            <div class="mt-3">
-                <label class="block text-sm text-gray-600 mb-2">COMBIEN ? *</label>
-                <div class="flex items-center space-x-2">
-                    <button type="button" class="w-8 h-8 border rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-minus">−</button>
-                    <input type="text" class="input-style w-16 text-center" value="1" readonly />
-                    <button type="button" class="w-8 h-8 border rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-plus">+</button>
-                </div>
-            </div>
-        `;
-        container.appendChild(newBaggageBlock);
     }
 
 </script>
