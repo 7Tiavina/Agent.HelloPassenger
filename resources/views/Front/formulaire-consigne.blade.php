@@ -335,8 +335,13 @@
     const defaultIconJs = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
 
     document.addEventListener('DOMContentLoaded', function() {
+        loadStateFromSession(); // Load state on page load
+
         // --- EVENT LISTENERS ---
-        document.getElementById('airport-select').addEventListener('change', function() { airportId = this.value; });
+        document.getElementById('airport-select').addEventListener('change', function() { 
+            airportId = this.value; 
+            saveStateToSession();
+        });
         document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
         
         document.getElementById('add-to-cart-btn').addEventListener('click', handleBaggageAddToCart);
@@ -348,6 +353,7 @@
             if (target) {
                 document.querySelectorAll('#baggage-types-grid .baggage-option').forEach(el => el.classList.remove('selected'));
                 target.classList.add('selected');
+                saveStateToSession();
             }
         });
 
@@ -356,7 +362,7 @@
             if (target) {
                 const index = parseInt(target.dataset.index, 10);
                 cartItems.splice(index, 1);
-                updateCartDisplay();
+                updateCartDisplay(); // This will also save the state
             }
         });
 
@@ -377,12 +383,27 @@
 
         const dateDepotInput = document.getElementById('date-depot');
         const dateRecuperationInput = document.getElementById('date-recuperation');
+        const heureDepotInput = document.getElementById('heure-depot');
+        const heureRecuperationInput = document.getElementById('heure-recuperation');
+
+        // Set min date for date-depot to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
+        dateDepotInput.min = todayFormatted;
+
+        [dateDepotInput, dateRecuperationInput, heureDepotInput, heureRecuperationInput].forEach(input => {
+            input.addEventListener('change', saveStateToSession);
+        });
 
         dateDepotInput.addEventListener('change', function() {
             if (this.value) {
                 dateRecuperationInput.min = this.value;
                 if (dateRecuperationInput.value < this.value) {
                     dateRecuperationInput.value = '';
+                    saveStateToSession();
                 }
             }
         });
@@ -423,6 +444,67 @@
             }
         });
     });
+
+    function saveStateToSession() {
+        const selectedBaggageEl = document.querySelector('#baggage-types-grid .baggage-option.selected');
+        const state = {
+            airportId: document.getElementById('airport-select').value,
+            dateDepot: document.getElementById('date-depot').value,
+            heureDepot: document.getElementById('heure-depot').value,
+            dateRecuperation: document.getElementById('date-recuperation').value,
+            heureRecuperation: document.getElementById('heure-recuperation').value,
+            isBaggageStepVisible: document.getElementById('baggage-selection-step').style.display === 'block',
+            selectedBaggageProductId: selectedBaggageEl ? selectedBaggageEl.dataset.productId : null,
+            quantity: document.getElementById('quantity-input').value,
+            cartItems: cartItems,
+            globalProductsData: globalProductsData,
+            globalLieuxData: globalLieuxData
+        };
+        sessionStorage.setItem('formState', JSON.stringify(state));
+    }
+
+    function loadStateFromSession() {
+        const state = JSON.parse(sessionStorage.getItem('formState'));
+        if (!state) return;
+
+        document.getElementById('airport-select').value = state.airportId;
+        airportId = state.airportId;
+        document.getElementById('date-depot').value = state.dateDepot;
+        document.getElementById('heure-depot').value = state.heureDepot;
+        document.getElementById('date-recuperation').value = state.dateRecuperation;
+        document.getElementById('heure-recuperation').value = state.heureRecuperation;
+        document.getElementById('quantity-input').value = state.quantity || '1';
+        
+        globalProductsData = state.globalProductsData || [];
+        globalLieuxData = state.globalLieuxData || [];
+        cartItems = state.cartItems || [];
+
+        if (state.isBaggageStepVisible) {
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('baggage-selection-step').style.display = 'block';
+            
+            if (state.selectedBaggageProductId) {
+                const baggageEl = document.querySelector(`.baggage-option[data-product-id="${state.selectedBaggageProductId}"]`);
+                if (baggageEl) {
+                    baggageEl.classList.add('selected');
+                }
+            }
+            
+            const dateDepot = document.getElementById('date-depot').value;
+            const heureDepot = document.getElementById('heure-depot').value;
+            const dateRecuperation = document.getElementById('date-recuperation').value;
+            const heureRecuperation = document.getElementById('heure-recuperation').value;
+            const debut = new Date(`${dateDepot}T${heureDepot}:00`);
+            const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
+            const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
+
+            if (dureeEnMinutes > 0) {
+                displayOptions(dureeEnMinutes);
+            }
+        }
+        
+        updateCartDisplay();
+    }
 
     async function checkAvailability() {
         const spinner = document.getElementById('loading-spinner-availability');
@@ -693,6 +775,8 @@
             btn.disabled = isAlreadyInCart;
             if(isAlreadyInCart) btn.textContent = 'Ajouté au panier';
         });
+
+        saveStateToSession(); // Save state after any cart update
     }
     
     async function handleTotalClick() {
