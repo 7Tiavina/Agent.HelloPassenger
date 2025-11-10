@@ -285,9 +285,6 @@ class PaymentController extends Controller
 
     public function paymentSuccess(Request $request)
     {
-        // Handle the successful payment return from Monetico
-        // You can add logic here to verify the payment status if needed
-
         $commandeData = Session::get('commande_en_cours');
         if (!$commandeData) {
             return redirect()->route('form-consigne')->with('error', 'Aucune commande en cours. Veuillez recommencer.');
@@ -299,22 +296,40 @@ class PaymentController extends Controller
         $totalPrixTTC = $commandeData['total_prix_ttc'];
 
         try {
-            // Call the external API to finalize the order
             $token = $this->getBdmToken();
+
+            $lignesProduits = [];
+            $lignesOptions = [];
+            foreach ($commandeLignes as $ligne) {
+                if ($this->isUuid($ligne['idProduit'])) {
+                    $lignesProduits[] = $ligne;
+                } else {
+                    $lignesOptions[] = $ligne;
+                }
+            }
+
+            // Préparation du payload pour l'API BDM
+            $payload = [
+                'CommandeLignes' => $lignesProduits,
+                'CommandeOptions' => $lignesOptions,
+                'Client' => $clientData,
+                'CommandeInfos' => [
+                    'idPlateforme' => $idPlateforme,
+                    'totalPrixTTC' => $totalPrixTTC,
+                    // Vous pouvez ajouter d'autres informations générales de la commande ici si nécessaire
+                ]
+            ];
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Accept' => 'application/json',
-            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", [
-                'CommandeLignes' => $commandeLignes,
-                'Client' => $clientData,
-            ]);
+            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", $payload);
 
             Log::info('API Commande response: ' . $response->body());
 
             $apiResult = $response->json();
 
-            if ($response->successful() && $apiResult['statut'] === 1) {
+            if ($response->successful() && isset($apiResult['statut']) && $apiResult['statut'] === 1) {
                 $client = Auth::guard('client')->user();
                 $commande = Commande::create([
                     'client_id' => $client->id,
@@ -337,16 +352,15 @@ class PaymentController extends Controller
                     'invoice_content' => $apiResult['content'] ?? null,
                 ]);
 
-                // Enregistrer les détails du paiement
                 PaymentClient::create([
                     'client_id' => $client->id,
                     'commande_id' => $commande->id,
                     'monetico_order_id' => $request->input('orderId', Session::get('monetico_order_id')),
-                    'monetico_transaction_id' => $request->input('transactionId'), // Assurez-vous que Monetico renvoie ce champ
+                    'monetico_transaction_id' => $request->input('transactionId'),
                     'amount' => $commande->total_prix_ttc * 100,
                     'currency' => 'EUR',
                     'status' => 'paid',
-                    'payment_method' => $request->input('brand'), // ex: VISA, MASTERCARD
+                    'payment_method' => $request->input('brand'),
                     'raw_response' => json_encode($request->all()),
                 ]);
 
@@ -358,12 +372,12 @@ class PaymentController extends Controller
                 return redirect()->route('payment.success.show');
             } else {
                 Log::error('API Commande failed. Status: ' . $response->status() . ' Body: ' . $response->body());
-                $errorMessage = $apiResult['message'] ?? 'Erreur inconnue lors de la commande via l%c3%a0API externe.';
-                return redirect()->route('payment')->with('error', $errorMessage);
+                $errorMessage = $apiResult['message'] ?? 'Erreur inconnue lors de la communication avec le service de réservation.';
+                return redirect()->route('form-consigne')->with('error', 'Votre paiement a été accepté, mais une erreur est survenue lors de la finalisation de votre réservation. Veuillez contacter le support. Détails : ' . $errorMessage);
             }
         } catch (\Exception $e) {
             Log::error('Technical error during payment processing: ' . $e->getMessage(), ['exception' => $e]);
-            return redirect()->route('payment')->with('error', 'Une erreur technique est survenue. Veuillez r%c3%a9essayer.');
+            return redirect()->route('form-consigne')->with('error', 'Une erreur technique est survenue après le paiement. Veuillez contacter le support.');
         }
     }
 
@@ -414,5 +428,19 @@ class PaymentController extends Controller
         // Most of the time, the 'return' URL is called for successful payments.
         // We redirect to the main success handler which contains the full logic to verify and save the command.
         return redirect()->route('payment.success', $request->query());
+    }
+
+    /**
+     * Check if a string is a valid UUID.
+     *
+     * @param string $uuid
+     * @return boolean
+     */
+    private function isUuid($uuid)
+    {
+        if (!is_string($uuid) || (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid) !== 1)) {
+            return false;
+        }
+        return true;
     }
 }

@@ -118,6 +118,14 @@
     .option-header.open .chevron-icon {
         transform: rotate(180deg);
     }
+    @keyframes pulse-bg {
+        0% { background-color: #fef9e7; } /* slightly yellow */
+        50% { background-color: #fef2d2; } /* more yellow */
+        100% { background-color: #fef9e7; }
+    }
+    .cart-updated {
+        animation: pulse-bg 0.5s ease-in-out;
+    }
     </style>
 </head>
 <body class="min-h-screen bg-white">
@@ -294,6 +302,7 @@
                 <div id="cart-summary" class="bg-white border-2 border-yellow-400 rounded-lg p-6 shadow-sm" style="display: none;">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-black">Votre panier</h3>
+                        <div id="cart-duration" class="text-sm text-gray-600 font-medium"></div>
                         <div class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-cart" style="display: none;"></div>
                     </div>
                     <div id="cart-items-container" class="panier-content divide-y divide-gray-200">
@@ -705,20 +714,41 @@
         const cartItemsContainer = document.getElementById('cart-items-container');
         const cartElement = document.getElementById('cart-summary');
         const emptyCartElement = document.getElementById('empty-cart');
+        const durationElement = document.getElementById('cart-duration');
         cartItemsContainer.innerHTML = '';
         let total = 0;
+        let diffDays = 0;
+
+        // Calculate and display duration
+        const dateDepot = document.getElementById('date-depot').value;
+        const dateRecuperation = document.getElementById('date-recuperation').value;
+        if (dateDepot && dateRecuperation) {
+            const start = new Date(dateDepot);
+            const end = new Date(dateRecuperation);
+            const diffTime = Math.abs(end - start);
+            diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            durationElement.textContent = `${diffDays} jour(s)`;
+        } else {
+            durationElement.textContent = '';
+        }
 
         cartItems.forEach((item, index) => {
             let itemTotal = 0;
             if (item.itemCategory === 'baggage') {
                 const product = globalProductsData.find(p => p.id === item.productId);
                 const itemPrice = product ? product.prixUnitaire : 0;
+                
+                let pricePerDayPerUnit = itemPrice;
+                if (diffDays > 0) {
+                    pricePerDayPerUnit = itemPrice / diffDays;
+                }
+
                 itemTotal = itemPrice * item.quantity;
                 cartItemsContainer.innerHTML += `
                     <div class="py-2 flex justify-between items-center">
                         <div>
                             <span class="font-medium">${item.quantity} x ${item.libelle}</span>
-                            <span class="block text-xs text-gray-500">${itemPrice.toFixed(2)} € / unité</span>
+                            <span class="block text-xs text-gray-500">${pricePerDayPerUnit.toFixed(2)} € / jour </span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="font-semibold">${itemTotal.toFixed(2)} €</span>
@@ -752,6 +782,8 @@
         if (cartItems.length > 0) {
             cartElement.style.display = 'block';
             emptyCartElement.style.display = 'none';
+            cartElement.classList.add('cart-updated');
+            setTimeout(() => cartElement.classList.remove('cart-updated'), 500);
         } else {
             cartElement.style.display = 'none';
             emptyCartElement.style.display = 'block';
