@@ -33,6 +33,9 @@ L’API BDM est un ERP utilisé par l’administrateur pour **gérer et synchron
 - `resources/views/` → Vues Blade globales  
 - `resources/views/Front/` → Vues Blade du frontend liées au service consigne et aux interfaces clients  
 - `public/` → Point d’entrée HTTP et ressources compilées  
+- dans `docs\console-front.txt` je met des fois les erreurs que fais le JS dans la console du navigateur
+- dans `docs\copypast.txt` je met des fois des infos(texte,infos supplementaire,doccumentation etc) tu dois lire si je te demande dans le chat
+- dans `docs\Documentation de l' API v2.pdf` ancienne doccumentation de l' API BDM (l' API est en maintenance constante)
 
 ---
 

@@ -85,12 +85,13 @@ Route::get('/check-auth-status', function () {
 });
 
 Route::middleware('auth:client')->group(function () { // Spécifier la garde 'client'
-    Route::get('/payment', [PaymentController::class, 'showPaymentPage'])->name('payment');
-
     Route::get('/mes-reservations', [CommandeController::class, 'index'])->name('mes.reservations');
-    Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
     Route::post('/client/update-profile', [ClientController::class, 'updateProfile'])->name('client.update-profile'); // Point to ClientController
 });
+
+// Routes de paiement publiques
+Route::get('/payment', [PaymentController::class, 'showPaymentPage'])->name('payment');
+Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
 
 // New routes for Monetico payment
 Route::match(['get', 'post'], '/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');

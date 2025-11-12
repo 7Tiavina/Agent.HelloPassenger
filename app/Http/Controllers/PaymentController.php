@@ -102,10 +102,31 @@ class PaymentController extends Controller
 
             // 3. Prepare final command data
             $user = Auth::guard('client')->user();
-            if (!$user) return response()->json(['message' => 'Client non authentifié.'], 401);
-            
-            $user = \App\Models\Client::find($user->id);
-            if (!$user) return response()->json(['message' => 'Client introuvable.'], 404);
+
+            if ($user) {
+                $user = \App\Models\Client::find($user->id);
+                if (!$user) {
+                    return response()->json(['message' => 'Client authentifié introuvable.'], 404);
+                }
+            } else {
+                $guestEmail = $request->input('guest_email');
+                if (!$guestEmail) {
+                    return response()->json(['message' => 'Unauthenticated'], 401);
+                }
+                
+                \Illuminate\Support\Facades\Validator::make(['guest_email' => $guestEmail], [
+                    'guest_email' => 'required|email|max:255'
+                ])->validate();
+
+                $user = \App\Models\Client::firstOrCreate(
+                    ['email' => $guestEmail],
+                    [
+                        'nom' => 'Invité',
+                        'prenom' => 'Client',
+                        'password_hash' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(16))
+                    ]
+                );
+            }
 
             $clientData = [
                 "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
@@ -231,35 +252,42 @@ class PaymentController extends Controller
         Log::info('----------------------------------------------------');
         Log::info('[showPaymentPage] START - Handling /payment route.');
 
-        $user = Auth::guard('client')->user();
-        if (!$user) {
-            Log::error('[showPaymentPage] CRITICAL: Client is not authenticated. Aborting.');
-            return redirect()->route('client.login')->with('error', 'Veuillez vous connecter pour accéder à la page de paiement.');
+        $commandeData = Session::get('commande_en_cours');
+        if (!$commandeData || !isset($commandeData['client'])) {
+            Log::error('[showPaymentPage] CRITICAL: Commande data or client info NOT FOUND in session. Aborting.');
+            return redirect()->route('form-consigne')->with('error', 'Votre session de commande a expiré ou est invalide. Veuillez recommencer.');
         }
 
-        $user = \App\Models\Client::find($user->id);
-        Log::info('[showPaymentPage] Authenticated client found: ' . $user->email);
+        // Retrieve client data from session, which was set by preparePayment
+        $clientDataFromSession = $commandeData['client'];
 
-        $isProfileComplete = true;
-        $formToken = null;
+        // Try to find the client in the database using the email from session
+        $user = \App\Models\Client::where('email', $clientDataFromSession['email'])->first();
 
+        if (!$user) {
+            // This is an unexpected error if preparePayment worked. Redirect to form.
+            Log::error('[showPaymentPage] Client record not found in DB for email from session: ' . $clientDataFromSession['email']);
+            return redirect()->route('form-consigne')->with('error', 'Erreur interne: Client introuvable pour la session de commande.');
+        }
+
+        $isProfileComplete = true; 
+        
+        // Check profile completeness for the retrieved user.
+        // For a guest, 'nom' and 'prenom' might be 'Invité', 'Client'.
+        // The view 'payment.blade.php' will handle displaying the completion form if needed.
         $requiredFields = ['telephone', 'adresse', 'ville', 'codePostal', 'pays'];
         foreach ($requiredFields as $field) {
-            if (empty($user->$field)) {
+            if (empty($user->$field) || $user->$field === 'À compléter') {
                 $isProfileComplete = false;
                 break;
             }
         }
 
-        if ($isProfileComplete) {
-            Log::info('[showPaymentPage] Client profile is complete. Proceeding to get formToken.');
-            $commandeData = Session::get('commande_en_cours');
-            if (!$commandeData) {
-                Log::error('[showPaymentPage] CRITICAL: commande_en_cours NOT FOUND in session. Aborting.');
-                return redirect()->route('form-consigne')->with('error', 'Votre session a expiré. Veuillez recommencer.');
-            }
-            Log::info('[showPaymentPage] Session data found for commande_en_cours.');
+        $formToken = null;
 
+        if ($isProfileComplete) {
+            Log::info('[showPaymentPage] Client profile is complete (or sufficient for guest). Proceeding to get formToken.');
+            // Update commandeData with the latest client info from the $user object we just retrieved/created
             $commandeData['client'] = [
                 "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
                 "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => $user->nomSociete ?? null,
@@ -277,7 +305,7 @@ class PaymentController extends Controller
                 return redirect()->route('form-consigne')->with('error', 'Erreur lors de l\initiation du paiement.');
             }
         } else {
-            Log::warning('[showPaymentPage] Profile for client ' . $user->id . ' is incomplete.');
+            Log::warning('[showPaymentPage] Profile for client ' . $user->id . ' is incomplete. Displaying form for completion.');
         }
 
         return view('payment', compact('user', 'formToken', 'isProfileComplete'));

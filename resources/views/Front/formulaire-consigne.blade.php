@@ -820,41 +820,55 @@
         try {
             const authResponse = await fetch('/check-auth-status');
             const authData = await authResponse.json();
-
-            if (authData.authenticated) {
-                const baggages = cartItems.filter(i => i.itemCategory === 'baggage').map(item => ({ type: item.type, quantity: item.quantity }));
-                const options = cartItems.filter(i => i.itemCategory === 'option').map(item => ({
-                    id: item.id,
-                    lieu_id: item.lieu_id,
-                    informations_complementaires: item.informations_complementaires,
-                    commentaire: item.commentaire
-                }));
-
-                const formData = {
-                    airportId: airportId,
-                    dateDepot: document.getElementById('date-depot').value,
-                    heureDepot: document.getElementById('heure-depot').value,
-                    dateRecuperation: document.getElementById('date-recuperation').value,
-                    heureRecuperation: document.getElementById('heure-recuperation').value,
-                    baggages: baggages,
-                    products: globalProductsData,
-                    options: options
-                };
-
-                const prepareResponse = await fetch('/prepare-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                    body: JSON.stringify(formData)
-                });
-
-                const resultData = await prepareResponse.json();
-                if (prepareResponse.ok) {
-                    window.location.href = resultData.redirect_url;
-                } else {
-                    alert('Erreur: ' + (resultData.message || 'Erreur inconnue.'));
+            
+            let guestEmail = null;
+            if (!authData.authenticated) {
+                guestEmail = prompt("Veuillez entrer votre adresse e-mail pour continuer en tant qu'invité:", "");
+                if (!guestEmail) {
+                    alert("Une adresse e-mail est requise pour continuer.");
+                    return;
                 }
+                // Basic email validation
+                if (!/^\S+@\S+\.\S+$/.test(guestEmail)) {
+                    alert("Veuillez entrer une adresse e-mail valide.");
+                    return;
+                }
+            }
+
+            const baggages = cartItems.filter(i => i.itemCategory === 'baggage').map(item => ({ type: item.type, quantity: item.quantity }));
+            const options = cartItems.filter(i => i.itemCategory === 'option').map(item => ({
+                id: item.id,
+                lieu_id: item.lieu_id,
+                informations_complementaires: item.informations_complementaires,
+                commentaire: item.commentaire
+            }));
+
+            const formData = {
+                airportId: airportId,
+                dateDepot: document.getElementById('date-depot').value,
+                heureDepot: document.getElementById('heure-depot').value,
+                dateRecuperation: document.getElementById('date-recuperation').value,
+                heureRecuperation: document.getElementById('heure-recuperation').value,
+                baggages: baggages,
+                products: globalProductsData,
+                options: options
+            };
+
+            if (guestEmail) {
+                formData.guest_email = guestEmail;
+            }
+
+            const prepareResponse = await fetch('/prepare-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                body: JSON.stringify(formData)
+            });
+
+            const resultData = await prepareResponse.json();
+            if (prepareResponse.ok) {
+                window.location.href = resultData.redirect_url;
             } else {
-                if (typeof window.openLoginModal === 'function') { window.openLoginModal(); } else { window.location.href = '/client/login'; } 
+                alert('Erreur: ' + (resultData.message || 'Erreur inconnue.'));
             }
         } catch (error) {
             console.error('Erreur critique dans handleTotalClick:', error);
