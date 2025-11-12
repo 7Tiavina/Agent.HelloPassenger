@@ -31,8 +31,8 @@
 <div class="container mx-auto max-w-5xl my-12 px-4">
 
     <div class="mb-6">
-        <a href="{{ route('form-consigne') }}" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <a href="{{ route('form-consigne') }}" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover inline-flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
             Retour au formulaire
@@ -82,7 +82,7 @@
                         <p id="display-user-phone"><strong>Téléphone:</strong> {{ $user->telephone ?? 'Non renseigné' }}</p>
                         <p id="display-user-address"><strong>Adresse:</strong> {{ $user->adresse ?? 'Non renseignée' }}</p>
                     </div>
-                    <button id="openClientProfileModalBtn" class="mt-4 text-sm text-yellow-600 hover:text-yellow-700 font-semibold">Modifier</button>
+                    <button id="openClientProfileModalBtn" class="mt-4 bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Modifier</button>
                 </div>
 
                 <!-- Bloc de paiement -->
@@ -92,7 +92,7 @@
                         <div class="kr-smart-form" kr-form-token="{{ $formToken }}"></div>
                     @else
                         <div class="p-4 bg-gray-100 rounded-md text-center text-gray-600">
-                            Veuillez compléter votre profil pour activer le paiement.
+                            Veuillez compléter vos informations pour activer le paiement.
                         </div>
                     @endif
                 </div>
