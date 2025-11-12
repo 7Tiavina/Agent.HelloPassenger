@@ -142,10 +142,18 @@
         Sélectionnez le type de consigne et suivez les étapes du formulaire. Nous vous indiquerons les informations à fournir.
     </p>
 
-    <div class="flex items-center space-x-2 text-sm text-gray-500 mb-8">
-        <span>Accueil</span>
-        <span>→</span>
-        <span class="text-gray-800 font-medium">Réserver une consigne</span>
+    <div class="flex justify-between items-center mb-8">
+        <div class="flex items-center space-x-2 text-sm text-gray-500">
+            <span>Accueil</span>
+            <span>→</span>
+            <span class="text-gray-800 font-medium">Réserver une consigne</span>
+        </div>
+        <button id="back-to-step-1-btn" class="hidden bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Retour
+        </button>
     </div>
 
     <div class="grid lg:grid-cols-3 gap-8">
@@ -214,22 +222,37 @@
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-xl font-bold text-gray-800">1. Choisissez vos bagages</h3>
-                        <button id="back-to-step-1-btn" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                            </svg>
-                            Retour
-                        </button>
                     </div>
-                    <div id="baggage-list-container" class="space-y-5 divide-y divide-gray-100">
+                    <div id="baggage-grid-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
                         @if(isset($products) && count($products) > 0)
+                            @php
+                                $product_map_icons = [
+                                    'Accessoires' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+                                    'Bagage cabine' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>',
+                                    'Bagage soute' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>',
+                                    'Bagage spécial' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+                                    'Vestiaire' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>'
+                                ];
+                                $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
+                            @endphp
                             @foreach($products as $product)
-                                <div class="pt-5 flex justify-between items-center" data-product-id="{{ $product['id'] }}">
-                                    <div class="w-2/3">
-                                        <p class="font-semibold text-gray-800">{{ $product['libelle'] }}</p>
-                                        <p class="text-sm text-gray-500" data-product-description="{{ $product['libelle'] }}"></p>
+                                @php
+                                    $libelle = $product['libelle'];
+                                    $icon = $product_map_icons[$libelle] ?? $default_icon;
+                                @endphp
+                                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2" data-product-id="{{ $product['id'] }}">
+                                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                        {!! $icon !!}
                                     </div>
-                                    <div class="flex items-center space-x-4">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <span class="text-sm font-medium text-center">{{ $libelle }}</span>
+                                        <span class="info-icon cursor-pointer" data-libelle="{{ $libelle }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 mt-2">
                                         <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="minus" data-product-id="{{ $product['id'] }}">−</button>
                                         <span class="font-bold text-lg w-5 text-center" data-quantity-display="{{ $product['id'] }}">0</span>
                                         <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="plus" data-product-id="{{ $product['id'] }}">+</button>
@@ -333,7 +356,6 @@
         'Bagage spécial': { type: 'special', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Objets volumineux ou hors format comme un équipement de sport ou un instrument de musique.' },
         'Vestiaire': { type: 'cloakroom', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>', description: 'Pour les manteaux, vestes ou autres vêtements sur cintre.' }
     };
-    const defaultIconJs = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
 
     document.addEventListener('DOMContentLoaded', function() {
         loadStateFromSession(); // Load state on page load
@@ -342,6 +364,7 @@
         document.getElementById('back-to-step-1-btn').addEventListener('click', function() {
             document.getElementById('baggage-selection-step').style.display = 'none';
             document.getElementById('step-1').style.display = 'block';
+            this.classList.add('hidden'); // Hide button
             saveStateToSession();
         });
 
@@ -351,7 +374,7 @@
         });
         document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
         
-        document.getElementById('baggage-list-container').addEventListener('click', handleQuantityChange);
+        document.getElementById('baggage-grid-container').addEventListener('click', handleQuantityChange);
 
         document.getElementById('cart-items-container').addEventListener('click', (e) => {
             const target = e.target.closest('.delete-item-btn');
@@ -404,18 +427,16 @@
             }
         });
 
-        populateBaggageDescriptions();
-
         // --- TOOLTIP LOGIC ---
         const tooltip = document.getElementById('baggage-tooltip');
         const baggageSelectionStep = document.getElementById('baggage-selection-step');
 
         baggageSelectionStep.addEventListener('mouseover', (e) => {
-            const target = e.target.closest('.baggage-option');
+            const target = e.target.closest('.info-icon');
             if (!target) return;
 
-            const baggageLibelle = target.dataset.libelle;
-            const productData = productMapJs[baggageLibelle];
+            const libelle = target.dataset.libelle;
+            const productData = productMapJs[libelle];
             
             if (productData && productData.description) {
                 tooltip.textContent = productData.description;
@@ -436,22 +457,14 @@
         });
 
         baggageSelectionStep.addEventListener('mouseout', (e) => {
-            const target = e.target.closest('.baggage-option');
+            const target = e.target.closest('.info-icon'); // New target
             if (target) {
                 tooltip.classList.add('hidden');
             }
         });
     });
 
-    function populateBaggageDescriptions() {
-        document.querySelectorAll('[data-product-description]').forEach(el => {
-            const libelle = el.dataset.productDescription;
-            const productData = productMapJs[libelle];
-            if (productData && productData.description) {
-                el.textContent = productData.description;
-            }
-        });
-    }
+    
 
     function displaySelectedDates() {
         const options = { month: 'short', day: 'numeric' };
@@ -536,6 +549,7 @@
         if (state.isBaggageStepVisible) {
             document.getElementById('step-1').style.display = 'none';
             document.getElementById('baggage-selection-step').style.display = 'block';
+            document.getElementById('back-to-step-1-btn').classList.remove('hidden'); // Show button
             displaySelectedDates();
             
             const dateDepot = document.getElementById('date-depot').value;
@@ -585,6 +599,7 @@
             if (result.statut === 1 && result.content === true) {
                 document.getElementById('step-1').style.display = 'none';
                 document.getElementById('baggage-selection-step').style.display = 'block';
+                document.getElementById('back-to-step-1-btn').classList.remove('hidden'); // Show button
                 displaySelectedDates();
                 getQuoteAndDisplay();
             } else {
@@ -826,6 +841,17 @@
             const productId = span.dataset.quantityDisplay;
             const itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
             span.textContent = itemInCart ? itemInCart.quantity : '0';
+        });
+
+        // Add yellow highlight to selected baggage boxes
+        document.querySelectorAll('#baggage-grid-container .baggage-option').forEach(box => {
+            const productId = box.dataset.productId;
+            const itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
+            if (itemInCart && itemInCart.quantity > 0) {
+                box.classList.add('selected');
+            } else {
+                box.classList.remove('selected');
+            }
         });
 
         saveStateToSession(); // Save state after any cart update
