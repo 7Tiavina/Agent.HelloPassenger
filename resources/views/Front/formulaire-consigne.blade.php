@@ -198,12 +198,22 @@
             </div>
 
             <div id="baggage-selection-step" class="hidden">
-                <!-- Section for selecting baggage -->
+                <!-- Display Dates -->
+                <div id="dates-display" class="flex justify-around bg-gray-100 p-4 rounded-lg mb-6 text-center">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">DÉPÔT</p>
+                        <p id="display-date-depot" class="text-lg font-bold text-gray-900"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">RETRAIT</p>
+                        <p id="display-date-recuperation" class="text-lg font-bold text-gray-900"></p>
+                    </div>
+                </div>
+
+                <!-- New Baggage Selection -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <label class="block text-sm font-medium text-gray-700">
-                            1. Choisissez un type de bagage
-                        </label>
+                        <h3 class="text-xl font-bold text-gray-800">1. Choisissez vos bagages</h3>
                         <button id="back-to-step-1-btn" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -211,56 +221,29 @@
                             Retour
                         </button>
                     </div>
-                    <div id="baggage-types-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
+                    <div id="baggage-list-container" class="space-y-5 divide-y divide-gray-100">
                         @if(isset($products) && count($products) > 0)
-                            @php
-                                $product_map = [
-                                    'Accessoires' => ['type' => 'accessory', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
-                                    'Bagage cabine' => ['type' => 'cabin', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>'],
-                                    'Bagage soute' => ['type' => 'hold', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>'],
-                                    'Bagage spécial' => ['type' => 'special', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'],
-                                    'Vestiaire' => ['type' => 'cloakroom', 'icon' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>']
-                                ];
-                                $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
-                            @endphp
                             @foreach($products as $product)
-                                @php
-                                    $libelle = $product['libelle'];
-                                    $map_data = $product_map[$libelle] ?? ['type' => Illuminate\Support\Str::slug($libelle), 'icon' => $default_icon];
-                                @endphp
-                                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2 cursor-pointer" data-type="{{ $map_data['type'] }}" data-product-id="{{ $product['id'] }}" data-libelle="{{ $product['libelle'] }}">
-                                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                        {!! $map_data['icon'] !!}
+                                <div class="pt-5 flex justify-between items-center" data-product-id="{{ $product['id'] }}">
+                                    <div class="w-2/3">
+                                        <p class="font-semibold text-gray-800">{{ $product['libelle'] }}</p>
+                                        <p class="text-sm text-gray-500" data-product-description="{{ $product['libelle'] }}"></p>
                                     </div>
-                                    <span class="text-sm font-medium text-center">{{ $libelle }}</span>
+                                    <div class="flex items-center space-x-4">
+                                        <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="minus" data-product-id="{{ $product['id'] }}">−</button>
+                                        <span class="font-bold text-lg w-5 text-center" data-quantity-display="{{ $product['id'] }}">0</span>
+                                        <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="plus" data-product-id="{{ $product['id'] }}">+</button>
+                                    </div>
                                 </div>
                             @endforeach
-                        @else
-                            <p class="col-span-full text-center text-gray-500">Aucun type de bagage disponible pour le moment.</p>
                         @endif
-                    </div>
-
-                    <div class="mt-6 flex items-center gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">2. Choisissez une quantité</label>
-                            <div class="flex items-center space-x-2">
-                                <button type="button" id="quantity-minus" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover">−</button>
-                                <input type="text" id="quantity-input" class="input-style w-16 text-center" value="1" readonly />
-                                <button type="button" id="quantity-plus" class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:bg-gray-50 btn-hover">+</button>
-                            </div>
-                        </div>
-                        <div class="self-end">
-                            <button id="add-to-cart-btn" class="bg-yellow-custom text-gray-dark font-bold py-3 px-6 rounded-full btn-hover">
-                                Ajouter au panier
-                            </button>
-                        </div>
                     </div>
                 </div>
 
                 <!-- Section for additional options -->
                 <div id="options-step" class="mt-6">
                     <div class="bg-white border border-gray-200 rounded-lg p-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">3. Souhaitez-vous bénéficier de services additionnels ?</h3>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">2. Souhaitez-vous bénéficier de services additionnels ?</h3>
                         <div id="options-container" class="space-y-4">
                             <!-- Options will be injected here -->
                             <div class="text-center text-gray-500">
@@ -368,18 +351,7 @@
         });
         document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
         
-        document.getElementById('add-to-cart-btn').addEventListener('click', handleBaggageAddToCart);
-        document.getElementById('quantity-plus').addEventListener('click', () => updateQuantity(1));
-        document.getElementById('quantity-minus').addEventListener('click', () => updateQuantity(-1));
-
-        document.getElementById('baggage-types-grid').addEventListener('click', (e) => {
-            const target = e.target.closest('.baggage-option');
-            if (target) {
-                document.querySelectorAll('#baggage-types-grid .baggage-option').forEach(el => el.classList.remove('selected'));
-                target.classList.add('selected');
-                saveStateToSession();
-            }
-        });
+        document.getElementById('baggage-list-container').addEventListener('click', handleQuantityChange);
 
         document.getElementById('cart-items-container').addEventListener('click', (e) => {
             const target = e.target.closest('.delete-item-btn');
@@ -432,6 +404,8 @@
             }
         });
 
+        populateBaggageDescriptions();
+
         // --- TOOLTIP LOGIC ---
         const tooltip = document.getElementById('baggage-tooltip');
         const baggageSelectionStep = document.getElementById('baggage-selection-step');
@@ -469,8 +443,65 @@
         });
     });
 
+    function populateBaggageDescriptions() {
+        document.querySelectorAll('[data-product-description]').forEach(el => {
+            const libelle = el.dataset.productDescription;
+            const productData = productMapJs[libelle];
+            if (productData && productData.description) {
+                el.textContent = productData.description;
+            }
+        });
+    }
+
+    function displaySelectedDates() {
+        const options = { month: 'short', day: 'numeric' };
+        const depotDate = new Date(document.getElementById('date-depot').value).toLocaleDateString('fr-FR', options);
+        const recupDate = new Date(document.getElementById('date-recuperation').value).toLocaleDateString('fr-FR', options);
+        const depotHeure = document.getElementById('heure-depot').value;
+        const recupHeure = document.getElementById('heure-recuperation').value;
+
+        document.getElementById('display-date-depot').textContent = `${depotDate}, ${depotHeure}`;
+        document.getElementById('display-date-recuperation').textContent = `${recupDate}, ${recupHeure}`;
+    }
+
+    function handleQuantityChange(e) {
+        const target = e.target.closest('.quantity-change-btn');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const productId = target.dataset.productId;
+        
+        const product = initialProducts.find(p => p.id == productId);
+        if (!product) return;
+
+        let itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
+
+        if (action === 'plus') {
+            if (itemInCart) {
+                itemInCart.quantity++;
+            } else {
+                const mapData = productMapJs[product.libelle];
+                const type = mapData ? mapData.type : 'unknown';
+                cartItems.push({
+                    itemCategory: 'baggage',
+                    productId: productId,
+                    libelle: product.libelle,
+                    type: type,
+                    quantity: 1
+                });
+            }
+        } else if (action === 'minus') {
+            if (itemInCart) {
+                itemInCart.quantity--;
+                if (itemInCart.quantity <= 0) {
+                    cartItems = cartItems.filter(item => item.productId !== productId || item.itemCategory !== 'baggage');
+                }
+            }
+        }
+        updateCartDisplay();
+    }
+
     function saveStateToSession() {
-        const selectedBaggageEl = document.querySelector('#baggage-types-grid .baggage-option.selected');
         const state = {
             airportId: document.getElementById('airport-select').value,
             dateDepot: document.getElementById('date-depot').value,
@@ -478,12 +509,10 @@
             dateRecuperation: document.getElementById('date-recuperation').value,
             heureRecuperation: document.getElementById('heure-recuperation').value,
             isBaggageStepVisible: document.getElementById('baggage-selection-step').style.display === 'block',
-            selectedBaggageProductId: selectedBaggageEl ? selectedBaggageEl.dataset.productId : null,
-            quantity: document.getElementById('quantity-input').value,
             cartItems: cartItems,
             globalProductsData: globalProductsData,
             globalLieuxData: globalLieuxData,
-            guestEmail: guestEmail // Add this line
+            guestEmail: guestEmail
         };
         sessionStorage.setItem('formState', JSON.stringify(state));
     }
@@ -498,7 +527,6 @@
         document.getElementById('heure-depot').value = state.heureDepot;
         document.getElementById('date-recuperation').value = state.dateRecuperation;
         document.getElementById('heure-recuperation').value = state.heureRecuperation;
-        document.getElementById('quantity-input').value = state.quantity || '1';
         
         globalProductsData = state.globalProductsData || [];
         globalLieuxData = state.globalLieuxData || [];
@@ -508,13 +536,7 @@
         if (state.isBaggageStepVisible) {
             document.getElementById('step-1').style.display = 'none';
             document.getElementById('baggage-selection-step').style.display = 'block';
-            
-            if (state.selectedBaggageProductId) {
-                const baggageEl = document.querySelector(`.baggage-option[data-product-id="${state.selectedBaggageProductId}"]`);
-                if (baggageEl) {
-                    baggageEl.classList.add('selected');
-                }
-            }
+            displaySelectedDates();
             
             const dateDepot = document.getElementById('date-depot').value;
             const heureDepot = document.getElementById('heure-depot').value;
@@ -563,6 +585,7 @@
             if (result.statut === 1 && result.content === true) {
                 document.getElementById('step-1').style.display = 'none';
                 document.getElementById('baggage-selection-step').style.display = 'block';
+                displaySelectedDates();
                 getQuoteAndDisplay();
             } else {
                 alert(result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
@@ -576,34 +599,7 @@
         }
     }
 
-    function updateQuantity(amount) {
-        const input = document.getElementById('quantity-input');
-        let currentValue = parseInt(input.value, 10);
-        currentValue += amount;
-        if (currentValue < 1) currentValue = 1;
-        input.value = currentValue;
-    }
-
-    function handleBaggageAddToCart() {
-        const selectedBaggageEl = document.querySelector('#baggage-types-grid .baggage-option.selected');
-        if (!selectedBaggageEl) {
-            alert('Veuillez sélectionner un type de bagage.');
-            return;
-        }
-
-        const productId = selectedBaggageEl.dataset.productId;
-        const libelle = selectedBaggageEl.dataset.libelle;
-        const type = selectedBaggageEl.dataset.type;
-        const quantity = parseInt(document.getElementById('quantity-input').value, 10);
-
-        const existingItem = cartItems.find(item => item.itemCategory === 'baggage' && item.productId === productId);
-        if (existingItem) {
-            existingItem.quantity += quantity;
-        } else {
-            cartItems.push({ itemCategory: 'baggage', productId, libelle, type, quantity });
-        }
-        updateCartDisplay();
-    }
+    
     
     function handleOptionAddToCart(optionKey) {
         const option = staticOptions[optionKey];
@@ -823,6 +819,13 @@
             const isAlreadyInCart = cartItems.some(item => item.itemCategory === 'option' && item.key === btn.dataset.optionKey);
             btn.disabled = isAlreadyInCart;
             if(isAlreadyInCart) btn.textContent = 'Ajouté au panier';
+        });
+
+        // Update quantity displays in the baggage list
+        document.querySelectorAll('[data-quantity-display]').forEach(span => {
+            const productId = span.dataset.quantityDisplay;
+            const itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
+            span.textContent = itemInCart ? itemInCart.quantity : '0';
         });
 
         saveStateToSession(); // Save state after any cart update

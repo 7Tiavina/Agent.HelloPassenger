@@ -1,14 +1,47 @@
 (index):64  cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
 (anonymous) @ (index):64
 (anonymous) @ (index):64
-main.js?attr=ysiKovSsotHUWkSTr_eUEzkk4iD4gu5IZRt-hzYrTpjsW8BczOi9zk_ZEyUJ53Du:4166   POST http://127.0.0.1:8000/client/update-profile 401 (Unauthorized)
-fetchCallImpl @ main.js?attr=ysiKovSsotHUWkSTr_eUEzkk4iD4gu5IZRt-hzYrTpjsW8BczOi9zk_ZEyUJ53Du:4166
-fetch @ main.js?attr=ysiKovSsotHUWkSTr_eUEzkk4iD4gu5IZRt-hzYrTpjsW8BczOi9zk_ZEyUJ53Du:4172
-e @ instrument.ts:174
-(anonymous) @ payment:516
-n @ helpers.ts:98
-instrument.ts:144  Update error: {message: 'Unauthenticated.'}message: "Unauthenticated."[[Prototype]]: Object
-(anonymous) @ instrument.ts:144
-(anonymous) @ payment:533
-await in (anonymous)
-n @ helpers.ts:98
+link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
+    at saveStateToSession (link-form:826:64)
+    at HTMLSelectElement.<anonymous> (link-form:662:13)
+saveStateToSession @ link-form:826
+(anonymous) @ link-form:662
+link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
+    at HTMLInputElement.saveStateToSession (link-form:826:64)
+saveStateToSession @ link-form:826
+change
+(anonymous) @ unknown
+setTimeout
+setSelectionAndCommit @ unknown
+selectRangeContainingDay @ unknown
+onClick @ unknown
+link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
+    at saveStateToSession (link-form:826:64)
+    at HTMLInputElement.<anonymous> (link-form:714:21)
+saveStateToSession @ link-form:826
+(anonymous) @ link-form:714
+change
+(anonymous) @ unknown
+setTimeout
+setSelectionAndCommit @ unknown
+selectRangeContainingDay @ unknown
+onClick @ unknown
+link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
+    at HTMLInputElement.saveStateToSession (link-form:826:64)
+saveStateToSession @ link-form:826
+link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
+    at HTMLInputElement.saveStateToSession (link-form:826:64)
+saveStateToSession @ link-form:826
+change
+(anonymous) @ unknown
+setTimeout
+setSelectionAndCommit @ unknown
+selectRangeContainingDay @ unknown
+onClick @ unknown
+link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
+    at HTMLInputElement.saveStateToSession (link-form:826:64)
+saveStateToSession @ link-form:826
+link-form:998  Erreur lors de la récupération des tarifs et lieux: 
+getQuoteAndDisplay @ link-form:998
+await in getQuoteAndDisplay
+checkAvailability @ link-form:911
