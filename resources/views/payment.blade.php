@@ -30,6 +30,15 @@
 
 <div class="container mx-auto max-w-5xl my-12 px-4">
 
+    <div class="mb-6">
+        <a href="{{ route('form-consigne') }}" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Retour au formulaire
+        </a>
+    </div>
+
     <!-- Afficheur de message d'erreur -->
     @if(!$isProfileComplete)
         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
@@ -125,6 +134,8 @@
 
         openClientProfileModalBtn.addEventListener('click', () => {
             document.getElementById('modal-email').value = userData.email || '';
+            document.getElementById('modal-nom').value = userData.nom || '';
+            document.getElementById('modal-prenom').value = userData.prenom || '';
             document.getElementById('modal-telephone').value = userData.telephone || '';
             document.getElementById('modal-civilite').value = userData.civilite || 'M.';
             document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
@@ -144,6 +155,7 @@
             e.preventDefault();
             const formData = new FormData(clientProfileForm);
             const data = Object.fromEntries(formData.entries());
+            const isGuest = @json($isGuest);
 
             for (const key in data) {
                 if (data[key] === '') {
@@ -151,11 +163,14 @@
                 }
             }
 
+            const url = isGuest ? '{{ route("session.updateGuestInfo") }}' : '{{ route("client.update-profile") }}';
+
             try {
-                const response = await fetch('{{ route("client.update-profile") }}', {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(data)

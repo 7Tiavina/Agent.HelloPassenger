@@ -104,11 +104,20 @@ class PaymentController extends Controller
             $user = Auth::guard('client')->user();
 
             if ($user) {
-                $user = \App\Models\Client::find($user->id);
-                if (!$user) {
+                // Authenticated user flow
+                $clientRecord = \App\Models\Client::find($user->id);
+                if (!$clientRecord) {
                     return response()->json(['message' => 'Client authentifié introuvable.'], 404);
                 }
+                $clientData = [
+                    "email" => $clientRecord->email, "telephone" => $clientRecord->telephone, "nom" => $clientRecord->nom,
+                    "prenom" => $clientRecord->prenom, "civilite" => $clientRecord->civilite ?? null, "nomSociete" => null,
+                    "adresse" => $clientRecord->adresse ?? null, "complementAdresse" => null, "ville" => $clientRecord->ville ?? null,
+                    "codePostal" => $clientRecord->codePostal ?? null, "pays" => $clientRecord->pays ?? null,
+                    "is_guest" => false
+                ];
             } else {
+                // Guest user flow
                 $guestEmail = $request->input('guest_email');
                 if (!$guestEmail) {
                     return response()->json(['message' => 'Unauthenticated'], 401);
@@ -118,22 +127,14 @@ class PaymentController extends Controller
                     'guest_email' => 'required|email|max:255'
                 ])->validate();
 
-                $user = \App\Models\Client::firstOrCreate(
-                    ['email' => $guestEmail],
-                    [
-                        'nom' => 'Invité',
-                        'prenom' => 'Client',
-                        'password_hash' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(16))
-                    ]
-                );
+                $clientData = [
+                    "email" => $guestEmail, "telephone" => null, "nom" => 'Invité',
+                    "prenom" => 'Client', "civilite" => null, "nomSociete" => null,
+                    "adresse" => null, "complementAdresse" => null, "ville" => null,
+                    "codePostal" => null, "pays" => null,
+                    "is_guest" => true
+                ];
             }
-
-            $clientData = [
-                "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
-                "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => null,
-                "adresse" => $user->adresse ?? null, "complementAdresse" => null, "ville" => $user->ville ?? null,
-                "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
-            ];
 
             $commandeData = [
                 'idPlateforme' => $validatedData['airportId'],
@@ -154,6 +155,44 @@ class PaymentController extends Controller
             Log::error('Error in preparePayment', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Une erreur interne est survenue lors de la préparation du paiement.'], 500);
         }
+    }
+
+    public function updateGuestInfoInSession(Request $request)
+    {
+        $validated = $request->validate([
+            'telephone' => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'civilite' => 'nullable|string',
+            'nomSociete' => 'nullable|string',
+            'adresse' => 'required|string',
+            'complementAdresse' => 'nullable|string',
+            'ville' => 'required|string',
+            'codePostal' => 'required|string',
+            'pays' => 'required|string',
+        ]);
+
+        $commandeData = Session::get('commande_en_cours');
+
+        if (!$commandeData || !isset($commandeData['client']['is_guest']) || !$commandeData['client']['is_guest']) {
+            return response()->json(['success' => false, 'message' => 'Not a guest session.'], 403);
+        }
+
+        // Update the client data within the session
+        $commandeData['client']['telephone'] = $validated['telephone'];
+        $commandeData['client']['nom'] = $validated['nom'];
+        $commandeData['client']['prenom'] = $validated['prenom'];
+        $commandeData['client']['civilite'] = $validated['civilite'];
+        $commandeData['client']['nomSociete'] = $validated['nomSociete'];
+        $commandeData['client']['adresse'] = $validated['adresse'];
+        $commandeData['client']['complementAdresse'] = $validated['complementAdresse'];
+        $commandeData['client']['ville'] = $validated['ville'];
+        $commandeData['client']['codePostal'] = $validated['codePostal'];
+        $commandeData['client']['pays'] = $validated['pays'];
+
+        Session::put('commande_en_cours', $commandeData);
+
+        return response()->json(['success' => true, 'message' => 'Guest information updated in session.']);
     }
 
     private function getBdmToken(): string
@@ -258,26 +297,29 @@ class PaymentController extends Controller
             return redirect()->route('form-consigne')->with('error', 'Votre session de commande a expiré ou est invalide. Veuillez recommencer.');
         }
 
-        // Retrieve client data from session, which was set by preparePayment
         $clientDataFromSession = $commandeData['client'];
+        $isGuest = $clientDataFromSession['is_guest'] ?? false;
+        $user = null;
 
-        // Try to find the client in the database using the email from session
-        $user = \App\Models\Client::where('email', $clientDataFromSession['email'])->first();
-
-        if (!$user) {
-            // This is an unexpected error if preparePayment worked. Redirect to form.
-            Log::error('[showPaymentPage] Client record not found in DB for email from session: ' . $clientDataFromSession['email']);
-            return redirect()->route('form-consigne')->with('error', 'Erreur interne: Client introuvable pour la session de commande.');
+        if ($isGuest) {
+            // For guests, use the data directly from the session.
+            // Cast to object so the view can access properties like $user->email
+            $user = (object) $clientDataFromSession;
+            Log::info('[showPaymentPage] Handling guest user from session.', ['data' => $user]);
+        } else {
+            // For authenticated users, fetch the full model from the DB.
+            $user = \App\Models\Client::where('email', $clientDataFromSession['email'])->first();
+            if (!$user) {
+                Log::error('[showPaymentPage] Client record not found in DB for email from session: ' . $clientDataFromSession['email']);
+                return redirect()->route('form-consigne')->with('error', 'Erreur interne: Client introuvable pour la session de commande.');
+            }
+            Log::info('[showPaymentPage] Handling authenticated user from DB.', ['data' => $user]);
         }
-
-        $isProfileComplete = true; 
         
-        // Check profile completeness for the retrieved user.
-        // For a guest, 'nom' and 'prenom' might be 'Invité', 'Client'.
-        // The view 'payment.blade.php' will handle displaying the completion form if needed.
-        $requiredFields = ['telephone', 'adresse', 'ville', 'codePostal', 'pays'];
+        $isProfileComplete = true;
+        $requiredFields = ['telephone'];
         foreach ($requiredFields as $field) {
-            if (empty($user->$field) || $user->$field === 'À compléter') {
+            if (empty($user->$field)) {
                 $isProfileComplete = false;
                 break;
             }
@@ -287,13 +329,7 @@ class PaymentController extends Controller
 
         if ($isProfileComplete) {
             Log::info('[showPaymentPage] Client profile is complete (or sufficient for guest). Proceeding to get formToken.');
-            // Update commandeData with the latest client info from the $user object we just retrieved/created
-            $commandeData['client'] = [
-                "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
-                "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => $user->nomSociete ?? null,
-                "adresse" => $user->adresse ?? null, "complementAdresse" => $user->complementAdresse ?? null, "ville" => $user->ville ?? null,
-                "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null
-            ];
+            $commandeData['client'] = (array) $user; // Recast object to array for session consistency
             Session::put('commande_en_cours', $commandeData);
             Log::info('[showPaymentPage] Session data updated with latest client info.');
 
@@ -305,10 +341,10 @@ class PaymentController extends Controller
                 return redirect()->route('form-consigne')->with('error', 'Erreur lors de l\initiation du paiement.');
             }
         } else {
-            Log::warning('[showPaymentPage] Profile for client ' . $user->id . ' is incomplete. Displaying form for completion.');
+            Log::warning('[showPaymentPage] Profile for client ' . ($user->email ?? '') . ' is incomplete. Displaying form for completion.');
         }
 
-        return view('payment', compact('user', 'formToken', 'isProfileComplete'));
+        return view('payment', compact('user', 'formToken', 'isProfileComplete', 'isGuest'));
     }
 
     public function paymentSuccess(Request $request)

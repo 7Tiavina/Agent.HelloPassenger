@@ -90,6 +90,7 @@ Route::middleware('auth:client')->group(function () { // Spécifier la garde 'cl
 });
 
 // Routes de paiement publiques
+Route::post('/session/update-guest-info', [PaymentController::class, 'updateGuestInfoInSession'])->name('session.updateGuestInfo');
 Route::get('/payment', [PaymentController::class, 'showPaymentPage'])->name('payment');
 Route::post('/prepare-payment', [PaymentController::class, 'preparePayment'])->name('prepare.payment');
 

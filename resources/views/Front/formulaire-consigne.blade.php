@@ -200,9 +200,17 @@
             <div id="baggage-selection-step" class="hidden">
                 <!-- Section for selecting baggage -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <label class="block text-sm font-medium text-gray-700">
-                        1. Choisissez un type de bagage
-                    </label>
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="block text-sm font-medium text-gray-700">
+                            1. Choisissez un type de bagage
+                        </label>
+                        <button id="back-to-step-1-btn" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Retour
+                        </button>
+                    </div>
                     <div id="baggage-types-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
                         @if(isset($products) && count($products) > 0)
                             @php
@@ -328,6 +336,7 @@
     let globalLieuxData = [];
     const initialProducts = @json($products);
     let cartItems = []; // Unified state management for the cart
+    let guestEmail = null; // Add this global variable
 
     const staticOptions = {
         priority: { id: 'opt_priority', libelle: 'Service Priority', prixUnitaire: 15 },
@@ -347,6 +356,12 @@
         loadStateFromSession(); // Load state on page load
 
         // --- EVENT LISTENERS ---
+        document.getElementById('back-to-step-1-btn').addEventListener('click', function() {
+            document.getElementById('baggage-selection-step').style.display = 'none';
+            document.getElementById('step-1').style.display = 'block';
+            saveStateToSession();
+        });
+
         document.getElementById('airport-select').addEventListener('change', function() { 
             airportId = this.value; 
             saveStateToSession();
@@ -467,7 +482,8 @@
             quantity: document.getElementById('quantity-input').value,
             cartItems: cartItems,
             globalProductsData: globalProductsData,
-            globalLieuxData: globalLieuxData
+            globalLieuxData: globalLieuxData,
+            guestEmail: guestEmail // Add this line
         };
         sessionStorage.setItem('formState', JSON.stringify(state));
     }
@@ -487,6 +503,7 @@
         globalProductsData = state.globalProductsData || [];
         globalLieuxData = state.globalLieuxData || [];
         cartItems = state.cartItems || [];
+        guestEmail = state.guestEmail || null; // Add this line
 
         if (state.isBaggageStepVisible) {
             document.getElementById('step-1').style.display = 'none';
@@ -821,18 +838,24 @@
             const authResponse = await fetch('/check-auth-status');
             const authData = await authResponse.json();
             
-            let guestEmail = null;
             if (!authData.authenticated) {
-                guestEmail = prompt("Veuillez entrer votre adresse e-mail pour continuer en tant qu'invité:", "");
-                if (!guestEmail) {
-                    alert("Une adresse e-mail est requise pour continuer.");
-                    return;
+                if (!guestEmail) { // Check global guestEmail
+                    guestEmail = prompt("Veuillez entrer votre adresse e-mail pour continuer en tant qu'invité:", "");
+                    if (!guestEmail) {
+                        alert("Une adresse e-mail est requise pour continuer.");
+                        return;
+                    }
+                    // Basic email validation
+                    if (!/^\S+@\S+\.\S+$/.test(guestEmail)) {
+                        alert("Veuillez entrer une adresse e-mail valide.");
+                        guestEmail = null; // Clear invalid email
+                        return;
+                    }
+                    saveStateToSession(); // Save email after successful prompt
                 }
-                // Basic email validation
-                if (!/^\S+@\S+\.\S+$/.test(guestEmail)) {
-                    alert("Veuillez entrer une adresse e-mail valide.");
-                    return;
-                }
+            } else {
+                guestEmail = null; // Clear guest email if user logs in
+                saveStateToSession();
             }
 
             const baggages = cartItems.filter(i => i.itemCategory === 'baggage').map(item => ({ type: item.type, quantity: item.quantity }));

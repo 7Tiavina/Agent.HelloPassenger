@@ -10,6 +10,16 @@
                         <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
                         <input type="email" name="email" id="modal-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm" readonly>
                     </div>
+                    <!-- Nom -->
+                    <div>
+                        <label for="nom" class="block text-sm font-medium text-gray-700">Nom</label>
+                        <input type="text" name="nom" id="modal-nom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm">
+                    </div>
+                    <!-- Prenom -->
+                    <div>
+                        <label for="prenom" class="block text-sm font-medium text-gray-700">Prénom</label>
+                        <input type="text" name="prenom" id="modal-prenom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm">
+                    </div>
                     <!-- Telephone -->
                     <div>
                         <label for="telephone" class="block text-sm font-medium text-gray-700">Téléphone</label>

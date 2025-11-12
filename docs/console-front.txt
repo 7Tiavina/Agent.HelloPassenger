@@ -1,18 +1,14 @@
 (index):64  cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
 (anonymous) @ (index):64
 (anonymous) @ (index):64
-link-form:625 ✅ Aéroport sélectionné: orly
-link-form:635 ✅ Type de bagage sélectionné: cabin
-link-form:749 --- DÉBUT DE L'INTERROGATION DES TARIFS ---
-link-form:757 Étape 1: Valeurs récupérées {airportId: 'orly', dateDepot: '2025-08-26', heureDepot: '10:16', dateRecuperation: '2025-08-30', heureRecuperation: '12:16'}
-link-form:768 
---- Étape 2: Vérification de la disponibilité ---
-link-form:772 Formatage de la date pour l'API: 20250826T1016
-main.js?attr=qFsXJinCfIbrhH5ievF98maBwdflRqV19mO8SRZWIIjVdYdvV3wocrT1EZHPM3EWVWbEJs3yTmzrOwAaFK4_kg:4018   POST http://127.0.0.1:8000/api/check-availability 500 (Internal Server Error)
-fetchCallImpl @ main.js?attr=qFsXJinCfIbrhH5ievF98maBwdflRqV19mO8SRZWIIjVdYdvV3wocrT1EZHPM3EWVWbEJs3yTmzrOwAaFK4_kg:4018
-fetch @ main.js?attr=qFsXJinCfIbrhH5ievF98maBwdflRqV19mO8SRZWIIjVdYdvV3wocrT1EZHPM3EWVWbEJs3yTmzrOwAaFK4_kg:4024
-(anonymous) @ link-form:774
-link-form:786 Réponse du serveur pour disponibilité: 500
-link-form:788 Corps de la réponse: {success: false, message: 'Erreur lors de la vérification de la disponibilité…he` where `key` in (laravel-cache-bdm_api_token))'}
-link-form:793  ❌ La plateforme est fermée ou une erreur est survenue. {success: false, message: 'Erreur lors de la vérification de la disponibilité…he` where `key` in (laravel-cache-bdm_api_token))'}message: "Erreur lors de la vérification de la disponibilité: SQLSTATE[HY000] [2002] Aucune connexion n’a pu être établie car l’ordinateur cible l’a expressément refusée (Connection: mysql, SQL: select * from `cache` where `key` in (laravel-cache-bdm_api_token))"success: false[[Prototype]]: Object
-(anonymous) @ link-form:793
+main.js?attr=ysiKovSsotHUWkSTr_eUEzkk4iD4gu5IZRt-hzYrTpjsW8BczOi9zk_ZEyUJ53Du:4166   POST http://127.0.0.1:8000/client/update-profile 401 (Unauthorized)
+fetchCallImpl @ main.js?attr=ysiKovSsotHUWkSTr_eUEzkk4iD4gu5IZRt-hzYrTpjsW8BczOi9zk_ZEyUJ53Du:4166
+fetch @ main.js?attr=ysiKovSsotHUWkSTr_eUEzkk4iD4gu5IZRt-hzYrTpjsW8BczOi9zk_ZEyUJ53Du:4172
+e @ instrument.ts:174
+(anonymous) @ payment:516
+n @ helpers.ts:98
+instrument.ts:144  Update error: {message: 'Unauthenticated.'}message: "Unauthenticated."[[Prototype]]: Object
+(anonymous) @ instrument.ts:144
+(anonymous) @ payment:533
+await in (anonymous)
+n @ helpers.ts:98
