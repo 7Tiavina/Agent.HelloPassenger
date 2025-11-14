@@ -127,13 +127,35 @@ class PaymentController extends Controller
                     'guest_email' => 'required|email|max:255'
                 ])->validate();
 
-                $clientData = [
-                    "email" => $guestEmail, "telephone" => null, "nom" => 'Invité',
-                    "prenom" => 'Client', "civilite" => null, "nomSociete" => null,
-                    "adresse" => null, "complementAdresse" => null, "ville" => null,
-                    "codePostal" => null, "pays" => null,
-                    "is_guest" => true
-                ];
+                // Check if we have persistent guest details in the session
+                $persistentGuestDetails = Session::get('guest_customer_details', []);
+
+                if (!empty($persistentGuestDetails)) {
+                    // Use the stored details
+                    $clientData = [
+                        "email" => $guestEmail, // Keep the email from the current form
+                        "telephone" => $persistentGuestDetails['telephone'] ?? null,
+                        "nom" => $persistentGuestDetails['nom'] ?? 'Invité',
+                        "prenom" => $persistentGuestDetails['prenom'] ?? 'Client',
+                        "civilite" => $persistentGuestDetails['civilite'] ?? null,
+                        "nomSociete" => $persistentGuestDetails['nomSociete'] ?? null,
+                        "adresse" => $persistentGuestDetails['adresse'] ?? null,
+                        "complementAdresse" => $persistentGuestDetails['complementAdresse'] ?? null,
+                        "ville" => $persistentGuestDetails['ville'] ?? null,
+                        "codePostal" => $persistentGuestDetails['codePostal'] ?? null,
+                        "pays" => $persistentGuestDetails['pays'] ?? null,
+                        "is_guest" => true
+                    ];
+                } else {
+                    // Fallback to default guest data
+                    $clientData = [
+                        "email" => $guestEmail, "telephone" => null, "nom" => 'Invité',
+                        "prenom" => 'Client', "civilite" => null, "nomSociete" => null,
+                        "adresse" => null, "complementAdresse" => null, "ville" => null,
+                        "codePostal" => null, "pays" => null,
+                        "is_guest" => true
+                    ];
+                }
             }
 
             $commandeData = [
@@ -178,7 +200,10 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Not a guest session.'], 403);
         }
 
-        // Update the client data within the session
+        // Persist guest details in a separate session key to remember them across orders
+        Session::put('guest_customer_details', $validated);
+
+        // Update the client data within the current order's session
         $commandeData['client']['telephone'] = $validated['telephone'];
         $commandeData['client']['nom'] = $validated['nom'];
         $commandeData['client']['prenom'] = $validated['prenom'];
@@ -322,6 +347,7 @@ class PaymentController extends Controller
             // For guests, use the data directly from the session.
             // Cast to object so the view can access properties like $user->email
             $user = (object) $clientDataFromSession;
+            Log::debug('[showPaymentPage] Guest user data from session: ', ['clientDataFromSession' => $clientDataFromSession, 'userObject' => $user]);
             Log::info('[showPaymentPage] Handling guest user from session.', ['data' => $user]);
         } else {
             // For authenticated users, fetch the full model from the DB.

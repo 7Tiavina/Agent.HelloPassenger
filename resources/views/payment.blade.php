@@ -231,6 +231,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const isProfileComplete = @json($isProfileComplete);
+        console.log('isProfileComplete:', isProfileComplete);
 
         const clientProfileModal = document.getElementById('clientProfileModal');
         const openClientProfileModalBtn = document.getElementById('openClientProfileModalBtn');
