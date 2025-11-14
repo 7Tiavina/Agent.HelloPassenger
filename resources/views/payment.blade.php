@@ -205,9 +205,19 @@
                         @endif
                         
                         @if($dateDebut && $dateFin)
-                        <div class="mt-2 text-sm text-gray-600 space-y-1">
-                            <p><strong>Du :</strong> {{ $dateDebut->format('d/m/Y à H:i') }}</p>
-                            <p><strong>Au :</strong> {{ $dateFin->format('d/m/Y à H:i') }}</p>
+                        <div class="mt-3 space-y-2">
+                            <div class="flex items-center text-gray-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-yellow-custom" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="text-base"><strong>Du :</strong> <span class="font-bold text-gray-900">{{ $dateDebut->format('d/m/Y à H:i') }}</span></p>
+                            </div>
+                            <div class="flex items-center text-gray-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-yellow-custom" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="text-base"><strong>Au :</strong> <span class="font-bold text-gray-900">{{ $dateFin->format('d/m/Y à H:i') }}</span></p>
+                            </div>
                         </div>
                         @endif
                     </div>

@@ -458,63 +458,6 @@
         });
     }
 
-    function showLoginModal() {
-        const modalOverlay = document.getElementById('custom-modal-overlay');
-        const modalTitle = document.getElementById('custom-modal-title');
-        const modalMessage = document.getElementById('custom-modal-message');
-        const promptContainer = document.getElementById('custom-modal-prompt-container');
-        const promptLabel = document.getElementById('custom-modal-prompt-label');
-        const promptInput = document.getElementById('custom-modal-input');
-        const modalError = document.getElementById('custom-modal-error');
-        const modalFooter = document.getElementById('custom-modal-footer');
-
-        modalTitle.textContent = 'Connexion';
-        modalMessage.textContent = 'Veuillez entrer vos identifiants pour vous connecter.';
-        promptContainer.classList.remove('hidden');
-        promptLabel.textContent = 'Adresse e-mail';
-        promptInput.type = 'email'; // Set input type to email
-        promptInput.value = '';
-        modalError.classList.add('hidden');
-
-        // Add password field
-        const passwordFieldHtml = `
-            <label for="custom-modal-password" class="block text-sm font-medium text-gray-700 mb-1 mt-3">Mot de passe</label>
-            <input type="password" id="custom-modal-password" class="input-style w-full">
-        `;
-        promptContainer.insertAdjacentHTML('beforeend', passwordFieldHtml);
-
-        modalFooter.innerHTML = `
-            <button id="btn-cancel-login" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
-            <button id="btn-confirm-login" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Se connecter</button>
-        `;
-
-        modalOverlay.classList.remove('hidden');
-
-        return new Promise(resolve => {
-            modalResolve = resolve;
-            document.getElementById('btn-cancel-login').onclick = () => {
-                closeModal();
-                resolve(null); // User cancelled login
-            };
-            document.getElementById('btn-confirm-login').onclick = async () => {
-                const email = promptInput.value;
-                const password = document.getElementById('custom-modal-password').value;
-
-                if (!email.trim() || !password.trim()) {
-                    modalError.textContent = 'Veuillez remplir tous les champs.';
-                    modalError.classList.remove('hidden');
-                    return;
-                }
-
-                // Simulate login or redirect to login route
-                // For now, we'll just redirect to the login page
-                window.location.href = '/login'; // Assuming '/login' is your login route
-                closeModal();
-                resolve(true); // Indicate that login process was initiated
-            };
-        });
-    }
-
     function closeModal() {
         document.getElementById('custom-modal-overlay').classList.add('hidden');
         // Clean up dynamically added password field
@@ -1175,15 +1118,15 @@
                     const choice = await showLoginOrGuestPrompt();
 
                     if (choice === 'login') {
-                        const loginResult = await showLoginModal();
-                        if (!loginResult) { // User cancelled login modal
-                            if (loader) loader.classList.add('hidden');
-                            return;
+                        if (window.openLoginModal) {
+                            window.openLoginModal();
+                        } else {
+                            console.error('Global openLoginModal function not found.');
+                            await showCustomAlert('Erreur', 'Impossible d\'ouvrir la fenêtre de connexion.');
                         }
-                        // If login initiated (redirected), the script will stop here.
-                        // If not redirected (e.g., login failed but stayed on page),
-                        // we should re-check auth status or stop. For now, assume redirect.
-                        return; 
+                        // Stop the process here; the global login modal will handle the rest.
+                        if (loader) loader.classList.add('hidden');
+                        return;
                     } else if (choice === 'guest') {
                         // Do NOT show loader here, as user needs to interact with the prompt
                         const email = await showCustomPrompt(
