@@ -243,15 +243,32 @@ class PaymentController extends Controller
         Session::put('monetico_order_id', $orderId);
 
         // 1. Préparer les données de la requête
+        $customerEmail = $commandeData['client']['email'] ?? null;
+        $customerFirstName = $commandeData['client']['prenom'] ?? null;
+        $customerLastName = $commandeData['client']['nom'] ?? null;
+
+        // Fallback to authenticated user if session data is incomplete
+        if ((!$customerEmail || !$customerFirstName || !$customerLastName) && Auth::guard('client')->check()) {
+            $authenticatedUser = Auth::guard('client')->user();
+            $customerEmail = $customerEmail ?? $authenticatedUser->email;
+            $customerFirstName = $customerFirstName ?? $authenticatedUser->prenom;
+            $customerLastName = $customerLastName ?? $authenticatedUser->nom;
+        }
+
+        if (!$customerEmail || !$customerFirstName || !$customerLastName) {
+            Log::error('Monetico redirection failed: Missing customer email, first name or last name.', ['commandeData' => $commandeData]);
+            return null;
+        }
+
         $payload = [
             'shopId' => config('monetico.login'),
             'amount' => (int)($commandeData['total_prix_ttc'] * 100),
             'currency' => 'EUR',
             'orderId' => $orderId,
             'customer' => [
-                'email' => $commandeData['client']['email'],
-                'firstName' => $commandeData['client']['prenom'],
-                'lastName' => $commandeData['client']['nom'],
+                'email' => $customerEmail,
+                'firstName' => $customerFirstName,
+                'lastName' => $customerLastName,
             ],
             'paymentMethod' => ['type' => 'Card'],
             'urls' => [
@@ -308,12 +325,12 @@ class PaymentController extends Controller
             Log::info('[showPaymentPage] Handling guest user from session.', ['data' => $user]);
         } else {
             // For authenticated users, fetch the full model from the DB.
-            $user = \App\Models\Client::where('email', $clientDataFromSession['email'])->first();
+            $user = Auth::guard('client')->user();
             if (!$user) {
-                Log::error('[showPaymentPage] Client record not found in DB for email from session: ' . $clientDataFromSession['email']);
-                return redirect()->route('form-consigne')->with('error', 'Erreur interne: Client introuvable pour la session de commande.');
+                Log::error('[showPaymentPage] Authenticated client not found via Auth::guard. Redirecting to form-consigne.');
+                return redirect()->route('form-consigne')->with('error', 'Erreur interne: Client authentifié introuvable. Veuillez vous reconnecter.');
             }
-            Log::info('[showPaymentPage] Handling authenticated user from DB.', ['data' => $user]);
+            Log::info('[showPaymentPage] Handling authenticated user from Auth::guard.', ['data' => $user]);
         }
         
         $isProfileComplete = true;
@@ -357,6 +374,29 @@ class PaymentController extends Controller
         $idPlateforme = $commandeData['idPlateforme'];
         $commandeLignes = $commandeData['commandeLignes'];
         $clientData = $commandeData['client'];
+
+        // Ensure clientData has an email, falling back to authenticated user if necessary
+        if (!isset($clientData['email']) && Auth::guard('client')->check()) {
+            $authenticatedUser = Auth::guard('client')->user();
+            $clientData['email'] = $authenticatedUser->email;
+            // Also update other client data if they are missing and available from authenticated user
+            $clientData['nom'] = $clientData['nom'] ?? $authenticatedUser->nom;
+            $clientData['prenom'] = $clientData['prenom'] ?? $authenticatedUser->prenom;
+            $clientData['telephone'] = $clientData['telephone'] ?? $authenticatedUser->telephone;
+            $clientData['civilite'] = $clientData['civilite'] ?? $authenticatedUser->civilite;
+            $clientData['nomSociete'] = $clientData['nomSociete'] ?? $authenticatedUser->nomSociete;
+            $clientData['adresse'] = $clientData['adresse'] ?? $authenticatedUser->adresse;
+            $clientData['complementAdresse'] = $clientData['complementAdresse'] ?? $authenticatedUser->complementAdresse;
+            $clientData['ville'] = $clientData['ville'] ?? $authenticatedUser->ville;
+            $clientData['codePostal'] = $clientData['codePostal'] ?? $authenticatedUser->codePostal;
+            $clientData['pays'] = $clientData['pays'] ?? $authenticatedUser->pays;
+        }
+
+        if (!isset($clientData['email'])) {
+            Log::error('paymentSuccess failed: Client email not available in session or from authenticated user.', ['commandeData' => $commandeData]);
+            return redirect()->route('form-consigne')->with('error', 'Erreur: Email client non disponible pour finaliser la commande.');
+        }
+
         $totalPrixTTC = $commandeData['total_prix_ttc'];
 
         try {
