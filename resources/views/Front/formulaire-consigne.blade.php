@@ -280,8 +280,8 @@
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex justify-end p-6 border-t border-gray-200">
-            <button id="qdm-validate-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-6 rounded-full btn-hover">
+        <div class="flex justify-center p-6 border-t border-gray-200">
+            <button id="qdm-validate-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-6 rounded-full btn-hover w-full">
                 Valider
             </button>
         </div>
@@ -374,7 +374,7 @@
                 </div>
 
                 <!-- Display Dates -->
-                <div id="dates-display" class="flex justify-around bg-gray-100 p-4 rounded-lg mb-6 text-center cursor-pointer">
+                <div id="dates-display" class="flex justify-around bg-gray-100 p-4 rounded-lg mb-6 text-center cursor-pointer hover:bg-gray-200 hover:shadow-md transition-all duration-200">
                     <div>
                         <p class="text-sm font-medium text-gray-600">DÉPÔT</p>
                         <p id="display-date-depot" class="text-lg font-bold text-gray-900"></p>
@@ -669,20 +669,7 @@
             }
         });
 
-        document.getElementById('options-container').addEventListener('click', (e) => {
-            const header = e.target.closest('.option-header');
-            const addButton = e.target.closest('.add-option-btn');
 
-            if (header) {
-                header.classList.toggle('open');
-                const details = header.nextElementSibling;
-                details.classList.toggle('hidden');
-            }
-
-            if(addButton && !addButton.disabled) {
-                handleOptionAddToCart(addButton.dataset.optionKey);
-            }
-        });
 
         const dateDepotInput = document.getElementById('date-depot');
         const dateRecuperationInput = document.getElementById('date-recuperation');
@@ -704,8 +691,10 @@
         dateDepotInput.addEventListener('change', function() {
             if (this.value) {
                 dateRecuperationInput.min = this.value;
+                // If new depot date is after current retrieval date, adjust retrieval date
                 if (dateRecuperationInput.value < this.value) {
-                    dateRecuperationInput.value = '';
+                    dateRecuperationInput.value = this.value; // Set retrieval date to new depot date
+                    heureRecuperationInput.value = heureDepotInput.value; // Also adjust time
                     saveStateToSession();
                 }
             }
@@ -1344,7 +1333,7 @@
         }
     }
 
-    function openQuickDateModal() {
+    function openQuickDateModal() { // Removed trigger parameter
         const depotDate = document.getElementById('date-depot').value;
         const depotHeure = document.getElementById('heure-depot').value;
         const retraitDate = document.getElementById('date-recuperation').value;
@@ -1354,8 +1343,12 @@
         qdm_temp_retrait_date = new Date(`${retraitDate}T${retraitHeure}`);
         qdm_editing_mode = 'depot'; // Always start editing depot date
 
-        // Determine initial day selections based on current dates
+        // Set initial min for custom date input (for depot date)
         const today = new Date();
+        const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        document.getElementById('qdm-custom-date-input').min = todayFormatted;
+
+        // Determine initial day selections based on current dates
         const tomorrow = new Date();
         tomorrow.setDate(today.getDate() + 1);
 
@@ -1376,23 +1369,29 @@
         }
 
         updateQdmDisplay();
-        generateHourButtons(qdm_temp_depot_date);
+        generateHourButtons(qdm_temp_depot_date); // Revert to original call
         document.getElementById('quick-date-modal').classList.remove('hidden');
     }
 
     function setupQdmListeners() {
-        document.getElementById('dates-display').addEventListener('click', openQuickDateModal);
+        document.getElementById('dates-display').addEventListener('click', openQuickDateModal); // Revert to original
         document.getElementById('close-quick-date-modal').addEventListener('click', () => {
             document.getElementById('quick-date-modal').classList.add('hidden');
         });
 
         document.getElementById('quick-depot-block').addEventListener('click', () => {
             qdm_editing_mode = 'depot';
+            const today = new Date();
+            const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            document.getElementById('qdm-custom-date-input').min = todayFormatted;
             updateQdmDisplay();
             generateHourButtons(qdm_temp_depot_date);
         });
         document.getElementById('quick-retrait-block').addEventListener('click', () => {
             qdm_editing_mode = 'retrait';
+            const pad = (num) => num.toString().padStart(2, '0');
+            const depotDateFormatted = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
+            document.getElementById('qdm-custom-date-input').min = depotDateFormatted;
             updateQdmDisplay();
             generateHourButtons(qdm_temp_retrait_date);
         });
@@ -1442,10 +1441,17 @@
 
         document.getElementById('qdm-custom-date-input').addEventListener('change', (e) => {
             const newDate = new Date(e.target.value);
+            // Adjust for timezone offset by using UTC dates
+            const newDateUTC = new Date(newDate.getUTCFullYear(), newDate.getUTCMonth(), newDate.getUTCDate());
+
             if (qdm_editing_mode === 'depot') {
-                qdm_temp_depot_date.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate() + 1); // Date picker timezone fix
-            } else {
-                qdm_temp_retrait_date.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate() + 1); // Date picker timezone fix
+                qdm_temp_depot_date.setFullYear(newDateUTC.getFullYear(), newDateUTC.getMonth(), newDateUTC.getDate());
+                // If new depot date is after retrait date, adjust retrait date
+                if (qdm_temp_depot_date > qdm_temp_retrait_date) {
+                    qdm_temp_retrait_date = new Date(qdm_temp_depot_date);
+                }
+            } else { // editing retrait
+                qdm_temp_retrait_date.setFullYear(newDateUTC.getFullYear(), newDateUTC.getMonth(), newDateUTC.getDate());
             }
             updateQdmDisplay();
         });
