@@ -130,6 +130,36 @@
 </head>
 <body class="min-h-screen bg-white">
 
+<!-- Custom Modal -->
+<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+    <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+            <h3 id="custom-modal-title" class="text-xl font-bold text-gray-800"></h3>
+            <button id="custom-modal-close" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Modal Body -->
+        <div class="py-4">
+            <p id="custom-modal-message" class="text-gray-600"></p>
+            <div id="custom-modal-prompt-container" class="hidden mt-4">
+                <label id="custom-modal-prompt-label" for="custom-modal-input" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                <input type="text" id="custom-modal-input" class="input-style w-full">
+                <p id="custom-modal-error" class="text-red-500 text-sm mt-1 hidden"></p>
+            </div>
+        </div>
+        <!-- Modal Footer -->
+        <div id="custom-modal-footer" class="flex justify-end pt-3 border-t border-gray-200 space-x-3">
+            <button id="custom-modal-cancel-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+            <button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">OK</button>
+        </div>
+    </div>
+</div>
+
+
 <div id="baggage-tooltip" class="hidden absolute z-10 p-2 text-sm font-medium text-white bg-gray-800 rounded-lg shadow-sm" role="tooltip">
     <!-- Tooltip content will be injected here -->
 </div>
@@ -335,6 +365,64 @@
 
 <footer id="footer"></footer>
 <script>
+    // --- MODAL ---
+    let modalResolve;
+
+    function showCustomAlert(title, message) {
+        const modalOverlay = document.getElementById('custom-modal-overlay');
+        const modalTitle = document.getElementById('custom-modal-title');
+        const modalMessage = document.getElementById('custom-modal-message');
+        const promptContainer = document.getElementById('custom-modal-prompt-container');
+        const modalCancelBtn = document.getElementById('custom-modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+
+        promptContainer.classList.add('hidden');
+        modalCancelBtn.classList.add('hidden');
+        modalConfirmBtn.textContent = 'OK';
+
+        modalOverlay.classList.remove('hidden');
+
+        return new Promise(resolve => {
+            modalResolve = resolve;
+        });
+    }
+
+    function showCustomPrompt(title, message, label) {
+        const modalOverlay = document.getElementById('custom-modal-overlay');
+        const modalTitle = document.getElementById('custom-modal-title');
+        const modalMessage = document.getElementById('custom-modal-message');
+        const promptContainer = document.getElementById('custom-modal-prompt-container');
+        const promptLabel = document.getElementById('custom-modal-prompt-label');
+        const promptInput = document.getElementById('custom-modal-input');
+        const modalError = document.getElementById('custom-modal-error');
+        const modalCancelBtn = document.getElementById('custom-modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        promptLabel.textContent = label;
+
+        promptContainer.classList.remove('hidden');
+        promptInput.value = '';
+        modalError.classList.add('hidden');
+
+        modalCancelBtn.classList.remove('hidden');
+        modalConfirmBtn.textContent = 'Confirmer';
+        
+        modalOverlay.classList.remove('hidden');
+
+        return new Promise(resolve => {
+            modalResolve = resolve;
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('custom-modal-overlay').classList.add('hidden');
+    }
+    // --- END MODAL ---
 
     let airportId = null;
     const serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
@@ -462,6 +550,50 @@
                 tooltip.classList.add('hidden');
             }
         });
+
+        // --- MODAL LISTENERS ---
+        const modalOverlay = document.getElementById('custom-modal-overlay');
+        const modalCloseBtn = document.getElementById('custom-modal-close');
+        const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('custom-modal-cancel-btn');
+        const promptContainer = document.getElementById('custom-modal-prompt-container');
+        const promptInput = document.getElementById('custom-modal-input');
+        const modalError = document.getElementById('custom-modal-error');
+
+        modalCloseBtn.addEventListener('click', () => {
+            closeModal();
+            if (modalResolve) modalResolve(null);
+        });
+
+        modalCancelBtn.addEventListener('click', () => {
+            closeModal();
+            if (modalResolve) modalResolve(null);
+        });
+
+        modalConfirmBtn.addEventListener('click', () => {
+            const isPrompt = !promptContainer.classList.contains('hidden');
+            if (isPrompt) {
+                const value = promptInput.value;
+                if (value.trim() === '' || !/^\S+@\S+\.\S+$/.test(value)) {
+                    modalError.textContent = 'Veuillez entrer une adresse e-mail valide.';
+                    modalError.classList.remove('hidden');
+                    return;
+                }
+                closeModal();
+                if (modalResolve) modalResolve(value);
+            } else {
+                closeModal();
+                if (modalResolve) modalResolve(true);
+            }
+        });
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+                if (modalResolve) modalResolve(null);
+            }
+        });
+        // --- END MODAL LISTENERS ---
     });
 
     
@@ -481,37 +613,46 @@
         const target = e.target.closest('.quantity-change-btn');
         if (!target) return;
 
-        const action = target.dataset.action;
-        const productId = target.dataset.productId;
-        
-        const product = initialProducts.find(p => p.id == productId);
-        if (!product) return;
+        const cartSpinner = document.getElementById('loading-spinner-cart');
+        if(cartSpinner) cartSpinner.style.display = 'inline-block';
 
-        let itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
-
-        if (action === 'plus') {
-            if (itemInCart) {
-                itemInCart.quantity++;
-            } else {
-                const mapData = productMapJs[product.libelle];
-                const type = mapData ? mapData.type : 'unknown';
-                cartItems.push({
-                    itemCategory: 'baggage',
-                    productId: productId,
-                    libelle: product.libelle,
-                    type: type,
-                    quantity: 1
-                });
+        // Simulate a small delay to make the spinner visible
+        setTimeout(() => {
+            const action = target.dataset.action;
+            const productId = target.dataset.productId;
+            
+            const product = initialProducts.find(p => p.id == productId);
+            if (!product) {
+                if(cartSpinner) cartSpinner.style.display = 'none';
+                return;
             }
-        } else if (action === 'minus') {
-            if (itemInCart) {
-                itemInCart.quantity--;
-                if (itemInCart.quantity <= 0) {
-                    cartItems = cartItems.filter(item => item.productId !== productId || item.itemCategory !== 'baggage');
+
+            let itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
+
+            if (action === 'plus') {
+                if (itemInCart) {
+                    itemInCart.quantity++;
+                } else {
+                    const mapData = productMapJs[product.libelle];
+                    const type = mapData ? mapData.type : 'unknown';
+                    cartItems.push({
+                        itemCategory: 'baggage',
+                        productId: productId,
+                        libelle: product.libelle,
+                        type: type,
+                        quantity: 1
+                    });
+                }
+            } else if (action === 'minus') {
+                if (itemInCart) {
+                    itemInCart.quantity--;
+                    if (itemInCart.quantity <= 0) {
+                        cartItems = cartItems.filter(item => item.productId !== productId || item.itemCategory !== 'baggage');
+                    }
                 }
             }
-        }
-        updateCartDisplay();
+            updateCartDisplay();
+        }, 1000); // 1000ms delay
     }
 
     function saveStateToSession() {
@@ -570,7 +711,7 @@
 
     async function checkAvailability() {
         const spinner = document.getElementById('loading-spinner-availability');
-        const btn = this;
+        const btn = document.getElementById('check-availability-btn');
         spinner.style.display = 'inline-block';
         btn.disabled = true;
 
@@ -578,7 +719,7 @@
         const heureDepot = document.getElementById('heure-depot').value;
 
         if (!airportId || !dateDepot || !heureDepot) {
-            alert('Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
+            await showCustomAlert('Champs incomplets', 'Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
             spinner.style.display = 'none';
             btn.disabled = false;
             return;
@@ -603,11 +744,11 @@
                 displaySelectedDates();
                 getQuoteAndDisplay();
             } else {
-                alert(result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
+                await showCustomAlert('Indisponible', result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
             }
         } catch (error) {
             console.error('Erreur lors de la vérification de disponibilité:', error);
-            alert('Une erreur technique est survenue.');
+            await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la vérification de la disponibilité.');
         } finally {
             spinner.style.display = 'none';
             btn.disabled = false;
@@ -653,7 +794,7 @@
         const heureRecuperation = document.getElementById('heure-recuperation').value;
 
         if (!dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
-            alert('Veuillez vérifier les dates et heures de dépôt et de récupération.');
+            await showCustomAlert('Attention', 'Veuillez vérifier les dates et heures de dépôt et de récupération.');
             if(cartSpinner) cartSpinner.style.display = 'none';
             if(optionsSpinner) optionsSpinner.style.display = 'none';
             return;
@@ -664,7 +805,7 @@
         const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
 
         if (dureeEnMinutes <= 0) {
-            alert('La date de récupération doit être postérieure à la date de dépôt.');
+            await showCustomAlert('Attention', 'La date de récupération doit être postérieure à la date de dépôt.');
             if(cartSpinner) cartSpinner.style.display = 'none';
             if(optionsSpinner) optionsSpinner.style.display = 'none';
             return;
@@ -685,11 +826,11 @@
                 displayOptions(dureeEnMinutes);
                 updateCartDisplay();
             } else {
-                alert('Erreur lors de la récupération des tarifs : ' + (result.message || 'Réponse invalide'));
+                await showCustomAlert('Erreur de tarification', 'Erreur lors de la récupération des tarifs : ' + (result.message || 'Réponse invalide'));
             }
         } catch (error) {
             console.error('Erreur lors de la récupération des tarifs et lieux:', error);
-            alert('Une erreur technique est survenue.');
+            await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la récupération des tarifs.');
         } finally {
             if(cartSpinner) cartSpinner.style.display = 'none';
             if(optionsSpinner) optionsSpinner.parentElement.style.display = 'none';
@@ -855,11 +996,22 @@
         });
 
         saveStateToSession(); // Save state after any cart update
+        
+        const cartSpinner = document.getElementById('loading-spinner-cart');
+        if(cartSpinner) cartSpinner.style.display = 'none';
     }
     
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     async function handleTotalClick() {
+        const loader = document.getElementById('loader');
+        if (loader) loader.classList.remove('hidden'); // Show loader
+
         if (cartItems.length === 0) {
-            alert("Votre panier est vide.");
+            await showCustomAlert('Panier vide', "Votre panier est vide.");
+            if (loader) loader.classList.add('hidden'); // Hide loader
             return;
         }
 
@@ -868,19 +1020,26 @@
             const authData = await authResponse.json();
             
             if (!authData.authenticated) {
-                if (!guestEmail) { // Check global guestEmail
-                    guestEmail = prompt("Veuillez entrer votre adresse e-mail pour continuer en tant qu'invité:", "");
-                    if (!guestEmail) {
-                        alert("Une adresse e-mail est requise pour continuer.");
+                if (!guestEmail) {
+                    await sleep(900); // Add 900 ms delay
+
+                    // Hide loader before showing prompt
+                    if (loader) loader.classList.add('hidden');
+
+                    const email = await showCustomPrompt(
+                        'Comment pouvons-nous vous joindre ?', 
+                        'C’est sur ce mail que vous recevrez la confirmation de réservation.',
+                        'Adresse e-mail'
+                    );
+                    
+                    if (email) {
+                        guestEmail = email;
+                        saveStateToSession();
+                    } else {
+                        // User cancelled the prompt, so hide loader and return
+                        if (loader) loader.classList.add('hidden');
                         return;
                     }
-                    // Basic email validation
-                    if (!/^\S+@\S+\.\S+$/.test(guestEmail)) {
-                        alert("Veuillez entrer une adresse e-mail valide.");
-                        guestEmail = null; // Clear invalid email
-                        return;
-                    }
-                    saveStateToSession(); // Save email after successful prompt
                 }
             } else {
                 guestEmail = null; // Clear guest email if user logs in
@@ -920,11 +1079,13 @@
             if (prepareResponse.ok) {
                 window.location.href = resultData.redirect_url;
             } else {
-                alert('Erreur: ' + (resultData.message || 'Erreur inconnue.'));
+                await showCustomAlert('Erreur', resultData.message || 'Une erreur inconnue est survenue lors de la préparation du paiement.');
             }
         } catch (error) {
             console.error('Erreur critique dans handleTotalClick:', error);
-            alert('Une erreur technique est survenue.');
+            await showCustomAlert('Erreur', 'Une erreur technique est survenue.');
+        } finally {
+            if (loader) loader.classList.add('hidden'); // Ensure loader is hidden
         }
     }
 
