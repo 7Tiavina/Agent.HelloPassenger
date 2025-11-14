@@ -160,6 +160,59 @@
             <div>
                 <h1 class="text-2xl font-bold text-gray-800 mb-6">Récapitulatif de votre commande</h1>
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    @php
+                        // --- Duration Calculation ---
+                        $duration_in_minutes = $commandeData['duration_in_minutes'] ?? 0;
+                        $duration_display = '';
+                        if ($duration_in_minutes > 0) {
+                            if ($duration_in_minutes < 1440) { // Less than a day
+                                $hours = floor($duration_in_minutes / 60);
+                                $minutes = $duration_in_minutes % 60;
+                                $duration_display = $hours . ' heure(s)';
+                                if ($minutes > 0) {
+                                    $duration_display .= ' et ' . $minutes . ' minute(s)';
+                                }
+                            } else { // A day or more
+                                $days = floor($duration_in_minutes / 1440);
+                                $remaining_hours = floor(($duration_in_minutes % 1440) / 60);
+                                $duration_display = $days . ' jour(s)';
+                                if ($remaining_hours > 0) {
+                                    $duration_display .= ' et ' . $remaining_hours . ' heure(s)';
+                                }
+                            }
+                        }
+
+                        // --- Date Extraction ---
+                        $firstLigne = $commandeData['commandeLignes'][0] ?? null;
+                        $dateDebut = null;
+                        $dateFin = null;
+                        if ($firstLigne) {
+                            try {
+                                $dateDebut = \Carbon\Carbon::parse($firstLigne['dateDebut']);
+                                $dateFin = \Carbon\Carbon::parse($firstLigne['dateFin']);
+                            } catch (\Exception $e) {
+                                // In case of parsing error, do nothing, dates will be null
+                            }
+                        }
+                    @endphp
+
+                    {{-- Display Block for Dates and Duration --}}
+                    @if($duration_display || ($dateDebut && $dateFin))
+                    <div class="border-b border-gray-200 pb-4 mb-4">
+                        @if($duration_display)
+                        <p class="font-semibold text-gray-700">Durée totale</p>
+                        <p class="text-lg font-bold text-gray-900">{{ $duration_display }}</p>
+                        @endif
+                        
+                        @if($dateDebut && $dateFin)
+                        <div class="mt-2 text-sm text-gray-600 space-y-1">
+                            <p><strong>Du :</strong> {{ $dateDebut->format('d/m/Y à H:i') }}</p>
+                            <p><strong>Au :</strong> {{ $dateFin->format('d/m/Y à H:i') }}</p>
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+                    
                     <ul class="divide-y divide-gray-200">
                         @foreach($commandeData['commandeLignes'] as $ligne)
                             <li class="py-4 flex justify-between items-center">

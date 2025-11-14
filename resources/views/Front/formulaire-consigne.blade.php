@@ -1019,16 +1019,35 @@
 
         // Calculate and display duration
         const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
         const dateRecuperation = document.getElementById('date-recuperation').value;
-        if (dateDepot && dateRecuperation) {
-            const start = new Date(dateDepot);
-            const end = new Date(dateRecuperation);
-            const diffTime = Math.abs(end - start);
-            diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            durationElement.textContent = `${diffDays} jour(s)`;
-        } else {
-            durationElement.textContent = '';
+        const heureRecuperation = document.getElementById('heure-recuperation').value;
+        
+        let duration_display = '';
+        if (dateDepot && heureDepot && dateRecuperation && heureRecuperation) {
+            const start = new Date(`${dateDepot}T${heureDepot}`);
+            const end = new Date(`${dateRecuperation}T${heureRecuperation}`);
+            const duration_in_minutes = Math.round((end - start) / (1000 * 60));
+
+            if (duration_in_minutes > 0) {
+                if (duration_in_minutes < 1440) { // Moins d'un jour (1440 minutes = 24 heures)
+                    const hours = Math.floor(duration_in_minutes / 60);
+                    const minutes = duration_in_minutes % 60;
+                    duration_display = hours + ' heure(s)';
+                    if (minutes > 0) {
+                        duration_display += ' et ' + minutes + ' minute(s)';
+                    }
+                } else { // Un jour ou plus
+                    const days = Math.floor(duration_in_minutes / 1440);
+                    const remaining_hours = Math.floor((duration_in_minutes % 1440) / 60);
+                    duration_display = days + ' jour(s)';
+                    if (remaining_hours > 0) {
+                        duration_display += ' et ' + remaining_hours + ' heure(s)';
+                    }
+                }
+            }
         }
+        durationElement.textContent = duration_display;
 
         cartItems.forEach((item, index) => {
             let itemTotal = 0;
