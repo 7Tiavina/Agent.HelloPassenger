@@ -212,6 +212,83 @@
     </div>
 </div>
 
+<!-- Quick Date Edit Modal -->
+<div id="quick-date-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10001] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-800">Modifier les dates</h3>
+            <button id="close-quick-date-modal" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-6">
+            <!-- Date Blocks -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Depot Block -->
+                <div id="quick-depot-block" class="border border-gray-300 rounded-lg p-4 text-center cursor-pointer">
+                    <p class="font-semibold text-gray-700">DÉPÔT</p>
+                    <p id="quick-depot-date-display" class="text-2xl font-bold text-gray-900 mt-2">--</p>
+                    <p id="quick-depot-time-display" class="text-lg text-gray-600">--:--</p>
+                </div>
+                <!-- Retrait Block -->
+                <div id="quick-retrait-block" class="border border-gray-200 rounded-lg p-4 text-center cursor-pointer">
+                    <p class="font-semibold text-gray-700">RETRAIT</p>
+                    <p id="quick-retrait-date-display" class="text-2xl font-bold text-gray-900 mt-2">--</p>
+                    <p id="quick-retrait-time-display" class="text-lg text-gray-600">--:--</p>
+                </div>
+            </div>
+
+            <!-- Date Selection Mode -->
+            <div class="text-center hidden">
+                <div class="inline-flex rounded-md shadow-sm" role="group">
+                    <button type="button" id="qdm-btn-depot" class="py-2 px-4 text-sm font-medium text-gray-900 bg-white rounded-l-lg border border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-yellow-custom">
+                        Modifier Dépôt
+                    </button>
+                    <button type="button" id="qdm-btn-retrait" class="py-2 px-4 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-yellow-custom">
+                        Modifier Retrait
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Select Buttons -->
+            <div id="qdm-quick-select-container" class="p-4 bg-gray-50 rounded-lg">
+                <p id="qdm-editing-label" class="text-center font-semibold mb-4">Modification de la date de Dépôt</p>
+                <div class="flex justify-center space-x-4">
+                    <button data-day="today" class="qdm-day-btn py-2 px-6 bg-gray-200 rounded-full">Auj.</button>
+                    <button data-day="tomorrow" class="qdm-day-btn py-2 px-6 bg-gray-200 rounded-full">Demain</button>
+                    <button data-day="custom" class="qdm-day-btn py-2 px-6 bg-gray-200 rounded-full">Personnalisé</button>
+                </div>
+                <!-- Custom Date Input -->
+                <div id="qdm-custom-date-container" class="hidden mt-4 text-center">
+                    <input type="date" id="qdm-custom-date-input" class="input-style mx-auto">
+                </div>
+            </div>
+
+            <!-- Hour Selection -->
+            <div id="qdm-hour-container" class="p-4 bg-gray-50 rounded-lg">
+                 <p class="text-center font-semibold mb-4">Heure</p>
+                 <div id="qdm-hour-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    <!-- Hour buttons will be injected here -->
+                 </div>
+                 <div id="qdm-custom-hour-container" class="hidden mt-4 text-center">
+                    <input type="time" id="qdm-custom-time-input" class="input-style mx-auto">
+                 </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end p-6 border-t border-gray-200">
+            <button id="qdm-validate-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-6 rounded-full btn-hover">
+                Valider
+            </button>
+        </div>
+    </div>
+</div>
+
+
 
 
 <div id="baggage-tooltip" class="hidden absolute z-10 p-2 text-sm font-medium text-white bg-gray-800 rounded-lg shadow-sm" role="tooltip">
@@ -290,8 +367,14 @@
             </div>
 
             <div id="baggage-selection-step" class="hidden">
+                <!-- Display Airport Name -->
+                <div class="bg-gray-100 p-4 rounded-lg mb-6 text-center">
+                    <p class="text-sm font-medium text-gray-600">AÉROPORT SÉLECTIONNÉ</p>
+                    <p id="display-airport-name" class="text-lg font-bold text-gray-900"></p>
+                </div>
+
                 <!-- Display Dates -->
-                <div id="dates-display" class="flex justify-around bg-gray-100 p-4 rounded-lg mb-6 text-center">
+                <div id="dates-display" class="flex justify-around bg-gray-100 p-4 rounded-lg mb-6 text-center cursor-pointer">
                     <div>
                         <p class="text-sm font-medium text-gray-600">DÉPÔT</p>
                         <p id="display-date-depot" class="text-lg font-bold text-gray-900"></p>
@@ -559,6 +642,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         loadStateFromSession(); // Load state on page load
+        setupQdmListeners(); // Setup listeners for the new modal
 
         // --- EVENT LISTENERS ---
         document.getElementById('back-to-step-1-btn').addEventListener('click', function() {
@@ -719,6 +803,11 @@
 
         document.getElementById('display-date-depot').textContent = `${depotDate}, ${depotHeure}`;
         document.getElementById('display-date-recuperation').textContent = `${recupDate}, ${recupHeure}`;
+
+        // NEW: Display airport name
+        const airportSelect = document.getElementById('airport-select');
+        const selectedAirportName = airportSelect.options[airportSelect.selectedIndex].text;
+        document.getElementById('display-airport-name').textContent = selectedAirportName;
     }
 
     function handleQuantityChange(e) {
@@ -1189,6 +1278,219 @@
     
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // --- QUICK DATE MODAL LOGIC ---
+    let qdm_temp_depot_date;
+    let qdm_temp_retrait_date;
+    let qdm_editing_mode = 'depot'; // 'depot' or 'retrait'
+    let qdm_depot_day_selection = 'custom'; // 'today', 'tomorrow', 'custom'
+    let qdm_retrait_day_selection = 'custom'; // 'today', 'tomorrow', 'custom'
+
+    function formatQdmDate(date) {
+        const options = { weekday: 'long', day: 'numeric', month: 'long' };
+        let formatted = date.toLocaleDateString('fr-FR', options);
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+
+    function updateQdmDisplay() {
+        // Update main blocks
+        document.getElementById('quick-depot-date-display').textContent = formatQdmDate(qdm_temp_depot_date);
+        document.getElementById('quick-depot-time-display').textContent = qdm_temp_depot_date.toTimeString().substring(0, 5);
+        document.getElementById('quick-retrait-date-display').textContent = formatQdmDate(qdm_temp_retrait_date);
+        document.getElementById('quick-retrait-time-display').textContent = qdm_temp_retrait_date.toTimeString().substring(0, 5);
+
+        // Update editing mode visuals
+        const depotBlock = document.getElementById('quick-depot-block');
+        const retraitBlock = document.getElementById('quick-retrait-block');
+        const editingLabel = document.getElementById('qdm-editing-label');
+
+        if (qdm_editing_mode === 'depot') {
+            depotBlock.classList.add('border-yellow-custom', 'border-2');
+            retraitBlock.classList.remove('border-yellow-custom', 'border-2');
+            editingLabel.textContent = 'Date de Dépôt';
+        } else {
+            retraitBlock.classList.add('border-yellow-custom', 'border-2');
+            depotBlock.classList.remove('border-yellow-custom', 'border-2');
+            editingLabel.textContent = 'Date de Retrait';
+        }
+
+        // Update day selection buttons highlighting
+        document.querySelectorAll('.qdm-day-btn').forEach(btn => {
+            btn.classList.remove('bg-yellow-custom', 'text-gray-dark');
+            btn.classList.add('bg-gray-200');
+        });
+
+        let currentSelection = (qdm_editing_mode === 'depot') ? qdm_depot_day_selection : qdm_retrait_day_selection;
+        const selectedBtn = document.querySelector(`.qdm-day-btn[data-day="${currentSelection}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.remove('bg-gray-200');
+            selectedBtn.classList.add('bg-yellow-custom', 'text-gray-dark');
+        }
+    }
+
+    function generateHourButtons(date) {
+        const hourGrid = document.getElementById('qdm-hour-grid');
+        hourGrid.innerHTML = '';
+        const startHour = (new Date().toDateString() === date.toDateString()) ? new Date().getHours() + 1 : 0;
+
+        for (let i = startHour; i < 24; i++) {
+            const hour = i.toString().padStart(2, '0') + ':00';
+            const button = document.createElement('button');
+            button.textContent = hour;
+            button.classList.add('qdm-hour-btn', 'py-2', 'px-2', 'bg-white', 'rounded-md', 'border', 'border-gray-300', 'hover:bg-gray-100');
+            button.dataset.hour = hour;
+            hourGrid.appendChild(button);
+        }
+    }
+
+    function openQuickDateModal() {
+        const depotDate = document.getElementById('date-depot').value;
+        const depotHeure = document.getElementById('heure-depot').value;
+        const retraitDate = document.getElementById('date-recuperation').value;
+        const retraitHeure = document.getElementById('heure-recuperation').value;
+
+        qdm_temp_depot_date = new Date(`${depotDate}T${depotHeure}`);
+        qdm_temp_retrait_date = new Date(`${retraitDate}T${retraitHeure}`);
+        qdm_editing_mode = 'depot'; // Always start editing depot date
+
+        // Determine initial day selections based on current dates
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        if (qdm_temp_depot_date.toDateString() === today.toDateString()) {
+            qdm_depot_day_selection = 'today';
+        } else if (qdm_temp_depot_date.toDateString() === tomorrow.toDateString()) {
+            qdm_depot_day_selection = 'tomorrow';
+        } else {
+            qdm_depot_day_selection = 'custom';
+        }
+
+        if (qdm_temp_retrait_date.toDateString() === today.toDateString()) {
+            qdm_retrait_day_selection = 'today';
+        } else if (qdm_temp_retrait_date.toDateString() === tomorrow.toDateString()) {
+            qdm_retrait_day_selection = 'tomorrow';
+        } else {
+            qdm_retrait_day_selection = 'custom';
+        }
+
+        updateQdmDisplay();
+        generateHourButtons(qdm_temp_depot_date);
+        document.getElementById('quick-date-modal').classList.remove('hidden');
+    }
+
+    function setupQdmListeners() {
+        document.getElementById('dates-display').addEventListener('click', openQuickDateModal);
+        document.getElementById('close-quick-date-modal').addEventListener('click', () => {
+            document.getElementById('quick-date-modal').classList.add('hidden');
+        });
+
+        document.getElementById('quick-depot-block').addEventListener('click', () => {
+            qdm_editing_mode = 'depot';
+            updateQdmDisplay();
+            generateHourButtons(qdm_temp_depot_date);
+        });
+        document.getElementById('quick-retrait-block').addEventListener('click', () => {
+            qdm_editing_mode = 'retrait';
+            updateQdmDisplay();
+            generateHourButtons(qdm_temp_retrait_date);
+        });
+
+        document.querySelectorAll('.qdm-day-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const day = e.target.dataset.day;
+                const customDateContainer = document.getElementById('qdm-custom-date-container');
+                const customHourContainer = document.getElementById('qdm-custom-hour-container');
+                const hourGrid = document.getElementById('qdm-hour-grid');
+                
+                let targetDate = new Date();
+                if (day === 'tomorrow') {
+                    targetDate.setDate(targetDate.getDate() + 1);
+                }
+
+                if (qdm_editing_mode === 'depot') {
+                    qdm_depot_day_selection = day;
+                    if (day === 'today' || day === 'tomorrow') {
+                        qdm_temp_depot_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                    }
+                } else {
+                    qdm_retrait_day_selection = day;
+                    if (day === 'today' || day === 'tomorrow') {
+                        qdm_temp_retrait_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                    }
+                }
+
+                if (day === 'today' || day === 'tomorrow') {
+                    customDateContainer.classList.add('hidden');
+                    hourGrid.classList.remove('hidden');
+                    customHourContainer.classList.add('hidden');
+                    generateHourButtons((qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date);
+                } else { // custom
+                    customDateContainer.classList.remove('hidden');
+                    hourGrid.classList.add('hidden');
+                    customHourContainer.classList.remove('hidden');
+                    // Set custom date input to current temp date
+                    const currentTempDate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
+                    const pad = (num) => num.toString().padStart(2, '0');
+                    document.getElementById('qdm-custom-date-input').value = `${currentTempDate.getFullYear()}-${pad(currentTempDate.getMonth() + 1)}-${pad(currentTempDate.getDate())}`;
+                    document.getElementById('qdm-custom-time-input').value = `${pad(currentTempDate.getHours())}:${pad(currentTempDate.getMinutes())}`;
+                }
+                updateQdmDisplay();
+            });
+        });
+
+        document.getElementById('qdm-custom-date-input').addEventListener('change', (e) => {
+            const newDate = new Date(e.target.value);
+            if (qdm_editing_mode === 'depot') {
+                qdm_temp_depot_date.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate() + 1); // Date picker timezone fix
+            } else {
+                qdm_temp_retrait_date.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate() + 1); // Date picker timezone fix
+            }
+            updateQdmDisplay();
+        });
+        
+        document.getElementById('qdm-hour-grid').addEventListener('click', (e) => {
+            if (e.target.classList.contains('qdm-hour-btn')) {
+                const hour = e.target.dataset.hour.split(':')[0];
+                const minute = e.target.dataset.hour.split(':')[1];
+                if (qdm_editing_mode === 'depot') {
+                    qdm_temp_depot_date.setHours(hour, minute);
+                } else {
+                    qdm_temp_retrait_date.setHours(hour, minute);
+                }
+                updateQdmDisplay();
+            }
+        });
+
+        document.getElementById('qdm-custom-time-input').addEventListener('change', (e) => {
+            const [hour, minute] = e.target.value.split(':');
+            if (qdm_editing_mode === 'depot') {
+                qdm_temp_depot_date.setHours(hour, minute);
+            } else {
+                qdm_temp_retrait_date.setHours(hour, minute);
+            }
+            updateQdmDisplay();
+        });
+
+        document.getElementById('qdm-validate-btn').addEventListener('click', async () => {
+            if (qdm_temp_retrait_date <= qdm_temp_depot_date) {
+                await showCustomAlert('Date invalide', 'La date de retrait doit être postérieure à la date de dépôt.');
+                return;
+            }
+
+            const pad = (num) => num.toString().padStart(2, '0');
+            document.getElementById('date-depot').value = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
+            document.getElementById('heure-depot').value = `${pad(qdm_temp_depot_date.getHours())}:${pad(qdm_temp_depot_date.getMinutes())}`;
+            document.getElementById('date-recuperation').value = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
+            document.getElementById('heure-recuperation').value = `${pad(qdm_temp_retrait_date.getHours())}:${pad(qdm_temp_retrait_date.getMinutes())}`;
+
+            document.getElementById('quick-date-modal').classList.add('hidden');
+            
+            displaySelectedDates();
+            await getQuoteAndDisplay();
+            saveStateToSession();
+        });
     }
 
     async function handleTotalClick() {
