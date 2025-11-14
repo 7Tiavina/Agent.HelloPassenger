@@ -164,6 +164,55 @@
     </div>
 </div>
 
+<!-- Options Advertisement Modal -->
+<div id="options-advert-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10000] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all max-h-[90vh] overflow-y-auto relative">
+        <!-- Close Button -->
+        <button id="close-options-advert-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <div class="p-8 text-center">
+            <h2 class="text-3xl font-bold text-gray-800">Optimisez votre expérience !</h2>
+            <p class="mt-2 text-gray-600">Ajoutez nos services exclusifs pour un voyage sans tracas.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-200">
+            <!-- Priority Option -->
+            <div id="advert-option-priority" class="hidden bg-white p-8">
+                <div class="text-center">
+                    <span class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">PRIORITAIRE</span>
+                    <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Priority</h3>
+                    <p class="mt-2 text-gray-500">Bénéficiez d’un traitement prioritaire pour vos bagages à la dépose et à la récupération.</p>
+                    <p class="mt-4 text-3xl font-extrabold text-gray-900">+15 €</p>
+                    <button id="add-priority-from-modal" data-option-key="priority" class="mt-6 w-full bg-yellow-custom text-gray-dark font-bold py-3 px-4 rounded-lg btn-hover">Ajouter au panier</button>
+                </div>
+            </div>
+
+            <!-- Premium Option -->
+            <div id="advert-option-premium" class="hidden bg-white p-8">
+                <div class="text-center">
+                    <span class="inline-block bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">PREMIUM</span>
+                    <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Premium</h3>
+                    <p class="mt-2 text-gray-500">Un agent vous attend à un point de rendez-vous défini pour une prise en charge VIP.</p>
+                    <p class="mt-4 text-3xl font-extrabold text-gray-900">+25 €</p>
+                    <div id="premium-details-modal" class="mt-4 text-left space-y-3">
+                        <!-- Premium specific fields will be injected here -->
+                    </div>
+                    <button id="add-premium-from-modal" data-option-key="premium" class="mt-6 w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg btn-hover">Ajouter au panier</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 text-center bg-gray-50">
+            <button id="continue-from-options-modal" class="text-gray-600 font-medium hover:text-gray-900">Valider et continuer →</button>
+        </div>
+    </div>
+</div>
+
+
 
 <div id="baggage-tooltip" class="hidden absolute z-10 p-2 text-sm font-medium text-white bg-gray-800 rounded-lg shadow-sm" role="tooltip">
     <!-- Tooltip content will be injected here -->
@@ -298,19 +347,6 @@
                     </div>
                 </div>
 
-                <!-- Section for additional options -->
-                <div id="options-step" class="mt-6">
-                    <div class="bg-white border border-gray-200 rounded-lg p-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">2. Souhaitez-vous bénéficier de services additionnels ?</h3>
-                        <div id="options-container" class="space-y-4">
-                            <!-- Options will be injected here -->
-                            <div class="text-center text-gray-500">
-                                <span class="custom-spinner" role="status" aria-hidden="true" id="loading-spinner-options"></span>
-                                Chargement des options...
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="bg-yellow-custom rounded-lg p-6">
@@ -508,6 +544,10 @@
         priority: { id: 'opt_priority', libelle: 'Service Priority', prixUnitaire: 15 },
         premium: { id: 'opt_premium', libelle: 'Service Premium', prixUnitaire: 25 }
     };
+
+    let isPriorityAvailable = false;
+    let isPremiumAvailable = false;
+
 
     const productMapJs = {
         'Accessoires': { type: 'accessory', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Petits objets comme un sac à main, un ordinateur portable ou un casque.' },
@@ -829,16 +869,34 @@
 
     
     
-    function handleOptionAddToCart(optionKey) {
+    function handleOptionAddToCart(optionKey, fromModal = false) { // Added fromModal parameter
         const option = staticOptions[optionKey];
-        const detailsDiv = document.getElementById(`details-${option.id}`);
-        
-        const infoComplementaires = detailsDiv.querySelector('input[name^="option_info_"]').value;
-        const commentaire = detailsDiv.querySelector('textarea[name^="option_comment_"]').value;
+        let infoComplementaires = '';
+        let commentaire = '';
         let lieuId = null;
-        if (optionKey === 'premium') {
-            const select = detailsDiv.querySelector('select[name^="option_lieu_"]');
-            if(select) lieuId = select.value;
+
+        if (fromModal) {
+            const modalContent = document.getElementById(`advert-option-${optionKey}`);
+            if (optionKey === 'premium') {
+                const select = modalContent.querySelector('select[name^="option_lieu_"]');
+                if(select) lieuId = select.value;
+            }
+            const infoInput = modalContent.querySelector('input[name^="option_info_"]');
+            const commentTextarea = modalContent.querySelector('textarea[name^="option_comment_"]');
+            if (infoInput) infoComplementaires = infoInput.value;
+            if (commentTextarea) commentaire = commentTextarea.value;
+        } else { // Old logic, if not from modal (shouldn't be reachable after options removed from page)
+            // This block is technically dead code now that the options section is removed from the main page,
+            // but keeping it for robustness or if the options section is ever re-added.
+            const detailsDiv = document.getElementById(`details-${option.id}`);
+            if(detailsDiv) {
+                infoComplementaires = detailsDiv.querySelector('input[name^="option_info_"]').value;
+                commentaire = detailsDiv.querySelector('textarea[name^="option_comment_"]').value;
+                if (optionKey === 'premium') {
+                    const select = detailsDiv.querySelector('select[name^="option_lieu_"]');
+                    if(select) lieuId = select.value;
+                }
+            }
         }
 
         cartItems.push({
@@ -852,6 +910,13 @@
             commentaire: commentaire
         });
         updateCartDisplay();
+        if (fromModal) { // Update button text in modal
+            const addButton = document.getElementById(`add-${optionKey}-from-modal`);
+            if(addButton) {
+                addButton.disabled = true;
+                addButton.textContent = 'Ajouté au panier';
+            }
+        }
     }
 
     async function getQuoteAndDisplay() {
@@ -910,45 +975,70 @@
     }
 
     function displayOptions(dureeEnMinutes) {
-        const optionsContainer = document.getElementById('options-container');
-        optionsContainer.innerHTML = '';
         const dureeEnHeures = dureeEnMinutes / 60;
+        isPriorityAvailable = dureeEnHeures < 72;
+        isPremiumAvailable = globalLieuxData.length > 0;
+    }
 
-        const createOptionHTML = (optionKey, isEnabled, lieuxHTML = '') => {
-            const option = staticOptions[optionKey];
-            const isAlreadyInCart = cartItems.some(item => item.itemCategory === 'option' && item.key === optionKey);
-            return `
-                <div class="border rounded-2xl p-5 bg-white ${!isEnabled ? 'opacity-50' : ''}">
-                    <div class="option-header flex items-center justify-between cursor-pointer">
-                        <div>
-                            <span class="text-lg font-medium">${option.libelle}</span>
-                            <p class="text-gray-500 text-sm mt-1">${optionKey === 'priority' ? 'Bénéficiez d’un traitement prioritaire pour vos bagages.' : 'Accédez à un service complet de gestion de vos bagages de bout en bout.'}</p>
-                        </div>
-                        <div class="flex items-center">
-                            <span class="text-yellow-custom font-semibold text-lg mr-4">+${option.prixUnitaire} €</span>
-                            <svg class="chevron-icon w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                    </div>
-                    <div id="details-${option.id}" class="hidden mt-4 border-t pt-4 space-y-3">
-                        ${lieuxHTML}
-                        <label class="block text-sm font-medium">Informations complémentaires</label>
-                        <input type="text" name="option_info_${option.id}" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
-                        <label class="block text-sm font-medium">Commentaire</label>
-                        <textarea name="option_comment_${option.id}" class="input-style w-full" rows="3" placeholder="Ajoutez un commentaire..."></textarea>
-                        <button type="button" data-option-key="${optionKey}" class="add-option-btn bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover w-full mt-3" ${!isEnabled || isAlreadyInCart ? 'disabled' : ''}>
-                            ${isAlreadyInCart ? 'Ajouté au panier' : 'Ajouter au panier'}
-                        </button>
-                    </div>
-                </div>`;
-        };
+    function showOptionsAdvertisementModal() {
+        return new Promise(resolve => {
+            const modal = document.getElementById('options-advert-modal');
+            const closeBtn = document.getElementById('close-options-advert-modal');
+            const prioritySection = document.getElementById('advert-option-priority');
+            const premiumSection = document.getElementById('advert-option-premium');
+            const addPriorityBtn = document.getElementById('add-priority-from-modal');
+            const addPremiumBtn = document.getElementById('add-premium-from-modal');
+            const continueBtn = document.getElementById('continue-from-options-modal');
 
-        const isPriorityEnabled = dureeEnHeures < 72;
-        optionsContainer.innerHTML += createOptionHTML('priority', isPriorityEnabled);
+            // Reset state
+            prioritySection.classList.add('hidden');
+            premiumSection.classList.add('hidden');
+            addPriorityBtn.disabled = cartItems.some(item => item.key === 'priority');
+            addPriorityBtn.textContent = addPriorityBtn.disabled ? 'Ajouté au panier' : 'Ajouter au panier';
+            addPremiumBtn.disabled = cartItems.some(item => item.key === 'premium');
+            addPremiumBtn.textContent = addPremiumBtn.disabled ? 'Ajouté au panier' : 'Ajouter au panier';
 
-        const isPremiumEnabled = globalLieuxData.length > 0;
-        const lieuxOptionsHTML = isPremiumEnabled ? globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('') : '';
-        const premiumLieuxHTML = `<label class="block text-sm font-medium">Lieu de rendez-vous *</label><select name="option_lieu_opt_premium" class="input-style custom-select w-full">${lieuxOptionsHTML}</select>`;
-        optionsContainer.innerHTML += createOptionHTML('premium', isPremiumEnabled, premiumLieuxHTML);
+            if (isPriorityAvailable) {
+                prioritySection.classList.remove('hidden');
+            }
+            if (isPremiumAvailable) {
+                premiumSection.classList.remove('hidden');
+                const premiumDetailsContainer = document.getElementById('premium-details-modal');
+                const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+                premiumDetailsContainer.innerHTML = `
+                    <label class="block text-sm font-medium">Lieu de rendez-vous *</label>
+                    <select name="option_lieu_opt_premium" class="input-style custom-select w-full">${lieuxOptionsHTML}</select>
+                    <label class="block text-sm font-medium">Informations complémentaires</label>
+                    <input type="text" name="option_info_opt_premium" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
+                    <label class="block text-sm font-medium">Commentaire</label>
+                    <textarea name="option_comment_opt_premium" class="input-style w-full" rows="2" placeholder="Ajoutez un commentaire..."></textarea>
+                `;
+            }
+
+            const closeModalAndResolve = (resolutionValue = 'continued') => {
+                modal.classList.add('hidden');
+                // Clean up event listeners to avoid memory leaks
+                continueBtn.onclick = null;
+                closeBtn.onclick = null;
+                modal.onclick = null;
+                addPriorityBtn.onclick = null;
+                addPremiumBtn.onclick = null;
+                resolve(resolutionValue);
+            };
+
+            addPriorityBtn.onclick = () => handleOptionAddToCart('priority', true);
+            addPremiumBtn.onclick = () => handleOptionAddToCart('premium', true);
+            continueBtn.onclick = () => closeModalAndResolve('continued');
+            closeBtn.onclick = () => closeModalAndResolve('cancelled');
+            modal.onclick = (e) => {
+                // Close only if the dark overlay is clicked, not the content inside
+                if (e.target === modal) {
+                    closeModalAndResolve('cancelled');
+                }
+            };
+            
+            modal.classList.remove('hidden');
+        });
     }
 
     function updateCartDisplay() {
@@ -1106,14 +1196,26 @@
             return;
         }
 
+        // --- NEW: Show options modal first if any options are available ---
+        if (isPriorityAvailable || isPremiumAvailable) {
+            // Loader is already visible, keep it that way for options modal.
+            // showOptionsAdvertisementModal will handle hiding loader if user just closes it.
+            const result = await showOptionsAdvertisementModal(); // This promise resolves when modal is dismissed
+            if (result === 'cancelled') { // User explicitly chose to cancel or closed the modal
+                if (loader) loader.classList.add('hidden');
+                return;
+            }
+        }
+        // --- END NEW ---
+
         try {
             const authResponse = await fetch('/check-auth-status');
             const authData = await authResponse.json();
             
             if (!authData.authenticated) {
                 if (!guestEmail) {
-                    await sleep(900); // Add 900 ms delay
-                    if (loader) loader.classList.add('hidden'); // Hide loader before showing prompt
+                    await sleep(300); // Shorter delay after options modal, if applicable
+                    if (loader) loader.classList.add('hidden'); // Hide loader before showing auth prompt
 
                     const choice = await showLoginOrGuestPrompt();
 
