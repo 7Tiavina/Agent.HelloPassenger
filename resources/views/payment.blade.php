@@ -23,8 +23,115 @@
     <link rel="stylesheet" href="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
     <script src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon.js"></script>
     <!-- Fin Scripts Monetico -->
+    <style>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'yellow-custom': '#FFC107',
+                        'yellow-hover': '#FFB300',
+                        'gray-dark': '#1f2937'
+                    }
+                }
+            }
+        }
+        .input-style {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-style:focus {
+            border-color: #FFC107;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+        }
+    </style>
+    <script>
+        let modalResolve;
+
+        function showCustomAlert(title, message) {
+            const modalOverlay = document.getElementById('custom-modal-overlay');
+            const modalTitle = document.getElementById('custom-modal-title');
+            const modalMessage = document.getElementById('custom-modal-message');
+            const promptContainer = document.getElementById('custom-modal-prompt-container');
+            const modalCancelBtn = document.getElementById('custom-modal-cancel-btn');
+            const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            promptContainer.classList.add('hidden');
+            modalCancelBtn.classList.add('hidden');
+            modalConfirmBtn.textContent = 'OK';
+
+            modalOverlay.classList.remove('hidden');
+
+            return new Promise(resolve => {
+                modalResolve = resolve;
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal-overlay').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalOverlay = document.getElementById('custom-modal-overlay');
+            const modalCloseBtn = document.getElementById('custom-modal-close');
+            const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+            // const modalCancelBtn = document.getElementById('custom-modal-cancel-btn'); // This might not be used for alerts, but good to have
+
+            modalCloseBtn.addEventListener('click', () => {
+                closeModal();
+                if (modalResolve) modalResolve(null);
+            });
+
+            modalConfirmBtn.addEventListener('click', () => {
+                closeModal();
+                if (modalResolve) modalResolve(true);
+            });
+
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                    if (modalResolve) modalResolve(null);
+                }
+            });
+        });
+    </script>
 </head>
 <body class="bg-gray-50">
+
+<!-- Custom Modal -->
+<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+    <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+            <h3 id="custom-modal-title" class="text-xl font-bold text-gray-800"></h3>
+            <button id="custom-modal-close" class="text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Modal Body -->
+        <div class="py-4">
+            <p id="custom-modal-message" class="text-gray-600"></p>
+            <div id="custom-modal-prompt-container" class="hidden mt-4">
+                <label id="custom-modal-prompt-label" for="custom-modal-input" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                <input type="text" id="custom-modal-input" class="input-style w-full">
+                <p id="custom-modal-error" class="text-red-500 text-sm mt-1 hidden"></p>
+            </div>
+        </div>
+        <!-- Modal Footer -->
+        <div id="custom-modal-footer" class="flex justify-end pt-3 border-t border-gray-200 space-x-3">
+            <button id="custom-modal-cancel-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+            <button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">OK</button>
+        </div>
+    </div>
+</div>
 
 @include('Front.header-front')
 
@@ -166,6 +273,9 @@
             const url = isGuest ? '{{ route("session.updateGuestInfo") }}' : '{{ route("client.update-profile") }}';
 
             try {
+                // Masquer la modale du profil client avant d'afficher l'alerte de succès
+                clientProfileModal.classList.add('hidden');
+
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -179,14 +289,14 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    alert('Informations mises à jour avec succès! La page va se recharger pour prendre en compte les changements.');
+                    await showCustomAlert('Succès', 'Informations mises à jour avec succès! La page va se recharger pour prendre en compte les changements.');
                     location.reload(); // Recharger pour que le controleur refasse la vérification
                 } else {
-                    alert('Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
+                    await showCustomAlert('Erreur', 'Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
                     console.error('Update error:', result);
                 }
             } catch (error) {
-                alert('Une erreur réseau est survenue.');
+                await showCustomAlert('Erreur', 'Une erreur réseau est survenue.');
                 console.error('Network error:', error);
             }
         });

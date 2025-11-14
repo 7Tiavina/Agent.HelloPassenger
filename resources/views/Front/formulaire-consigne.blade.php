@@ -130,6 +130,11 @@
 </head>
 <body class="min-h-screen bg-white">
 
+<!-- Loader Overlay -->
+<div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center">
+    <div class="custom-spinner !w-12 !h-12 !border-4"></div>
+</div>
+
 <!-- Custom Modal -->
 <div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
     <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
@@ -419,8 +424,132 @@
         });
     }
 
+    function showLoginOrGuestPrompt() {
+        const modalOverlay = document.getElementById('custom-modal-overlay');
+        const modalTitle = document.getElementById('custom-modal-title');
+        const modalMessage = document.getElementById('custom-modal-message');
+        const promptContainer = document.getElementById('custom-modal-prompt-container');
+        const modalCancelBtn = document.getElementById('custom-modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+        const modalFooter = document.getElementById('custom-modal-footer');
+
+        modalTitle.textContent = 'Comment souhaitez-vous procéder ?';
+        modalMessage.textContent = 'Connectez-vous pour utiliser vos informations enregistrées ou continuez en tant qu\'invité.';
+        promptContainer.classList.add('hidden'); // Hide prompt input
+
+        // Clear existing buttons and add new ones
+        modalFooter.innerHTML = `
+            <button id="btn-continue-guest" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Continuer en invité</button>
+            <button id="btn-login-modal" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Se connecter</button>
+        `;
+        
+        modalOverlay.classList.remove('hidden');
+
+        return new Promise(resolve => {
+            modalResolve = resolve;
+            document.getElementById('btn-login-modal').onclick = () => {
+                closeModal();
+                resolve('login');
+            };
+            document.getElementById('btn-continue-guest').onclick = () => {
+                closeModal();
+                resolve('guest');
+            };
+        });
+    }
+
+    function showLoginModal() {
+        const modalOverlay = document.getElementById('custom-modal-overlay');
+        const modalTitle = document.getElementById('custom-modal-title');
+        const modalMessage = document.getElementById('custom-modal-message');
+        const promptContainer = document.getElementById('custom-modal-prompt-container');
+        const promptLabel = document.getElementById('custom-modal-prompt-label');
+        const promptInput = document.getElementById('custom-modal-input');
+        const modalError = document.getElementById('custom-modal-error');
+        const modalFooter = document.getElementById('custom-modal-footer');
+
+        modalTitle.textContent = 'Connexion';
+        modalMessage.textContent = 'Veuillez entrer vos identifiants pour vous connecter.';
+        promptContainer.classList.remove('hidden');
+        promptLabel.textContent = 'Adresse e-mail';
+        promptInput.type = 'email'; // Set input type to email
+        promptInput.value = '';
+        modalError.classList.add('hidden');
+
+        // Add password field
+        const passwordFieldHtml = `
+            <label for="custom-modal-password" class="block text-sm font-medium text-gray-700 mb-1 mt-3">Mot de passe</label>
+            <input type="password" id="custom-modal-password" class="input-style w-full">
+        `;
+        promptContainer.insertAdjacentHTML('beforeend', passwordFieldHtml);
+
+        modalFooter.innerHTML = `
+            <button id="btn-cancel-login" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+            <button id="btn-confirm-login" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Se connecter</button>
+        `;
+
+        modalOverlay.classList.remove('hidden');
+
+        return new Promise(resolve => {
+            modalResolve = resolve;
+            document.getElementById('btn-cancel-login').onclick = () => {
+                closeModal();
+                resolve(null); // User cancelled login
+            };
+            document.getElementById('btn-confirm-login').onclick = async () => {
+                const email = promptInput.value;
+                const password = document.getElementById('custom-modal-password').value;
+
+                if (!email.trim() || !password.trim()) {
+                    modalError.textContent = 'Veuillez remplir tous les champs.';
+                    modalError.classList.remove('hidden');
+                    return;
+                }
+
+                // Simulate login or redirect to login route
+                // For now, we'll just redirect to the login page
+                window.location.href = '/login'; // Assuming '/login' is your login route
+                closeModal();
+                resolve(true); // Indicate that login process was initiated
+            };
+        });
+    }
+
     function closeModal() {
         document.getElementById('custom-modal-overlay').classList.add('hidden');
+        // Clean up dynamically added password field
+        const passwordField = document.getElementById('custom-modal-password');
+        if (passwordField) {
+            passwordField.previousElementSibling.remove(); // Remove label
+            passwordField.remove(); // Remove input
+        }
+        // Restore default footer buttons
+        const modalFooter = document.getElementById('custom-modal-footer');
+        modalFooter.innerHTML = `
+            <button id="custom-modal-cancel-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+            <button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">OK</button>
+        `;
+        // Re-attach default listeners (if they were removed)
+        document.getElementById('custom-modal-cancel-btn').onclick = () => {
+            closeModal();
+            if (modalResolve) modalResolve(null);
+        };
+        document.getElementById('custom-modal-confirm-btn').onclick = () => {
+            const isPrompt = !document.getElementById('custom-modal-prompt-container').classList.contains('hidden');
+            if (isPrompt) {
+                const value = document.getElementById('custom-modal-input').value;
+                if (value.trim() === '' || !/^\S+@\S+\.\S+$/.test(value)) {
+                    document.getElementById('custom-modal-error').textContent = 'Veuillez entrer une adresse e-mail valide.';
+                    document.getElementById('custom-modal-error').classList.remove('hidden');
+                    return;
+                }
+                closeModal();
+                if (modalResolve) modalResolve(value);
+            } else {
+                closeModal();
+                if (modalResolve) modalResolve(true);
+            }
+        };
     }
     // --- END MODAL ---
 
@@ -1022,21 +1151,38 @@
             if (!authData.authenticated) {
                 if (!guestEmail) {
                     await sleep(900); // Add 900 ms delay
+                    if (loader) loader.classList.add('hidden'); // Hide loader before showing prompt
 
-                    // Hide loader before showing prompt
-                    if (loader) loader.classList.add('hidden');
+                    const choice = await showLoginOrGuestPrompt();
 
-                    const email = await showCustomPrompt(
-                        'Comment pouvons-nous vous joindre ?', 
-                        'C’est sur ce mail que vous recevrez la confirmation de réservation.',
-                        'Adresse e-mail'
-                    );
-                    
-                    if (email) {
-                        guestEmail = email;
-                        saveStateToSession();
-                    } else {
-                        // User cancelled the prompt, so hide loader and return
+                    if (choice === 'login') {
+                        const loginResult = await showLoginModal();
+                        if (!loginResult) { // User cancelled login modal
+                            if (loader) loader.classList.add('hidden');
+                            return;
+                        }
+                        // If login initiated (redirected), the script will stop here.
+                        // If not redirected (e.g., login failed but stayed on page),
+                        // we should re-check auth status or stop. For now, assume redirect.
+                        return; 
+                    } else if (choice === 'guest') {
+                        // Do NOT show loader here, as user needs to interact with the prompt
+                        const email = await showCustomPrompt(
+                            'Comment pouvons-nous vous joindre ?',
+                            'C’est sur ce mail que vous recevrez la confirmation de réservation.',
+                            'Adresse e-mail'
+                        );
+                        
+                        if (email) {
+                            guestEmail = email;
+                            saveStateToSession();
+                            if (loader) loader.classList.remove('hidden'); // Show loader AFTER email is provided
+                        } else {
+                            // User cancelled the prompt, so hide loader and return
+                            if (loader) loader.classList.add('hidden');
+                            return;
+                        }
+                    } else { // User cancelled the initial choice prompt
                         if (loader) loader.classList.add('hidden');
                         return;
                     }
