@@ -869,61 +869,9 @@
 
     
     
-    function handleOptionAddToCart(optionKey, fromModal = false) { // Added fromModal parameter
-        const option = staticOptions[optionKey];
-        let infoComplementaires = '';
-        let commentaire = '';
-        let lieuId = null;
-
-        if (fromModal) {
-            const modalContent = document.getElementById(`advert-option-${optionKey}`);
-            if (optionKey === 'premium') {
-                const select = modalContent.querySelector('select[name^="option_lieu_"]');
-                if(select) lieuId = select.value;
-            }
-            const infoInput = modalContent.querySelector('input[name^="option_info_"]');
-            const commentTextarea = modalContent.querySelector('textarea[name^="option_comment_"]');
-            if (infoInput) infoComplementaires = infoInput.value;
-            if (commentTextarea) commentaire = commentTextarea.value;
-        } else { // Old logic, if not from modal (shouldn't be reachable after options removed from page)
-            // This block is technically dead code now that the options section is removed from the main page,
-            // but keeping it for robustness or if the options section is ever re-added.
-            const detailsDiv = document.getElementById(`details-${option.id}`);
-            if(detailsDiv) {
-                infoComplementaires = detailsDiv.querySelector('input[name^="option_info_"]').value;
-                commentaire = detailsDiv.querySelector('textarea[name^="option_comment_"]').value;
-                if (optionKey === 'premium') {
-                    const select = detailsDiv.querySelector('select[name^="option_lieu_"]');
-                    if(select) lieuId = select.value;
-                }
-            }
-        }
-
-        cartItems.push({
-            itemCategory: 'option', 
-            id: option.id, 
-            key: optionKey,
-            libelle: option.libelle,
-            prix: option.prixUnitaire,
-            lieu_id: lieuId,
-            informations_complementaires: infoComplementaires,
-            commentaire: commentaire
-        });
-        updateCartDisplay();
-        if (fromModal) { // Update button text in modal
-            const addButton = document.getElementById(`add-${optionKey}-from-modal`);
-            if(addButton) {
-                addButton.disabled = true;
-                addButton.textContent = 'Ajouté au panier';
-            }
-        }
-    }
-
     async function getQuoteAndDisplay() {
         const cartSpinner = document.getElementById('loading-spinner-cart');
-        const optionsSpinner = document.getElementById('loading-spinner-options');
         if(cartSpinner) cartSpinner.style.display = 'inline-block';
-        if(optionsSpinner) optionsSpinner.style.display = 'inline-block';
 
         const dateDepot = document.getElementById('date-depot').value;
         const heureDepot = document.getElementById('heure-depot').value;
@@ -933,7 +881,6 @@
         if (!dateDepot || !heureDepot || !dateRecuperation || !heureRecuperation) {
             await showCustomAlert('Attention', 'Veuillez vérifier les dates et heures de dépôt et de récupération.');
             if(cartSpinner) cartSpinner.style.display = 'none';
-            if(optionsSpinner) optionsSpinner.style.display = 'none';
             return;
         }
 
@@ -944,7 +891,6 @@
         if (dureeEnMinutes <= 0) {
             await showCustomAlert('Attention', 'La date de récupération doit être postérieure à la date de dépôt.');
             if(cartSpinner) cartSpinner.style.display = 'none';
-            if(optionsSpinner) optionsSpinner.style.display = 'none';
             return;
         }
 
@@ -970,7 +916,6 @@
             await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la récupération des tarifs.');
         } finally {
             if(cartSpinner) cartSpinner.style.display = 'none';
-            if(optionsSpinner) optionsSpinner.parentElement.style.display = 'none';
         }
     }
 
@@ -978,6 +923,69 @@
         const dureeEnHeures = dureeEnMinutes / 60;
         isPriorityAvailable = dureeEnHeures < 72;
         isPremiumAvailable = globalLieuxData.length > 0;
+    }
+
+    function updateAdvertModalButtons() {
+        ['priority', 'premium'].forEach(optionKey => {
+            const addButton = document.getElementById(`add-${optionKey}-from-modal`);
+            if (!addButton) return;
+
+            const isInCart = cartItems.some(item => item.key === optionKey);
+            addButton.disabled = false; // Always enable the button for toggling
+
+            if (isInCart) {
+                addButton.textContent = 'Enlever du panier';
+                addButton.classList.remove('bg-yellow-custom', 'text-gray-dark', 'bg-purple-600', 'text-white');
+                addButton.classList.add('bg-red-600', 'text-white');
+            } else {
+                addButton.textContent = 'Ajouter au panier';
+                addButton.classList.remove('bg-red-600', 'text-white');
+                if (optionKey === 'priority') {
+                    addButton.classList.add('bg-yellow-custom', 'text-gray-dark');
+                } else {
+                    addButton.classList.add('bg-purple-600', 'text-white');
+                }
+            }
+        });
+    }
+
+    function toggleOptionFromModal(optionKey) {
+        const itemIndex = cartItems.findIndex(item => item.key === optionKey);
+
+        if (itemIndex > -1) {
+            // Item exists, so remove it
+            cartItems.splice(itemIndex, 1);
+        } else {
+            // Item does not exist, so add it
+            const option = staticOptions[optionKey];
+            let infoComplementaires = '';
+            let commentaire = '';
+            let lieuId = null;
+
+            const modalContent = document.getElementById(`advert-option-${optionKey}`);
+            if (optionKey === 'premium') {
+                const select = modalContent.querySelector('select[name^="option_lieu_"]');
+                if(select) lieuId = select.value;
+            }
+            const infoInput = modalContent.querySelector('input[name^="option_info_"]');
+            const commentTextarea = modalContent.querySelector('textarea[name^="option_comment_"]');
+            if (infoInput) infoComplementaires = infoInput.value;
+            if (commentTextarea) commentaire = commentTextarea.value;
+
+            cartItems.push({
+                itemCategory: 'option', 
+                id: option.id, 
+                key: optionKey,
+                libelle: option.libelle,
+                prix: option.prixUnitaire,
+                lieu_id: lieuId,
+                informations_complementaires: infoComplementaires,
+                commentaire: commentaire
+            });
+        }
+        
+        updateCartDisplay();
+        updateAdvertModalButtons(); // Update button states after toggle
     }
 
     function showOptionsAdvertisementModal() {
@@ -990,14 +998,10 @@
             const addPremiumBtn = document.getElementById('add-premium-from-modal');
             const continueBtn = document.getElementById('continue-from-options-modal');
 
-            // Reset state
+            // Reset visibility
             prioritySection.classList.add('hidden');
             premiumSection.classList.add('hidden');
-            addPriorityBtn.disabled = cartItems.some(item => item.key === 'priority');
-            addPriorityBtn.textContent = addPriorityBtn.disabled ? 'Ajouté au panier' : 'Ajouter au panier';
-            addPremiumBtn.disabled = cartItems.some(item => item.key === 'premium');
-            addPremiumBtn.textContent = addPremiumBtn.disabled ? 'Ajouté au panier' : 'Ajouter au panier';
-
+            
             if (isPriorityAvailable) {
                 prioritySection.classList.remove('hidden');
             }
@@ -1015,9 +1019,11 @@
                 `;
             }
 
+            updateAdvertModalButtons(); // Set initial button states
+
             const closeModalAndResolve = (resolutionValue = 'continued') => {
                 modal.classList.add('hidden');
-                // Clean up event listeners to avoid memory leaks
+                // Clean up event listeners
                 continueBtn.onclick = null;
                 closeBtn.onclick = null;
                 modal.onclick = null;
@@ -1026,12 +1032,11 @@
                 resolve(resolutionValue);
             };
 
-            addPriorityBtn.onclick = () => handleOptionAddToCart('priority', true);
-            addPremiumBtn.onclick = () => handleOptionAddToCart('premium', true);
+            addPriorityBtn.onclick = () => toggleOptionFromModal('priority');
+            addPremiumBtn.onclick = () => toggleOptionFromModal('premium');
             continueBtn.onclick = () => closeModalAndResolve('continued');
             closeBtn.onclick = () => closeModalAndResolve('cancelled');
             modal.onclick = (e) => {
-                // Close only if the dark overlay is clicked, not the content inside
                 if (e.target === modal) {
                     closeModalAndResolve('cancelled');
                 }
