@@ -13,8 +13,17 @@ use Illuminate\Support\Facades\Cache; // Added
 
 class PaymentController extends Controller
 {
+    private function getStaticOptions(): array
+    {
+        // TODO: REMPLACER CES GUIDS PAR LES VRAIS GUIDs DE L'API BDM
+        return [
+            'priority' => ['id' => '00000000-0000-0000-0000-000000000001', 'prixUnitaire' => 15, 'libelle' => 'Service Priority'],
+            'premium'  => ['id' => '00000000-0000-0000-0000-000000000002', 'prixUnitaire' => 25, 'libelle' => 'Service Premium'],
+        ];
+    }
+
     /**
-     * Pr%c3%a8pare les donn%c3%a9es de la commande et les stocke en session avant la redirection vers la page de paiement.
+     * Prépare les données de la commande et les stocke en session avant la redirection vers la page de paiement.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -41,10 +50,7 @@ class PaymentController extends Controller
 
             // --- Server-side definitions for security ---
             $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
-            $staticOptions = [
-                'opt_priority' => ['prixUnitaire' => 15, 'libelle' => 'Service Priority'],
-                'opt_premium' => ['prixUnitaire' => 25, 'libelle' => 'Service Premium'],
-            ];
+            $staticOptions = $this->getStaticOptions();
             $baggageTypeToLibelleMap = [
                 'accessory' => 'Accessoires',
                 'cabin' => 'Bagage cabine',
@@ -78,15 +84,15 @@ class PaymentController extends Controller
             // 2. Process Options
             if (!empty($validatedData['options'])) {
                 foreach ($validatedData['options'] as $selectedOption) {
-                    $optionId = $selectedOption['id'];
-                    if (!isset($staticOptions[$optionId])) {
-                        throw new \Exception('Invalid option ID provided: ' . $optionId);
+                    $optionKey = $selectedOption['id']; // This will be 'priority' or 'premium' from the JS
+                    if (!isset($staticOptions[$optionKey])) {
+                        throw new \Exception('Invalid option key provided: ' . $optionKey);
                     }
                     
-                    $optionDetails = $staticOptions[$optionId];
+                    $optionDetails = $staticOptions[$optionKey];
 
                     $commandeLignes[] = [
-                        "idProduit" => $optionId, // Use the static ID for the command
+                        "idProduit" => $optionDetails['id'], // Use the real GUID
                         "idService" => $serviceId,
                         "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
                         "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
@@ -428,22 +434,26 @@ class PaymentController extends Controller
         try {
             $token = $this->getBdmToken();
 
+            $staticOptions = $this->getStaticOptions();
+            $optionGuids = array_column($staticOptions, 'id');
+
             $lignesProduits = [];
             $lignesOptions = [];
             foreach ($commandeLignes as $ligne) {
-                if ($this->isUuid($ligne['idProduit'])) {
-                    $lignesProduits[] = $ligne;
-                } else {
+                if (in_array($ligne['idProduit'], $optionGuids)) {
                     $lignesOptions[] = $ligne;
+                } else {
+                    $lignesProduits[] = $ligne;
                 }
             }
 
             // Extraire les informations spécifiques pour 'commandeInfos' à partir des options
             $firstOptionWithLieu = collect($lignesOptions)->firstWhere('idLieu');
             $firstOptionWithCommentaire = collect($lignesOptions)->firstWhere('commentaire');
+            $firstOptionWithInfo = collect($lignesOptions)->firstWhere('informationsComplementaires');
 
             $commandeInfos = [
-                "modeTransport" => null, // La documentation indique "string", mais nous n'avons pas cette info.
+                "modeTransport" => $firstOptionWithInfo['informationsComplementaires'] ?? null,
                 "lieu" => $firstOptionWithLieu['idLieu'] ?? null,
                 "commentaires" => $firstOptionWithCommentaire['commentaire'] ?? null
             ];

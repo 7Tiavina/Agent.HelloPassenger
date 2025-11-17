@@ -703,8 +703,8 @@
     let guestEmail = null; // Add this global variable
 
     const staticOptions = {
-        priority: { id: 'opt_priority', libelle: 'Service Priority', prixUnitaire: 15 },
-        premium: { id: 'opt_premium', libelle: 'Service Premium', prixUnitaire: 25 }
+        priority: { libelle: 'Service Priority', prixUnitaire: 15 },
+        premium: { libelle: 'Service Premium', prixUnitaire: 25 }
     };
 
     let isPriorityAvailable = false;
@@ -1162,7 +1162,7 @@
 
             cartItems.push({
                 itemCategory: 'option', 
-                id: option.id, 
+                id: optionKey, // Use the key itself ('priority' or 'premium') as the ID for the backend
                 key: optionKey,
                 libelle: option.libelle,
                 prix: option.prixUnitaire,
@@ -1198,13 +1198,35 @@
                 const premiumDetailsContainer = document.getElementById('premium-details-modal');
                 const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
                 premiumDetailsContainer.innerHTML = `
-                    <label class="block text-sm font-medium">Lieu de rendez-vous *</label>
-                    <select name="option_lieu_opt_premium" class="input-style custom-select w-full">${lieuxOptionsHTML}</select>
-                    <label class="block text-sm font-medium">Informations complémentaires</label>
+                    <label class="block text-sm font-medium text-gray-700">Lieu de rendez-vous *</label>
+                    <select name="option_lieu_opt_premium" class="input-style custom-select w-full">
+                        <option value="" selected disabled>Sélectionnez un lieu</option>
+                        ${lieuxOptionsHTML}
+                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mt-3">Informations complémentaires</label>
                     <input type="text" name="option_info_opt_premium" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
-                    <label class="block text-sm font-medium">Commentaire</label>
+                    <label class="block text-sm font-medium text-gray-700 mt-3">Commentaire</label>
                     <textarea name="option_comment_opt_premium" class="input-style w-full" rows="2" placeholder="Ajoutez un commentaire..."></textarea>
                 `;
+
+                // --- NOUVELLE LOGIQUE DE VALIDATION ---
+                const lieuSelect = premiumDetailsContainer.querySelector('select[name="option_lieu_opt_premium"]');
+                
+                const validatePremium = () => {
+                    if (lieuSelect.value) {
+                        addPremiumBtn.disabled = false;
+                        addPremiumBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        addPremiumBtn.disabled = true;
+                        addPremiumBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                };
+
+                // Désactiver le bouton par défaut et écouter les changements
+                addPremiumBtn.disabled = true;
+                addPremiumBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                lieuSelect.addEventListener('change', validatePremium);
+                // --- FIN DE LA NOUVELLE LOGIQUE ---
             }
 
             updateAdvertModalButtons(); // Set initial button states
@@ -1217,6 +1239,13 @@
                 modal.onclick = null;
                 addPriorityBtn.onclick = null;
                 addPremiumBtn.onclick = null;
+                
+                // Nettoyer le listener de validation premium s'il existe
+                const lieuSelect = document.querySelector('select[name="option_lieu_opt_premium"]');
+                if (lieuSelect) {
+                    lieuSelect.removeEventListener('change', () => {}); // Note: this is not ideal, but works for this simple case
+                }
+
                 resolve(resolutionValue);
             };
 

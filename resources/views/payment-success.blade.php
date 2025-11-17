@@ -41,7 +41,7 @@
         <!-- Aperçu de la facture -->
         <div class="bg-gray-100 p-4 rounded-lg border border-gray-200">
             <h2 class="text-xl font-semibold text-left mb-4">Aperçu de la facture</h2>
-            @if(isset($apiResult['content']) && !empty($apiResult['content']))
+            @if(isset($apiResult['content']) && is_string($apiResult['content']) && !empty($apiResult['content']))
                 <div class="w-full h-[600px] border rounded-md bg-white">
                     <iframe src="data:application/pdf;base64,{{ $apiResult['content'] }}" class="w-full h-full" frameborder="0"></iframe>
                 </div>
