@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Commande;
 use Illuminate\Support\Facades\Response;
+use PDF; // Ajouter cette ligne pour importer la façade PDF
 
 class CommandeController extends Controller
 {
@@ -40,11 +41,9 @@ class CommandeController extends Controller
 
     /**
      * Permet de télécharger la facture.
-     * Pour l'instant, affiche simplement la facture HTML.
-     * Pour générer un PDF, un package comme barryvdh/laravel-dompdf serait nécessaire.
      *
      * @param int $id
-     * @return \Illuminate\View\View
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function downloadInvoice($id)
     {
@@ -55,12 +54,15 @@ class CommandeController extends Controller
         //     abort(403, 'Accès non autorisé.');
         // }
 
-        // Pour une vraie génération PDF, il faudrait installer un package et faire :
-        // $pdf = \PDF::loadView('invoices.default', compact('commande'));
-        // return $pdf->download('facture-'.$commande->id.'.pdf');
+        // Récupérer la référence de la commande pour le nom du fichier
+        $reference = $commande->paymentClient->monetico_order_id ?? $commande->id;
+        $fileName = 'facture-' . $reference . '.pdf';
 
-        // En attendant, on affiche la facture HTML.
-        return view('invoices.default', compact('commande'));
+        // Générer le PDF à partir de la vue
+        $pdf = PDF::loadView('invoices.default', compact('commande'));
+
+        // Retourner le PDF en téléchargement
+        return $pdf->download($fileName);
     }
 }
 

@@ -32,9 +32,9 @@
 
         <!-- Boutons d'action -->
         <div class="flex justify-center space-x-4 mb-8">
-            <a href="{{ route('invoices.show', ['id' => $lastCommandeId]) }}" target="_blank"
+            <a href="{{ route('commandes.download-invoice', ['id' => $lastCommandeId]) }}"
                class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                Voir ma facture
+                Télécharger ma facture
             </a>
         </div>
 
