@@ -438,52 +438,89 @@ class PaymentController extends Controller
                 }
             }
 
-            // Préparation du payload pour l'API BDM
+            // Extraire les informations spécifiques pour 'commandeInfos' à partir des options
+            $firstOptionWithLieu = collect($lignesOptions)->firstWhere('idLieu');
+            $firstOptionWithCommentaire = collect($lignesOptions)->firstWhere('commentaire');
+
+            $commandeInfos = [
+                "modeTransport" => null, // La documentation indique "string", mais nous n'avons pas cette info.
+                "lieu" => $firstOptionWithLieu['idLieu'] ?? null,
+                "commentaires" => $firstOptionWithCommentaire['commentaire'] ?? null
+            ];
+
+            // Préparation du payload pour l'API BDM avec les clés en camelCase
             $payload = [
-                'CommandeLignes' => $lignesProduits,
-                'CommandeOptions' => $lignesOptions,
-                'Client' => $clientData,
-                'CommandeInfos' => [
-                    'idPlateforme' => $idPlateforme,
-                    'totalPrixTTC' => $totalPrixTTC,
-                    // Vous pouvez ajouter d'autres informations générales de la commande ici si nécessaire
-                ]
+                'commandeLignes' => $lignesProduits,
+                'commandeOptions' => $lignesOptions,
+                'client' => $clientData,
+                'commandeInfos' => $commandeInfos
             ];
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Accept' => 'application/json',
-            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", $payload);
+            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande/options", $payload);
 
             Log::info('API Commande response: ' . $response->body());
 
             $apiResult = $response->json();
 
             if ($response->successful() && isset($apiResult['statut']) && $apiResult['statut'] === 1) {
+                
                 $client = Auth::guard('client')->user();
+                $clientId = null;
+
+                // Gérer le cas de l'utilisateur invité
+                if (!$client && isset($clientData['is_guest']) && $clientData['is_guest']) {
+                    // Chercher ou créer le client invité
+                    $client = \App\Models\Client::firstOrCreate(
+                        ['email' => $clientData['email']],
+                        [
+                            'nom' => $clientData['nom'],
+                            'prenom' => $clientData['prenom'],
+                            'telephone' => $clientData['telephone'],
+                            'civilite' => $clientData['civilite'],
+                            'adresse' => $clientData['adresse'],
+                            'ville' => $clientData['ville'],
+                            'codePostal' => $clientData['codePostal'],
+                            'pays' => $clientData['pays'],
+                            'password' => bcrypt(str()->random(16)), // Mot de passe aléatoire pour les invités
+                            'is_guest' => true
+                        ]
+                    );
+                    $clientId = $client->id;
+                } elseif ($client) {
+                    $clientId = $client->id;
+                }
+
+                if (!$clientId) {
+                    Log::error('API Commande success but could not determine client ID.');
+                    return redirect()->route('form-consigne')->with('error', 'Impossible de déterminer le client pour la commande.');
+                }
+
                 $commande = Commande::create([
-                    'client_id' => $client->id,
-                    'client_email' => $client->email,
-                    'client_nom' => $client->nom,
-                    'client_prenom' => $client->prenom,
-                    'client_telephone' => $client->telephone,
-                    'client_civilite' => $client->civilite,
-                    'client_nom_societe' => $client->nomSociete,
-                    'client_adresse' => $client->adresse,
-                    'client_complement_adresse' => $client->complementAdresse,
-                    'client_ville' => $client->ville,
-                    'client_code_postal' => $client->codePostal,
-                    'client_pays' => $client->pays,
+                    'client_id' => $clientId,
+                    'client_email' => $clientData['email'],
+                    'client_nom' => $clientData['nom'],
+                    'client_prenom' => $clientData['prenom'],
+                    'client_telephone' => $clientData['telephone'],
+                    'client_civilite' => $clientData['civilite'] ?? null,
+                    'client_nom_societe' => $clientData['nomSociete'] ?? null,
+                    'client_adresse' => $clientData['adresse'] ?? null,
+                    'client_complement_adresse' => $clientData['complementAdresse'] ?? null,
+                    'client_ville' => $clientData['ville'] ?? null,
+                    'client_code_postal' => $clientData['codePostal'] ?? null,
+                    'client_pays' => $clientData['pays'] ?? null,
                     'id_api_commande' => $apiResult['message'] ?? null,
                     'id_plateforme' => $idPlateforme,
                     'total_prix_ttc' => $totalPrixTTC,
                     'statut' => 'completed',
                     'details_commande_lignes' => json_encode($commandeLignes),
-                    'invoice_content' => $apiResult['content'] ?? null,
+                    'invoice_content' => isset($apiResult['content']) ? json_encode($apiResult['content']) : null,
                 ]);
 
                 PaymentClient::create([
-                    'client_id' => $client->id,
+                    'client_id' => $clientId,
                     'commande_id' => $commande->id,
                     'monetico_order_id' => $request->input('orderId', Session::get('monetico_order_id')),
                     'monetico_transaction_id' => $request->input('transactionId'),
