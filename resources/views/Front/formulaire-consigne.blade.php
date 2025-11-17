@@ -136,7 +136,7 @@
 </div>
 
 <!-- Custom Modal -->
-<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center px-4">
     <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-3 border-b border-gray-200">
@@ -491,8 +491,21 @@
 <script>
     // --- MODAL ---
     let modalResolve;
+    let wasQuickDateModalOpen = false; // New global variable
+
+    function hideQuickDateModalIfOpen() {
+        const quickDateModal = document.getElementById('quick-date-modal');
+        if (quickDateModal && !quickDateModal.classList.contains('hidden')) {
+            wasQuickDateModalOpen = true;
+            quickDateModal.classList.add('hidden');
+        } else {
+            wasQuickDateModalOpen = false;
+        }
+    }
 
     function showCustomAlert(title, message) {
+        hideQuickDateModalIfOpen(); // Hide quick-date-modal if open
+
         const modalOverlay = document.getElementById('custom-modal-overlay');
         const modalTitle = document.getElementById('custom-modal-title');
         const modalMessage = document.getElementById('custom-modal-message');
@@ -515,6 +528,8 @@
     }
 
     function showCustomPrompt(title, message, label) {
+        hideQuickDateModalIfOpen(); // Hide quick-date-modal if open
+
         const modalOverlay = document.getElementById('custom-modal-overlay');
         const modalTitle = document.getElementById('custom-modal-title');
         const modalMessage = document.getElementById('custom-modal-message');
@@ -544,6 +559,8 @@
     }
 
     function showLoginOrGuestPrompt() {
+        hideQuickDateModalIfOpen(); // Hide quick-date-modal if open
+
         const modalOverlay = document.getElementById('custom-modal-overlay');
         const modalTitle = document.getElementById('custom-modal-title');
         const modalMessage = document.getElementById('custom-modal-message');
@@ -612,6 +629,12 @@
                 if (modalResolve) modalResolve(true);
             }
         };
+
+        // Re-show quick-date-modal if it was open
+        if (wasQuickDateModalOpen) {
+            document.getElementById('quick-date-modal').classList.remove('hidden');
+            wasQuickDateModalOpen = false; // Reset the flag
+        }
     }
     // --- END MODAL ---
 
@@ -656,7 +679,16 @@
             airportId = this.value; 
             saveStateToSession();
         });
-        document.getElementById('check-availability-btn').addEventListener('click', checkAvailability);
+        document.getElementById('check-availability-btn').addEventListener('click', async () => {
+            const isAvailable = await checkAvailability();
+            if (isAvailable) {
+                document.getElementById('step-1').style.display = 'none';
+                document.getElementById('baggage-selection-step').style.display = 'block';
+                document.getElementById('back-to-step-1-btn').classList.remove('hidden');
+                displaySelectedDates();
+                getQuoteAndDisplay();
+            }
+        });
         
         document.getElementById('baggage-grid-container').addEventListener('click', handleQuantityChange);
 
@@ -912,7 +944,7 @@
             await showCustomAlert('Champs incomplets', 'Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
             spinner.style.display = 'none';
             btn.disabled = false;
-            return;
+            return false;
         }
 
         try {
@@ -928,17 +960,15 @@
 
             const result = await response.json();
             if (result.statut === 1 && result.content === true) {
-                document.getElementById('step-1').style.display = 'none';
-                document.getElementById('baggage-selection-step').style.display = 'block';
-                document.getElementById('back-to-step-1-btn').classList.remove('hidden'); // Show button
-                displaySelectedDates();
-                getQuoteAndDisplay();
+                return true;
             } else {
                 await showCustomAlert('Indisponible', result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
+                return false;
             }
         } catch (error) {
             console.error('Erreur lors de la vérification de disponibilité:', error);
             await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la vérification de la disponibilité.');
+            return false;
         } finally {
             spinner.style.display = 'none';
             btn.disabled = false;
@@ -1321,14 +1351,29 @@
     function generateHourButtons(date) {
         const hourGrid = document.getElementById('qdm-hour-grid');
         hourGrid.innerHTML = '';
-        const startHour = (new Date().toDateString() === date.toDateString()) ? new Date().getHours() + 1 : 0;
+        
+        let startHour = 0;
+        const isToday = new Date().toDateString() === date.toDateString();
+        const isSameDayAsDepot = date.toDateString() === qdm_temp_depot_date.toDateString();
 
-        for (let i = startHour; i < 24; i++) {
+        if (qdm_editing_mode === 'retrait' && isSameDayAsDepot) {
+            startHour = qdm_temp_depot_date.getHours() + 3;
+        } else if (isToday) {
+            startHour = new Date().getHours() + 1;
+        }
+
+        for (let i = 0; i < 24; i++) {
             const hour = i.toString().padStart(2, '0') + ':00';
             const button = document.createElement('button');
             button.textContent = hour;
             button.classList.add('qdm-hour-btn', 'py-2', 'px-2', 'bg-white', 'rounded-md', 'border', 'border-gray-300', 'hover:bg-gray-100');
             button.dataset.hour = hour;
+
+            if (i < startHour) {
+                button.disabled = true;
+                button.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+            }
+
             hourGrid.appendChild(button);
         }
     }
@@ -1384,6 +1429,7 @@
             const today = new Date();
             const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             document.getElementById('qdm-custom-date-input').min = todayFormatted;
+            document.getElementById('qdm-custom-time-input').min = ''; // No min time for depot
             updateQdmDisplay();
             generateHourButtons(qdm_temp_depot_date);
         });
@@ -1392,6 +1438,15 @@
             const pad = (num) => num.toString().padStart(2, '0');
             const depotDateFormatted = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
             document.getElementById('qdm-custom-date-input').min = depotDateFormatted;
+            
+            // Set min time for custom retrait time input
+            if (qdm_temp_retrait_date.toDateString() === qdm_temp_depot_date.toDateString()) {
+                const minRetraitHour = qdm_temp_depot_date.getHours() + 3;
+                document.getElementById('qdm-custom-time-input').min = `${pad(minRetraitHour)}:00`;
+            } else {
+                document.getElementById('qdm-custom-time-input').min = '';
+            }
+
             updateQdmDisplay();
             generateHourButtons(qdm_temp_retrait_date);
         });
@@ -1454,14 +1509,31 @@
                 qdm_temp_retrait_date.setFullYear(newDateUTC.getFullYear(), newDateUTC.getMonth(), newDateUTC.getDate());
             }
             updateQdmDisplay();
+            // After date change, we need to re-evaluate the min time for retrait
+            if (qdm_editing_mode === 'retrait') {
+                const pad = (num) => num.toString().padStart(2, '0');
+                if (qdm_temp_retrait_date.toDateString() === qdm_temp_depot_date.toDateString()) {
+                    const minRetraitHour = qdm_temp_depot_date.getHours() + 3;
+                    document.getElementById('qdm-custom-time-input').min = `${pad(minRetraitHour)}:00`;
+                } else {
+                    document.getElementById('qdm-custom-time-input').min = '';
+                }
+            }
         });
         
         document.getElementById('qdm-hour-grid').addEventListener('click', (e) => {
-            if (e.target.classList.contains('qdm-hour-btn')) {
+            if (e.target.classList.contains('qdm-hour-btn') && !e.target.disabled) {
                 const hour = e.target.dataset.hour.split(':')[0];
                 const minute = e.target.dataset.hour.split(':')[1];
                 if (qdm_editing_mode === 'depot') {
                     qdm_temp_depot_date.setHours(hour, minute);
+                    // If depot time changes, re-evaluate retrait time
+                    if (qdm_temp_depot_date.toDateString() === qdm_temp_retrait_date.toDateString()) {
+                        const minRetraitTime = new Date(qdm_temp_depot_date.getTime() + 3 * 60 * 60 * 1000);
+                        if (qdm_temp_retrait_date < minRetraitTime) {
+                            qdm_temp_retrait_date = minRetraitTime;
+                        }
+                    }
                 } else {
                     qdm_temp_retrait_date.setHours(hour, minute);
                 }
@@ -1473,6 +1545,13 @@
             const [hour, minute] = e.target.value.split(':');
             if (qdm_editing_mode === 'depot') {
                 qdm_temp_depot_date.setHours(hour, minute);
+                 // If depot time changes, re-evaluate retrait time
+                 if (qdm_temp_depot_date.toDateString() === qdm_temp_retrait_date.toDateString()) {
+                    const minRetraitTime = new Date(qdm_temp_depot_date.getTime() + 3 * 60 * 60 * 1000);
+                    if (qdm_temp_retrait_date < minRetraitTime) {
+                        qdm_temp_retrait_date = minRetraitTime;
+                    }
+                }
             } else {
                 qdm_temp_retrait_date.setHours(hour, minute);
             }
@@ -1480,22 +1559,51 @@
         });
 
         document.getElementById('qdm-validate-btn').addEventListener('click', async () => {
-            if (qdm_temp_retrait_date <= qdm_temp_depot_date) {
-                await showCustomAlert('Date invalide', 'La date de retrait doit être postérieure à la date de dépôt.');
-                return;
+            const validateBtn = document.getElementById('qdm-validate-btn');
+            const loader = document.getElementById('loader');
+
+            validateBtn.disabled = true;
+            loader.classList.remove('hidden');
+
+            try {
+                if (qdm_temp_retrait_date <= qdm_temp_depot_date) {
+                    await showCustomAlert('Date invalide', 'La date de retrait doit être postérieure à la date de dépôt.');
+                    return;
+                }
+
+                // New validation: 3-hour gap on the same day
+                if (qdm_temp_depot_date.toDateString() === qdm_temp_retrait_date.toDateString()) {
+                    const diffInMs = qdm_temp_retrait_date - qdm_temp_depot_date;
+                    const diffInHours = diffInMs / (1000 * 60 * 60);
+                    if (diffInHours < 3) {
+                        await showCustomAlert('Date invalide', 'Pour une réservation le même jour, un délai minimum de 3 heures est requis entre le dépôt et le retrait.');
+                        return;
+                    }
+                }
+
+                const pad = (num) => num.toString().padStart(2, '0');
+                document.getElementById('date-depot').value = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
+                document.getElementById('heure-depot').value = `${pad(qdm_temp_depot_date.getHours())}:${pad(qdm_temp_depot_date.getMinutes())}`;
+                document.getElementById('date-recuperation').value = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
+                document.getElementById('heure-recuperation').value = `${pad(qdm_temp_retrait_date.getHours())}:${pad(qdm_temp_retrait_date.getMinutes())}`;
+
+                
+                displaySelectedDates();
+                const isAvailable = await checkAvailability(); // Re-check availability with new dates
+                
+                if (isAvailable) {
+                    document.getElementById('quick-date-modal').classList.add('hidden');
+                    await getQuoteAndDisplay();
+                }
+                
+                saveStateToSession();
+            } catch (error) {
+                console.error('Erreur lors de la validation des dates:', error);
+                await showCustomAlert('Erreur', 'Une erreur est survenue lors de la mise à jour des dates.');
+            } finally {
+                validateBtn.disabled = false;
+                loader.classList.add('hidden');
             }
-
-            const pad = (num) => num.toString().padStart(2, '0');
-            document.getElementById('date-depot').value = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
-            document.getElementById('heure-depot').value = `${pad(qdm_temp_depot_date.getHours())}:${pad(qdm_temp_depot_date.getMinutes())}`;
-            document.getElementById('date-recuperation').value = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
-            document.getElementById('heure-recuperation').value = `${pad(qdm_temp_retrait_date.getHours())}:${pad(qdm_temp_retrait_date.getMinutes())}`;
-
-            document.getElementById('quick-date-modal').classList.add('hidden');
-            
-            displaySelectedDates();
-            await getQuoteAndDisplay();
-            saveStateToSession();
         });
     }
 
