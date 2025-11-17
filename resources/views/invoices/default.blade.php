@@ -4,32 +4,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facture #{{ $commande->id_api_commande ?? $commande->id }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact; /* Pour les fonds et couleurs d'arrière-plan */
+            background-color: #f8f8f8; /* Couleur de fond légère pour le corps */
+        }
+        .invoice-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 30px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #eee;
+        }
+        .header-table, .total-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .header-table td {
+            padding: 0;
+            vertical-align: top;
+        }
+        .header-table .left-col {
+            width: 50%;
+            text-align: left;
+        }
+        .header-table .right-col {
+            width: 50%;
+            text-align: right;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 5px;
+        }
+        p {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 3px;
+        }
+        .client-info {
+            margin-bottom: 30px;
+        }
+        .client-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        table th, table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        table th {
+            background-color: #f5f5f5;
+            text-align: left;
+            font-weight: 600;
+            color: #444;
+        }
+        table td {
+            color: #555;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .font-semibold { font-weight: 600; }
+        .text-xl { font-size: 18px; }
+        .text-sm { font-size: 12px; }
+        .text-gray-800 { color: #333; }
+        .text-gray-700 { color: #444; }
+        .text-gray-600 { color: #555; }
+        .text-gray-500 { color: #777; }
+        .bg-gray-200 { background-color: #eee; }
+        .border-b { border-bottom: 1px solid #eee; }
+        .border-t-2 { border-top: 2px solid #ccc; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-16 { margin-top: 64px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mb-8 { margin-bottom: 32px; }
+        .pb-2 { padding-bottom: 8px; }
+        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .total-table td {
+            padding: 8px 0;
+        }
+        .total-table .label {
+            font-weight: 600;
+            color: #555;
+        }
+        .total-table .value {
+            text-align: right;
+        }
+        .total-table .grand-total {
+            font-weight: bold;
+            font-size: 18px;
+            border-top: 2px solid #ccc;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        .footer-section {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="max-w-4xl mx-auto my-10 p-8 bg-white shadow-lg">
+<body>
+    <div class="invoice-container">
         <!-- En-tête -->
-        <div class="flex justify-between items-start mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-800">FACTURE</h1>
-                <p class="text-gray-500">Référence: {{ $commande->paymentClient->monetico_order_id ?? $commande->id }}</p>
-                <p class="text-gray-500">Date: {{ $commande->created_at->format('d/m/Y') }}</p>
-            </div>
-            <div class="text-right">
-                <h2 class="text-2xl font-semibold text-gray-700">HelloPassenger</h2>
-                <p class="text-gray-500">Service Consigne Bagages</p>
-                <p class="text-gray-500">contact@hellopassenger.com</p>
-            </div>
-        </div>
+        <table class="header-table">
+            <tr>
+                <td class="left-col">
+                    <h1>FACTURE</h1>
+                    <p>Référence: {{ $commande->paymentClient->monetico_order_id ?? $commande->id }}</p>
+                    <p>Date: {{ $commande->created_at->format('d/m/Y') }}</p>
+                </td>
+                <td class="right-col">
+                    <h2>HelloPassenger</h2>
+                    <p>Service Consigne Bagages</p>
+                    <p>contact@hellopassenger.com</p>
+                </td>
+            </tr>
+        </table>
 
         <!-- Informations Client -->
-        <div class="mb-8">
-            <h3 class="text-lg font-semibold border-b pb-2 mb-2">Facturé à :</h3>
+        <div class="client-info">
+            <h3>Facturé à :</h3>
             <p class="font-bold">{{ $commande->client_prenom }} {{ $commande->client_nom }}</p>
             <p>{{ $commande->client_adresse }}</p>
             <p>{{ $commande->client_code_postal }} {{ $commande->client_ville }}</p>
@@ -44,9 +166,9 @@
         </div>
 
         <!-- Lignes de la commande -->
-        <table class="w-full mb-8">
+        <table>
             <thead>
-                <tr class="bg-gray-200 text-left">
+                <tr class="bg-gray-200">
                     <th class="p-2 font-semibold">Description</th>
                     <th class="p-2 font-semibold text-center">Quantité</th>
                     <th class="p-2 font-semibold text-right">Prix Unitaire</th>
@@ -77,25 +199,30 @@
         </table>
 
         <!-- Total -->
-        <div class="flex justify-end">
-            <div class="w-full md:w-1/3">
-                <div class="flex justify-between py-2">
-                    <span class="font-semibold text-gray-600">Sous-total</span>
-                    <span>{{ number_format($commande->total_prix_ttc, 2, ',', ' ') }} €</span>
-                </div>
-                <div class="flex justify-between py-2">
-                    <span class="font-semibold text-gray-600">TVA (0%)</span>
-                    <span>0,00 €</span>
-                </div>
-                <div class="flex justify-between py-2 border-t-2 border-gray-300 mt-2">
-                    <span class="font-bold text-xl">TOTAL</span>
-                    <span class="font-bold text-xl">{{ number_format($commande->total_prix_ttc, 2, ',', ' ') }} €</span>
-                </div>
-            </div>
-        </div>
+        <table class="total-table">
+            <tr>
+                <td style="width: 67%;"></td> <!-- Colonne vide pour aligner à droite -->
+                <td style="width: 33%;">
+                    <table>
+                        <tr>
+                            <td class="label">Sous-total</td>
+                            <td class="value">{{ number_format($commande->total_prix_ttc, 2, ',', ' ') }} €</td>
+                        </tr>
+                        <tr>
+                            <td class="label">TVA (0%)</td>
+                            <td class="value">0,00 €</td>
+                        </tr>
+                        <tr class="grand-total">
+                            <td class="label">TOTAL</td>
+                            <td class="value">{{ number_format($commande->total_prix_ttc, 2, ',', ' ') }} €</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
         <!-- Pied de page -->
-        <div class="mt-16 text-center text-sm text-gray-500">
+        <div class="footer-section">
             <p>Merci pour votre confiance.</p>
             <p>HelloPassenger - SAS au capital de 1000€ - SIRET 123456789</p>
         </div>
