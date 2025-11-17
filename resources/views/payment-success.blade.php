@@ -32,22 +32,18 @@
 
         <!-- Boutons d'action -->
         <div class="flex justify-center space-x-4 mb-8">
-            <a href="{{ route('commandes.download-invoice', ['id' => $lastCommandeId]) }}" 
+            <a href="{{ route('invoices.show', ['id' => $lastCommandeId]) }}" target="_blank"
                class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                Télécharger ma facture
+                Voir ma facture
             </a>
         </div>
 
         <!-- Aperçu de la facture -->
         <div class="bg-gray-100 p-4 rounded-lg border border-gray-200">
             <h2 class="text-xl font-semibold text-left mb-4">Aperçu de la facture</h2>
-            @if(isset($apiResult['content']) && is_string($apiResult['content']) && !empty($apiResult['content']))
-                <div class="w-full h-[600px] border rounded-md bg-white">
-                    <iframe src="data:application/pdf;base64,{{ $apiResult['content'] }}" class="w-full h-full" frameborder="0"></iframe>
-                </div>
-            @else
-                <p class="text-center text-gray-500 py-8">L'aperçu de la facture n'est pas disponible.</p>
-            @endif
+            <div class="w-full h-[600px] border rounded-md bg-white">
+                <iframe src="{{ route('invoices.show', ['id' => $lastCommandeId]) }}" class="w-full h-full" frameborder="0"></iframe>
+            </div>
         </div>
 
     </div>

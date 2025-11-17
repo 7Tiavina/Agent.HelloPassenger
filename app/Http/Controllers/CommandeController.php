@@ -4,40 +4,63 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Commande; // N'oubliez pas d'importer le modèle Commande
+use App\Models\Commande;
 use Illuminate\Support\Facades\Response;
 
 class CommandeController extends Controller
 {
+    /**
+     * Affiche la liste des commandes pour le client authentifié.
+     */
     public function index()
     {
-        $user = Auth::user();
-        $commandes = Commande::where('user_id', $user->id)->latest()->get();
+        $client = Auth::guard('client')->user();
+        $commandes = Commande::where('client_id', $client->id)->latest()->get();
 
         return view('mes-reservations', compact('commandes'));
     }
 
-    public function downloadInvoice($id)
+    /**
+     * Affiche la facture HTML pour une commande donnée.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function showInvoice($id)
     {
         $commande = Commande::findOrFail($id);
 
-        // Vérifier que l'utilisateur authentifié a le droit de voir cette facture (optionnel mais recommandé)
+        // Optionnel : vérifier que le client a le droit de voir cette facture
         // if ($commande->client_id !== Auth::guard('client')->id()) {
         //     abort(403, 'Accès non autorisé.');
         // }
 
-        if (empty($commande->invoice_content)) {
-            abort(404, 'Contenu de la facture non trouvé.');
-        }
+        return view('invoices.default', compact('commande'));
+    }
 
-        // Décoder le contenu qui est en base64
-        $pdfContent = base64_decode($commande->invoice_content);
+    /**
+     * Permet de télécharger la facture.
+     * Pour l'instant, affiche simplement la facture HTML.
+     * Pour générer un PDF, un package comme barryvdh/laravel-dompdf serait nécessaire.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function downloadInvoice($id)
+    {
+        $commande = Commande::findOrFail($id);
 
-        $fileName = 'facture-' . $commande->id . '.pdf';
+        // Optionnel : vérifier les droits
+        // if ($commande->client_id !== Auth::guard('client')->id()) {
+        //     abort(403, 'Accès non autorisé.');
+        // }
 
-        return Response::make($pdfContent, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ]);
+        // Pour une vraie génération PDF, il faudrait installer un package et faire :
+        // $pdf = \PDF::loadView('invoices.default', compact('commande'));
+        // return $pdf->download('facture-'.$commande->id.'.pdf');
+
+        // En attendant, on affiche la facture HTML.
+        return view('invoices.default', compact('commande'));
     }
 }
+

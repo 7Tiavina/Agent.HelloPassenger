@@ -53,8 +53,16 @@ class Commande extends Model
     /**
      * Get the client that owns the Commande.
      */
-    public function client(): BelongsTo // Renamed method to client
+    public function client(): BelongsTo
     {
-        return $this->belongsTo(Client::class, 'client_id'); // Link to Client model, specify foreign key
+        return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    /**
+     * Get the payment record associated with the Commande.
+     */
+    public function paymentClient()
+    {
+        return $this->hasOne(PaymentClient::class);
     }
 }

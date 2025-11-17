@@ -103,4 +103,5 @@ Route::post('/payment/ipn', [PaymentController::class, 'handleIpn'])->name('paym
 Route::get('/payment/success/show', [PaymentController::class, 'showPaymentSuccess'])->name('payment.success.show');
 
 Route::get('/commandes/{id}/download-invoice', [CommandeController::class, 'downloadInvoice'])->name('commandes.download-invoice');
+Route::get('/invoice/{id}', [CommandeController::class, 'showInvoice'])->name('invoices.show');
 Route::get('//commandes/{id}', [CommandeController::class, 'show'])->name('commandes.show');
