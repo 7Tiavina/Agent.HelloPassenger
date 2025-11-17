@@ -1095,9 +1095,22 @@
     }
 
     function displayOptions(dureeEnMinutes) {
-        const dureeEnHeures = dureeEnMinutes / 60;
-        isPriorityAvailable = dureeEnHeures < 72;
-        isPremiumAvailable = globalLieuxData.length > 0;
+        // Condition pour Priority (ne change pas)
+        isPriorityAvailable = true;
+
+        // Nouvelle condition pour Premium
+        const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
+        const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
+        const now = new Date();
+
+        const diffInMs = depotDateTime - now;
+        const diffInHours = diffInMs / (1000 * 60 * 60);
+
+        const isDepotInFuture = diffInHours >= 72;
+        const hasLieux = globalLieuxData.length > 0;
+
+        isPremiumAvailable = hasLieux && isDepotInFuture;
     }
 
     function updateAdvertModalButtons() {
