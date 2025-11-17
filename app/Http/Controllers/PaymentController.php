@@ -472,8 +472,8 @@ class PaymentController extends Controller
 
                 // Gérer le cas de l'utilisateur invité
                 if (!$client && isset($clientData['is_guest']) && $clientData['is_guest']) {
-                    // Chercher ou créer le client invité
-                    $client = \App\Models\Client::firstOrCreate(
+                    // Chercher ou mettre à jour le client invité pour s'assurer que les infos sont complètes
+                    $client = \App\Models\Client::updateOrCreate(
                         ['email' => $clientData['email']],
                         [
                             'nom' => $clientData['nom'],
@@ -484,8 +484,7 @@ class PaymentController extends Controller
                             'ville' => $clientData['ville'],
                             'codePostal' => $clientData['codePostal'],
                             'pays' => $clientData['pays'],
-                            'password' => bcrypt(str()->random(16)), // Mot de passe aléatoire pour les invités
-                            'is_guest' => true
+                            'password_hash' => \App\Models\Client::where('email', $clientData['email'])->value('password_hash') ?? bcrypt(''), // Ne pas écraser un mdp existant
                         ]
                     );
                     $clientId = $client->id;

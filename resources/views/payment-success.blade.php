@@ -36,10 +36,6 @@
                class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
                 Télécharger ma facture
             </a>
-            <a href="{{ route('mes.reservations') }}" 
-               class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                Voir mes réservations
-            </a>
         </div>
 
         <!-- Aperçu de la facture -->

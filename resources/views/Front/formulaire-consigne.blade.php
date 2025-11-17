@@ -298,7 +298,15 @@
 @include('Front.header-front')
 
 <div class="max-w-6xl mx-auto px-6 py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">Réserver une consigne</h1>
+    <div class="flex justify-between items-center mb-2">
+        <h1 class="text-3xl font-bold text-gray-800">Réserver une consigne</h1>
+        <button id="reset-form-btn" class="text-sm text-red-600 hover:text-red-800 font-medium flex items-center space-x-1 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Réinitialiser</span>
+        </button>
+    </div>
     <p class="text-gray-600 mb-8">
         Sélectionnez le type de consigne et suivez les étapes du formulaire. Nous vous indiquerons les informations à fournir.
     </p>
@@ -594,6 +602,54 @@
         });
     }
 
+    function showCustomConfirm(title, message) {
+        hideQuickDateModalIfOpen();
+
+        const modalOverlay = document.getElementById('custom-modal-overlay');
+        const modalTitle = document.getElementById('custom-modal-title');
+        const modalMessage = document.getElementById('custom-modal-message');
+        const promptContainer = document.getElementById('custom-modal-prompt-container');
+        const modalFooter = document.getElementById('custom-modal-footer');
+        const modalCloseBtn = document.getElementById('custom-modal-close');
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        promptContainer.classList.add('hidden');
+
+        // Use specific IDs for confirm buttons to avoid listener collision
+        modalFooter.innerHTML = `
+            <button id="modal-btn-cancel-confirm" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+            <button id="modal-btn-confirm-confirm" class="bg-red-600 text-white font-bold py-2 px-4 rounded-full btn-hover">Confirmer</button>
+        `;
+
+        modalOverlay.classList.remove('hidden');
+
+        return new Promise(resolve => {
+            const confirmBtn = document.getElementById('modal-btn-confirm-confirm');
+            const cancelBtn = document.getElementById('modal-btn-cancel-confirm');
+
+            const cleanup = (result) => {
+                // Remove listeners to prevent memory leaks
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                modalCloseBtn.onclick = null;
+                modalOverlay.onclick = null;
+                
+                closeModal(); // This will hide the modal and restore its default state
+                resolve(result);
+            };
+
+            confirmBtn.onclick = () => cleanup(true);
+            cancelBtn.onclick = () => cleanup(false);
+            modalCloseBtn.onclick = () => cleanup(false); // Use existing close button
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) {
+                    cleanup(false);
+                }
+            };
+        });
+    }
+
     function closeModal() {
         document.getElementById('custom-modal-overlay').classList.add('hidden');
         // Clean up dynamically added password field
@@ -668,6 +724,17 @@
         setupQdmListeners(); // Setup listeners for the new modal
 
         // --- EVENT LISTENERS ---
+        document.getElementById('reset-form-btn').addEventListener('click', async function() {
+            const confirmed = await showCustomConfirm(
+                'Réinitialiser la commande', 
+                'Voulez-vous vraiment continuer ? Toutes les données saisies pour votre commande actuelle seront définitivement perdues.'
+            );
+            if (confirmed) {
+                sessionStorage.removeItem('formState');
+                location.reload();
+            }
+        });
+
         document.getElementById('back-to-step-1-btn').addEventListener('click', function() {
             document.getElementById('baggage-selection-step').style.display = 'none';
             document.getElementById('step-1').style.display = 'block';
