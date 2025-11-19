@@ -547,6 +547,38 @@ class PaymentController extends Controller
                 Session::put('api_payment_result', $apiResult);
                 Session::put('last_commande_id', $commande->id);
 
+                /*
+                // --- ENVOI DE L'EMAIL DE CONFIRMATION AVEC FACTURE PDF ---
+                try {
+                    // Générer le PDF
+                    $pdf = PDF::loadView('invoices.default', compact('commande'));
+                    
+                    // Sauvegarder le PDF temporairement
+                    $reference = $commande->paymentClient->monetico_order_id ?? $commande->id;
+                    $fileName = 'facture-' . $reference . '.pdf';
+                    
+                    // Assurez-vous que le répertoire 'temp' existe
+                    if (!Storage::exists('temp')) {
+                        Storage::makeDirectory('temp');
+                    }
+
+                    $pdfPath = Storage::path('temp/' . $fileName);
+                    $pdf->save($pdfPath);
+
+                    // Envoyer l'e-mail
+                    Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande, $pdfPath));
+                    Log::info('Email de confirmation de commande envoyé à ' . $commande->client_email);
+
+                    // Supprimer le fichier PDF temporaire
+                    Storage::delete('temp/' . $fileName);
+
+                } catch (\Exception $mailException) {
+                    Log::error('Erreur lors de l\'envoi de l\'e-mail de confirmation: ' . $mailException->getMessage(), ['exception' => $mailException]);
+                    // Continuer le processus même si l'e-mail échoue
+                }
+                // --- FIN ENVOI EMAIL ---
+                */
+
                 return redirect()->route('payment.success.show');
             } else {
                 Log::error('API Commande failed. Status: ' . $response->status() . ' Body: ' . $response->body());

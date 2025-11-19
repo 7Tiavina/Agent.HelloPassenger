@@ -286,31 +286,36 @@ class FrontController extends Controller
             $productsResponse = $responses[0];
             $lieuxResponse = $responses[1];
 
-            if ($productsResponse->failed()) {
-                Log::error('API BDM (produits) a échoué', ['status' => $productsResponse->status(), 'body' => $productsResponse->body()]);
-                return response()->json(['message' => 'Erreur lors de la récupération des tarifs.'], $productsResponse->status());
+            // Vérifier si l'un ou l'autre des appels a échoué au niveau HTTP
+            if ($productsResponse->failed() || $lieuxResponse->failed()) {
+                Log::error("Échec d'au moins un appel API BDM dans le pool getQuote.", [
+                    'products_status' => $productsResponse->status(),
+                    'products_body' => $productsResponse->body(),
+                    'lieux_status' => $lieuxResponse->status(),
+                    'lieux_body' => $lieuxResponse->body(),
+                ]);
+                return response()->json(['statut' => 0, 'message' => 'Erreur lors de la communication avec le service de réservation.'], 500);
             }
 
             $productsResult = $productsResponse->json();
-            Log::info('Réponse de l\'API BDM (produits)', ['status' => $productsResponse->status(), 'body' => $productsResult]);
+            $lieuxResult = $lieuxResponse->json();
 
-            $lieux = [];
-            if ($lieuxResponse->successful()) {
-                $lieuxResult = $lieuxResponse->json();
-                if ($lieuxResult['statut'] === 1 && is_array($lieuxResult['content'])) {
-                    $lieux = $lieuxResult['content'];
-                }
-                Log::info('Réponse de l\'API BDM (lieux)', ['status' => $lieuxResponse->status(), 'body' => $lieuxResult]);
-            } else {
-                Log::warning('API BDM (lieux) a échoué', ['status' => $lieuxResponse->status(), 'body' => $lieuxResponse->body()]);
+            // Vérifier si le statut interne de l'API BDM indique un échec
+            if (($productsResult['statut'] ?? 0) !== 1 || ($lieuxResult['statut'] ?? 0) !== 1) {
+                Log::error("Réponse API BDM avec un statut d'échec dans le pool getQuote.", [
+                    'products_response' => $productsResult,
+                    'lieux_response' => $lieuxResult,
+                ]);
+                return response()->json(['statut' => 0, 'message' => "Les données de réservation n'ont pas pu être chargées entièrement."], 422);
             }
 
+            // Si tout réussit, on construit la réponse
             return response()->json([
-                'statut' => $productsResult['statut'],
-                'message' => $productsResult['message'] ?? 'Données récupérées',
+                'statut' => 1,
+                'message' => 'Données récupérées',
                 'content' => [
                     'products' => $productsResult['content'] ?? [],
-                    'lieux' => $lieux,
+                    'lieux' => $lieuxResult['content'] ?? [],
                 ]
             ]);
 
