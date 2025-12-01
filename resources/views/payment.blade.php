@@ -47,6 +47,22 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
         }
+        .input-error {
+            border: 2px solid #ef4444 !important; /* red-500 */
+        }
+        .custom-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #FFC107;
+            border-radius: 50%;
+            width: 1.5em;
+            height: 1.5em;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
     <script>
         let modalResolve;
@@ -103,6 +119,11 @@
     </script>
 </head>
 <body class="bg-gray-50">
+
+<!-- Loader Overlay -->
+<div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center">
+    <div class="custom-spinner !w-12 !h-12 !border-4" style="margin-left: 0;"></div>
+</div>
 
 <!-- Custom Modal -->
 <div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
@@ -294,14 +315,55 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const isProfileComplete = @json($isProfileComplete);
-        console.log('isProfileComplete:', isProfileComplete);
-
+        const isGuest = @json($isGuest);
+        console.log('Script loaded. isGuest:', isGuest, 'isProfileComplete:', isProfileComplete);
+        
         const clientProfileModal = document.getElementById('clientProfileModal');
         const openClientProfileModalBtn = document.getElementById('openClientProfileModalBtn');
         const closeClientProfileModalBtn = document.getElementById('closeClientProfileModalBtn');
         const clientProfileForm = document.getElementById('clientProfileForm');
 
         const userData = @json($user);
+
+        function validateGuestForm() {
+            console.log('validateGuestForm called');
+            const requiredFields = ['modal-prenom', 'modal-email', 'modal-telephone', 'modal-adresse', 'modal-ville', 'modal-codePostal', 'modal-pays'];
+            let isValid = true;
+
+            requiredFields.forEach(fieldId => {
+                const input = document.getElementById(fieldId);
+                if (!input) {
+                    console.error('Input not found for ID:', fieldId);
+                    return; 
+                }
+
+                let fieldIsValid = true;
+                const value = input.value.trim();
+                console.log(`Validating field: ${fieldId}, Value: "${value}"`);
+
+                if (value === '') {
+                    fieldIsValid = false;
+                }
+                
+                if (fieldId === 'modal-email' && value !== '') {
+                    const emailRegex = /^\S+@\S+\.\S+$/;
+                    if (!emailRegex.test(value)) {
+                        fieldIsValid = false;
+                    }
+                }
+
+                if (!fieldIsValid) {
+                    isValid = false;
+                    console.log(`Field ${fieldId} is INVALID. Adding .input-error`);
+                    input.classList.add('input-error');
+                } else {
+                    input.classList.remove('input-error');
+                }
+            });
+            
+            console.log('Validation result (isValid):', isValid);
+            return isValid;
+        }
 
         openClientProfileModalBtn.addEventListener('click', () => {
             document.getElementById('modal-email').value = userData.email || '';
@@ -315,6 +377,23 @@
             document.getElementById('modal-ville').value = userData.ville || '';
             document.getElementById('modal-codePostal').value = userData.codePostal || '';
             document.getElementById('modal-pays').value = userData.pays || '';
+
+            if (isGuest) {
+                const nomInput = document.getElementById('modal-nom');
+                const prenomLabel = document.querySelector('label[for="prenom"]');
+                
+                if (nomInput && nomInput.parentElement) {
+                    nomInput.parentElement.style.display = 'none';
+                }
+                if (prenomLabel) {
+                    prenomLabel.style.display = 'none';
+                }
+                const prenomInput = document.getElementById('modal-prenom');
+                if(prenomInput) {
+                    prenomInput.placeholder = 'Prénom';
+                }
+            }
+
             clientProfileModal.classList.remove('hidden');
         });
 
@@ -324,9 +403,19 @@
 
         clientProfileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Form submission intercepted.');
+
+            if (isGuest) {
+                console.log('Running validation for guest...');
+                if (!validateGuestForm()) {
+                    console.log('Validation failed. Submission stopped.');
+                    return; 
+                }
+                console.log('Validation passed.');
+            }
+
             const formData = new FormData(clientProfileForm);
             const data = Object.fromEntries(formData.entries());
-            const isGuest = @json($isGuest);
 
             for (const key in data) {
                 if (data[key] === '') {
@@ -337,7 +426,6 @@
             const url = isGuest ? '{{ route("session.updateGuestInfo") }}' : '{{ route("client.update-profile") }}';
 
             try {
-                // Masquer la modale du profil client avant d'afficher l'alerte de succès
                 clientProfileModal.classList.add('hidden');
 
                 const response = await fetch(url, {
@@ -353,19 +441,26 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    await showCustomAlert('Succès', 'Informations mises à jour avec succès! La page va se recharger pour prendre en compte les changements.');
-                    location.reload(); // Recharger pour que le controleur refasse la vérification
+                    const loader = document.getElementById('loader');
+                    if (loader) {
+                        loader.classList.remove('hidden');
+                    }
+                    // Recharger la page après un court instant pour voir le loader
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 } else {
+                    clientProfileModal.classList.remove('hidden'); 
                     await showCustomAlert('Erreur', 'Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
                     console.error('Update error:', result);
                 }
             } catch (error) {
+                clientProfileModal.classList.remove('hidden');
                 await showCustomAlert('Erreur', 'Une erreur réseau est survenue.');
                 console.error('Network error:', error);
             }
         });
 
-        // Auto-ouverture de la modale si le profil est incomplet
         if (!isProfileComplete) {
             openClientProfileModalBtn.click();
         }
