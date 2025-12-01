@@ -12,6 +12,7 @@
     <title>Finaliser le Paiement - HelloPassenger</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css"/>
     <!-- Scripts Monetico -->
     <script
         src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
@@ -167,14 +168,23 @@
 
 <!-- Loader Overlay -->
 <div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center">
-    <div class="custom-spinner !w-12 !h-12 !border-4" style="margin-left: 0;"></div>
-</div>
-
-<!-- Custom Modal -->
-<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
-    <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
-        <!-- Modal Header -->
-        <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                <div class="custom-spinner !w-12 !h-12 !border-4" style="margin-left: 0;"></div>
+    </div>
+    
+    <style>
+        /* Styles pour intl-tel-input */
+        .iti {
+            width: 100%;
+        }
+        .iti__tel-input {
+            width: 100% !important;
+        }
+    </style>
+    
+    <!-- Custom Modal -->
+    <div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+        <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
+            <!-- Modal Header -->        <div class="flex justify-between items-center pb-3 border-b border-gray-200">
             <h3 id="custom-modal-title" class="text-xl font-bold text-gray-800"></h3>
             <button id="custom-modal-close" class="text-gray-400 hover:text-gray-600">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -363,8 +373,17 @@
 
 @include('components.client-profile-modal')
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const input = document.querySelector("#modal-telephone");
+        if (input) {
+            window.intlTelInput(input, {
+                initialCountry: "fr",
+                utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js"
+            });
+        }
+        
         const isProfileComplete = @json($isProfileComplete);
         const isGuest = @json($isGuest);
         console.log('Script loaded. isGuest:', isGuest, 'isProfileComplete:', isProfileComplete);
