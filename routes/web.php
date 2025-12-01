@@ -102,6 +102,7 @@ Route::get('/payment/return', [PaymentController::class, 'paymentReturn'])->name
 Route::post('/payment/ipn', [PaymentController::class, 'handleIpn'])->name('payment.ipn');
 Route::get('/payment/success/show', [PaymentController::class, 'showPaymentSuccess'])->name('payment.success.show');
 
+Route::post('/reset-session', [PaymentController::class, 'clearGuestSession'])->name('session.reset');
 Route::get('/commandes/{id}/download-invoice', [CommandeController::class, 'downloadInvoice'])->name('commandes.download-invoice');
 Route::get('/invoice/{id}', [CommandeController::class, 'showInvoice'])->name('invoices.show');
 Route::get('//commandes/{id}', [CommandeController::class, 'show'])->name('commandes.show');

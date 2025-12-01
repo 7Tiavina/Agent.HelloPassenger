@@ -92,6 +92,51 @@
         function closeModal() {
             document.getElementById('custom-modal-overlay').classList.add('hidden');
         }
+        
+        // Moved to be globally accessible
+        function showCustomConfirm(title, message) {
+            const modalOverlay = document.getElementById('custom-modal-overlay');
+            const modalTitle = document.getElementById('custom-modal-title');
+            const modalMessage = document.getElementById('custom-modal-message');
+            const promptContainer = document.getElementById('custom-modal-prompt-container');
+            const modalFooter = document.getElementById('custom-modal-footer');
+            const modalCloseBtn = document.getElementById('custom-modal-close');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            promptContainer.classList.add('hidden');
+
+            modalFooter.innerHTML = `
+                <button id="modal-btn-cancel-confirm" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+                <button id="modal-btn-confirm-confirm" class="bg-red-600 text-white font-bold py-2 px-4 rounded-full btn-hover">Confirmer</button>
+            `;
+
+            modalOverlay.classList.remove('hidden');
+
+            return new Promise(resolve => {
+                const confirmBtn = document.getElementById('modal-btn-confirm-confirm');
+                const cancelBtn = document.getElementById('modal-btn-cancel-confirm');
+
+                const cleanup = (result) => {
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    modalCloseBtn.onclick = null;
+                    modalOverlay.onclick = null;
+                    closeModal();
+                    resolve(result);
+                };
+
+                confirmBtn.onclick = () => cleanup(true);
+                cancelBtn.onclick = () => cleanup(false);
+                modalCloseBtn.onclick = () => cleanup(false);
+                modalOverlay.onclick = (e) => {
+                    if (e.target === modalOverlay) {
+                        cleanup(false);
+                    }
+                };
+            });
+        }
+
 
         document.addEventListener('DOMContentLoaded', function() {
             const modalOverlay = document.getElementById('custom-modal-overlay');
@@ -158,13 +203,19 @@
 
 <div class="container mx-auto max-w-5xl my-12 px-4">
 
-    <div class="mb-6">
+    <div class="mb-6 flex justify-between items-center">
         <a href="{{ route('form-consigne') }}" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover inline-flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
             Retour au formulaire
         </a>
+        <button id="payment-reset-btn" class="text-sm text-red-600 hover:text-red-800 font-medium flex items-center space-x-1 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Réinitialiser et recommencer</span>
+        </button>
     </div>
 
     <!-- Afficheur de message d'erreur -->
@@ -464,8 +515,49 @@
             }
         });
 
+        // Auto-ouverture de la modale si le profil est incomplet
         if (!isProfileComplete) {
             openClientProfileModalBtn.click();
+        }
+
+        const paymentResetBtn = document.getElementById('payment-reset-btn');
+        if (paymentResetBtn) {
+            paymentResetBtn.addEventListener('click', async function() {
+                const confirmed = await showCustomConfirm(
+                    'Réinitialiser la commande', 
+                    'Voulez-vous vraiment continuer ? Toutes les données saisies et votre panier seront perdus.'
+                );
+                if (confirmed) {
+                    // Afficher le loader
+                    const loader = document.getElementById('loader');
+                    if (loader) {
+                        loader.classList.remove('hidden');
+                    }
+
+                    // Vider le stockage local
+                    sessionStorage.removeItem('formState');
+                    
+                    // Appeler le serveur pour vider la session
+                    try {
+                        await fetch('{{ route("session.reset") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Failed to reset server session:', error);
+                        // Cacher le loader en cas d'erreur avant de rediriger
+                        if(loader) loader.classList.add('hidden');
+                    }
+
+                    // Rediriger vers la page du formulaire après un court délai
+                    setTimeout(() => {
+                        window.location.href = '{{ route("form-consigne") }}';
+                    }, 500);
+                }
+            });
         }
     });
 </script>

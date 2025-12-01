@@ -735,8 +735,33 @@
                 'Voulez-vous vraiment continuer ? Toutes les données saisies pour votre commande actuelle seront définitivement perdues.'
             );
             if (confirmed) {
+                // Afficher le loader
+                const loader = document.getElementById('loader');
+                if (loader) {
+                    loader.classList.remove('hidden');
+                }
+
+                // Vider le stockage local
                 sessionStorage.removeItem('formState');
-                location.reload();
+                
+                // Appeler le serveur pour vider la session
+                try {
+                    await fetch('{{ route("session.reset") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                } catch (error) {
+                    console.error('Failed to reset server session:', error);
+                    // On pourrait cacher le loader ici, mais la page va recharger de toute façon
+                }
+
+                // Recharger la page après un court délai pour que le loader soit visible
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
             }
         });
 
