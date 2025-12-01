@@ -222,7 +222,7 @@
     @if(!$isProfileComplete)
         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
             <p class="font-bold">Action requise</p>
-            <p>Votre profil est incomplet. Veuillez mettre à jour vos informations pour pouvoir procéder au paiement.</p>
+            <p>Tous les bagages déposés en consigne sont préalablement contrôlés par Rayon X. Pour des raisons de sûreté - sécurité nous avons donc besoin d'informations complémentaires pour valider votre commande.</p>
         </div>
     @endif
 
@@ -426,8 +426,8 @@
 
         openClientProfileModalBtn.addEventListener('click', () => {
             document.getElementById('modal-email').value = userData.email || '';
-            document.getElementById('modal-nom').value = userData.nom || '';
-            document.getElementById('modal-prenom').value = userData.prenom || '';
+            document.getElementById('modal-nom').value = isGuest ? '' : userData.nom || '';
+            document.getElementById('modal-prenom').value = isGuest ? '' : userData.prenom || '';
             document.getElementById('modal-telephone').value = userData.telephone || '';
             document.getElementById('modal-civilite').value = userData.civilite || 'M.';
             document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
