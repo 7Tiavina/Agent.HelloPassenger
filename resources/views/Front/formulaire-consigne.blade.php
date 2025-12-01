@@ -187,27 +187,32 @@
                     <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Priority</h3>
                     <p class="mt-2 text-gray-500">Bénéficiez d’un traitement prioritaire pour vos bagages à la dépose et à la récupération.</p>
                     <p class="mt-4 text-3xl font-extrabold text-gray-900">+15 €</p>
-                    <button id="add-priority-from-modal" data-option-key="priority" class="mt-6 w-full bg-yellow-custom text-gray-dark font-bold py-3 px-4 rounded-lg btn-hover">Ajouter au panier</button>
+                    <button id="add-priority-from-modal" data-option-key="priority" class="mt-6 w-full bg-transparent border border-gray-400 text-gray-700 font-bold py-3 px-4 rounded-lg btn-hover hover:bg-gray-100">Ajouter au panier</button>
                 </div>
             </div>
 
             <!-- Premium Option -->
-            <div id="advert-option-premium" class="hidden bg-white p-8">
-                <div class="text-center">
-                    <span class="inline-block bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">PREMIUM</span>
-                    <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Premium</h3>
-                    <p class="mt-2 text-gray-500">Un agent vous attend à un point de rendez-vous défini pour une prise en charge VIP.</p>
-                    <p class="mt-4 text-3xl font-extrabold text-gray-900">+25 €</p>
-                    <div id="premium-details-modal" class="mt-4 text-left space-y-3">
-                        <!-- Premium specific fields will be injected here -->
+            <div id="advert-option-premium" class="hidden bg-white p-8 relative">
+                <div id="premium-available-content">
+                    <div class="text-center">
+                        <span class="inline-block bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">PREMIUM</span>
+                        <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Premium</h3>
+                        <p class="mt-2 text-gray-500">Permet de remettre ou récupérer ses bagages directement à l’endroit exact choisi à l’aéroport, avec l’aide d’un porteur dédié. Le client indique le lieu, son mode de transport et un commentaire, et l’équipe s’occupe de tout.</p>
+                        <p class="mt-4 text-3xl font-extrabold text-gray-900">+25 €</p>
+                        <div id="premium-details-modal" class="mt-4 text-left space-y-3">
+                            <!-- Premium specific fields will be injected here -->
+                        </div>
+                        <button id="add-premium-from-modal" data-option-key="premium" class="mt-6 w-full bg-transparent border border-gray-400 text-gray-700 font-bold py-3 px-4 rounded-lg btn-hover hover:bg-gray-100">Ajouter au panier</button>
                     </div>
-                    <button id="add-premium-from-modal" data-option-key="premium" class="mt-6 w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg btn-hover">Ajouter au panier</button>
+                </div>
+                <div id="premium-unavailable-message" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-90 rounded-lg hidden">
+                    <p class="text-lg font-semibold text-gray-600">Service Premium indisponible</p>
                 </div>
             </div>
         </div>
 
         <div class="p-6 text-center bg-gray-50">
-            <button id="continue-from-options-modal" class="text-gray-600 font-medium hover:text-gray-900">Valider et continuer →</button>
+            <button id="continue-from-options-modal" class="bg-yellow-custom text-gray-dark font-bold py-3 px-8 rounded-full btn-hover">Valider et continuer →</button>
         </div>
     </div>
 </div>
@@ -1080,6 +1085,8 @@
             if (result.statut === 1 && result.content) {
                 globalProductsData = result.content.products || [];
                 globalLieuxData = result.content.lieux || [];
+                console.log('Données de tarification reçues:', globalProductsData);
+                console.log('Lieux de rendez-vous reçus:', globalLieuxData);
                 
                 displayOptions(dureeEnMinutes);
                 updateCartDisplay();
@@ -1123,16 +1130,12 @@
 
             if (isInCart) {
                 addButton.textContent = 'Enlever du panier';
-                addButton.classList.remove('bg-yellow-custom', 'text-gray-dark', 'bg-purple-600', 'text-white');
+                addButton.classList.remove('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
                 addButton.classList.add('bg-red-600', 'text-white');
             } else {
                 addButton.textContent = 'Ajouter au panier';
                 addButton.classList.remove('bg-red-600', 'text-white');
-                if (optionKey === 'priority') {
-                    addButton.classList.add('bg-yellow-custom', 'text-gray-dark');
-                } else {
-                    addButton.classList.add('bg-purple-600', 'text-white');
-                }
+                addButton.classList.add('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
             }
         });
     }
@@ -1182,6 +1185,8 @@
             const closeBtn = document.getElementById('close-options-advert-modal');
             const prioritySection = document.getElementById('advert-option-priority');
             const premiumSection = document.getElementById('advert-option-premium');
+            const premiumAvailableContent = document.getElementById('premium-available-content'); // Ajouté
+            const premiumUnavailableMessage = document.getElementById('premium-unavailable-message'); // Ajouté
             const addPriorityBtn = document.getElementById('add-priority-from-modal');
             const addPremiumBtn = document.getElementById('add-premium-from-modal');
             const continueBtn = document.getElementById('continue-from-options-modal');
@@ -1195,6 +1200,9 @@
             }
             if (isPremiumAvailable) {
                 premiumSection.classList.remove('hidden');
+                premiumAvailableContent.classList.remove('hidden');
+                premiumUnavailableMessage.classList.add('hidden');
+
                 const premiumDetailsContainer = document.getElementById('premium-details-modal');
                 const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
                 premiumDetailsContainer.innerHTML = `
@@ -1203,30 +1211,38 @@
                         <option value="" selected disabled>Sélectionnez un lieu</option>
                         ${lieuxOptionsHTML}
                     </select>
-                    <label class="block text-sm font-medium text-gray-700 mt-3">Informations complémentaires</label>
+                    <label class="block text-sm font-medium text-gray-700 mt-3">Informations complémentaires *</label>
                     <input type="text" name="option_info_opt_premium" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
-                    <label class="block text-sm font-medium text-gray-700 mt-3">Commentaire</label>
+                    <label class="block text-sm font-medium text-gray-700 mt-3">Commentaire *</label>
                     <textarea name="option_comment_opt_premium" class="input-style w-full" rows="2" placeholder="Ajoutez un commentaire..."></textarea>
                 `;
 
                 // --- NOUVELLE LOGIQUE DE VALIDATION ---
                 const lieuSelect = premiumDetailsContainer.querySelector('select[name="option_lieu_opt_premium"]');
-                
+                const infoInput = premiumDetailsContainer.querySelector('input[name="option_info_opt_premium"]');
+                const commentTextarea = premiumDetailsContainer.querySelector('textarea[name="option_comment_opt_premium"]');
+
                 const validatePremium = () => {
-                    if (lieuSelect.value) {
-                        addPremiumBtn.disabled = false;
-                        addPremiumBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    const isInCart = cartItems.some(item => item.key === 'premium');
+                    const areFieldsValid = lieuSelect.value && infoInput.value.trim() !== '' && commentTextarea.value.trim() !== '';
+
+                    if (areFieldsValid || isInCart) {
+                        addPremiumBtn.classList.remove('hidden');
                     } else {
-                        addPremiumBtn.disabled = true;
-                        addPremiumBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        addPremiumBtn.classList.add('hidden');
                     }
                 };
 
-                // Désactiver le bouton par défaut et écouter les changements
-                addPremiumBtn.disabled = true;
-                addPremiumBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                // Attacher les listeners et valider l'état initial
                 lieuSelect.addEventListener('change', validatePremium);
+                infoInput.addEventListener('input', validatePremium);
+                commentTextarea.addEventListener('input', validatePremium);
+                validatePremium(); // Appel initial pour définir la visibilité
                 // --- FIN DE LA NOUVELLE LOGIQUE ---
+            } else {
+                premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
+                premiumAvailableContent.classList.add('hidden');
+                premiumUnavailableMessage.classList.remove('hidden');
             }
 
             updateAdvertModalButtons(); // Set initial button states
@@ -1735,6 +1751,8 @@
                 if (loader) loader.classList.add('hidden');
                 return;
             }
+            if (loader) loader.classList.add('hidden'); // Hide loader if options modal is not cancelled
+            if (loader) loader.classList.add('hidden'); // Hide loader if options modal is not cancelled
         }
         // --- END NEW ---
 

@@ -278,6 +278,7 @@ class FrontController extends Controller
             $idService = $validated['idService'];
             $duree = $validated['duree'];
 
+            Log::info("Tentative de récupération des lieux pour le service Premium sur la plateforme {$idPlateforme}.");
             $responses = Http::pool(fn ($pool) => [
                 $pool->withToken($token)->withHeaders(['Accept' => 'application/json'])->get("{$baseUrl}/api/plateforme/{$idPlateforme}/service/{$idService}/{$duree}/produits"),
                 $pool->withToken($token)->withHeaders(['Accept' => 'application/json'])->get("{$baseUrl}/api/plateforme/{$idPlateforme}/lieux"),
