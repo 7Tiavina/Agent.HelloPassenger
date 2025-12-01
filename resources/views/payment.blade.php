@@ -327,7 +327,7 @@
 
         function validateGuestForm() {
             console.log('validateGuestForm called');
-            const requiredFields = ['modal-prenom', 'modal-email', 'modal-telephone', 'modal-adresse', 'modal-ville', 'modal-codePostal', 'modal-pays'];
+            const requiredFields = ['modal-prenom', 'modal-nom', 'modal-email', 'modal-telephone', 'modal-adresse', 'modal-ville', 'modal-codePostal', 'modal-pays'];
             let isValid = true;
 
             requiredFields.forEach(fieldId => {
@@ -348,6 +348,14 @@
                 if (fieldId === 'modal-email' && value !== '') {
                     const emailRegex = /^\S+@\S+\.\S+$/;
                     if (!emailRegex.test(value)) {
+                        fieldIsValid = false;
+                    }
+                }
+
+                // Validation spécifique pour le code postal
+                if (fieldId === 'modal-codePostal' && value !== '') {
+                    const postalCodeRegex = /^\d{5}$/;
+                    if (!postalCodeRegex.test(value)) {
                         fieldIsValid = false;
                     }
                 }
@@ -378,21 +386,7 @@
             document.getElementById('modal-codePostal').value = userData.codePostal || '';
             document.getElementById('modal-pays').value = userData.pays || '';
 
-            if (isGuest) {
-                const nomInput = document.getElementById('modal-nom');
-                const prenomLabel = document.querySelector('label[for="prenom"]');
-                
-                if (nomInput && nomInput.parentElement) {
-                    nomInput.parentElement.style.display = 'none';
-                }
-                if (prenomLabel) {
-                    prenomLabel.style.display = 'none';
-                }
-                const prenomInput = document.getElementById('modal-prenom');
-                if(prenomInput) {
-                    prenomInput.placeholder = 'Prénom';
-                }
-            }
+
 
             clientProfileModal.classList.remove('hidden');
         });
@@ -451,7 +445,16 @@
                     }, 500);
                 } else {
                     clientProfileModal.classList.remove('hidden'); 
-                    await showCustomAlert('Erreur', 'Erreur lors de la mise à jour: ' + (result.message || 'Erreur inconnue'));
+                    let errorMessage = result.message || 'Une erreur inconnue est survenue.';
+                    // Si des erreurs de validation spécifiques sont retournées par l'API
+                    if (result.errors) {
+                        errorMessage = 'Veuillez corriger les erreurs suivantes :\n';
+                        // Concaténer tous les messages d'erreur
+                        Object.values(result.errors).forEach(errorArray => {
+                            errorMessage += `\n- ${errorArray[0]}`;
+                        });
+                    }
+                    await showCustomAlert('Erreur de mise à jour', errorMessage);
                     console.error('Update error:', result);
                 }
             } catch (error) {
