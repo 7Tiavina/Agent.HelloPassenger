@@ -640,6 +640,15 @@ class PaymentController extends Controller
         return redirect()->route('payment.success', $request->query());
     }
 
+    public function clearGuestSession(Request $request)
+    {
+        Session::forget('commande_en_cours');
+        Session::forget('guest_customer_details');
+        Session::forget('monetico_order_id'); // Ajout pour vider l'ID de commande Monetico
+        Log::info('Guest session data cleared successfully.');
+        return response()->json(['success' => true, 'message' => 'Guest session data cleared.']);
+    }
+
     /**
      * Check if a string is a valid UUID.
      *
