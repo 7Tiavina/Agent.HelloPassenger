@@ -402,40 +402,40 @@
 
             requiredFields.forEach(fieldId => {
                 const input = document.getElementById(fieldId);
-                if (!input) {
-                    console.error('Input not found for ID:', fieldId);
-                    return; 
-                }
+                if (input) {
+                    let fieldIsValid = true;
+                    const value = input.value.trim();
+                    console.log(`Validating field: ${fieldId}, Value: "${value}"`);
 
-                let fieldIsValid = true;
-                const value = input.value.trim();
-                console.log(`Validating field: ${fieldId}, Value: "${value}"`);
-
-                if (value === '') {
-                    fieldIsValid = false;
-                }
-                
-                if (fieldId === 'modal-email' && value !== '') {
-                    const emailRegex = /^\S+@\S+\.\S+$/;
-                    if (!emailRegex.test(value)) {
+                    if (value === '') {
                         fieldIsValid = false;
                     }
-                }
-
-                // Validation spécifique pour le code postal
-                if (fieldId === 'modal-codePostal' && value !== '') {
-                    const postalCodeRegex = /^\d{5}$/;
-                    if (!postalCodeRegex.test(value)) {
-                        fieldIsValid = false;
+                    
+                    if (fieldId === 'modal-email' && value !== '') {
+                        const emailRegex = /^\S+@\S+\.\S+$/;
+                        if (!emailRegex.test(value)) {
+                            fieldIsValid = false;
+                        }
                     }
-                }
 
-                if (!fieldIsValid) {
-                    isValid = false;
-                    console.log(`Field ${fieldId} is INVALID. Adding .input-error`);
-                    input.classList.add('input-error');
+                    // Validation spécifique pour le code postal
+                    if (fieldId === 'modal-codePostal' && value !== '') {
+                        const postalCodeRegex = /^\d{5}$/;
+                        if (!postalCodeRegex.test(value)) {
+                            fieldIsValid = false;
+                        }
+                    }
+
+                    if (!fieldIsValid) {
+                        isValid = false;
+                        console.log(`Field ${fieldId} is INVALID. Adding .input-error`);
+                        input.classList.add('input-error');
+                    } else {
+                        input.classList.remove('input-error');
+                    }
                 } else {
-                    input.classList.remove('input-error');
+                    console.error('Input not found for ID:', fieldId);
+                    isValid = false;
                 }
             });
             
