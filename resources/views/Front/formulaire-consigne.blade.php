@@ -1210,8 +1210,8 @@
             const closeBtn = document.getElementById('close-options-advert-modal');
             const prioritySection = document.getElementById('advert-option-priority');
             const premiumSection = document.getElementById('advert-option-premium');
-            const premiumAvailableContent = document.getElementById('premium-available-content'); // Ajouté
-            const premiumUnavailableMessage = document.getElementById('premium-unavailable-message'); // Ajouté
+            const premiumAvailableContent = document.getElementById('premium-available-content');
+            const premiumUnavailableMessage = document.getElementById('premium-unavailable-message');
             const addPriorityBtn = document.getElementById('add-priority-from-modal');
             const addPremiumBtn = document.getElementById('add-premium-from-modal');
             const continueBtn = document.getElementById('continue-from-options-modal');
@@ -1230,40 +1230,118 @@
 
                 const premiumDetailsContainer = document.getElementById('premium-details-modal');
                 const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+
                 premiumDetailsContainer.innerHTML = `
-                    <label class="block text-sm font-medium text-gray-700">Lieu de rendez-vous *</label>
-                    <select name="option_lieu_opt_premium" class="input-style custom-select w-full">
-                        <option value="" selected disabled>Sélectionnez un lieu</option>
-                        ${lieuxOptionsHTML}
-                    </select>
-                    <label class="block text-sm font-medium text-gray-700 mt-3">Informations complémentaires *</label>
-                    <input type="text" name="option_info_opt_premium" class="input-style w-full" placeholder="Ex: N° de vol, provenance...">
-                    <label class="block text-sm font-medium text-gray-700 mt-3">Commentaire *</label>
-                    <textarea name="option_comment_opt_premium" class="input-style w-full" rows="2" placeholder="Ajoutez un commentaire..."></textarea>
+                    <div class="space-y-4">
+                        <p class="font-medium text-gray-700">Sens de la prise en charge :</p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
+                                <input type="radio" name="premium_direction" value="terminal_to_agence" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
+                                <span class="ml-3 text-gray-700 font-medium">Terminal → Agence BDM</span>
+                            </label>
+                            <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
+                                <input type="radio" name="premium_direction" value="agence_to_terminal" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
+                                <span class="ml-3 text-gray-700 font-medium">Agence BDM → Terminal</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire pour Terminal -> Agence -->
+                    <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
+                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Terminal → Agence BDM</h4>
+                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" data-field="flight_number_arrival" class="input-style w-full premium-input"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" data-field="date_arrival" class="input-style w-full premium-input"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" data-field="time_arrival" class="input-style w-full premium-input"></div>
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700">Terminal d’arrivée</label><input type="text" data-field="terminal_arrival" class="input-style w-full premium-input"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" data-field="baggage_count_arrival" class="input-style w-full premium-input" min="1"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                             <div><label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label><input type="text" data-field="pickup_location_arrival" class="input-style w-full premium-input"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge</label><input type="time" data-field="pickup_time_arrival" class="input-style w-full premium-input"></div>
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea data-field="instructions_arrival" class="input-style w-full premium-input" rows="2"></textarea></div>
+                    </div>
+
+                    <!-- Formulaire pour Agence -> Terminal -->
+                    <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
+                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Agence BDM → Terminal</h4>
+                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" data-field="flight_number_departure" class="input-style w-full premium-input"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" data-field="date_departure" class="input-style w-full premium-input"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" data-field="time_departure" class="input-style w-full premium-input"></div>
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700">Terminal de départ</label><input type="text" data-field="terminal_departure" class="input-style w-full premium-input"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" data-field="baggage_count_departure" class="input-style w-full premium-input" min="1"></div>
+                         <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-sm font-medium text-gray-700">Lieu de restitution</label><input type="text" data-field="restitution_location_departure" class="input-style w-full premium-input"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure de restitution</label><input type="time" data-field="restitution_time_departure" class="input-style w-full premium-input"></div>
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea data-field="instructions_departure" class="input-style w-full premium-input" rows="2"></textarea></div>
+                    </div>
+                    
+                    <!-- Hidden legacy fields for data submission -->
+                    <div id="legacy-premium-fields" class="hidden">
+                        <select name="option_lieu_opt_premium" class="input-style custom-select w-full">
+                            <option value="" selected disabled>Sélectionnez un lieu</option>
+                            ${lieuxOptionsHTML}
+                        </select>
+                        <input type="text" name="option_info_opt_premium">
+                        <textarea name="option_comment_opt_premium"></textarea>
+                    </div>
                 `;
 
-                // --- NOUVELLE LOGIQUE DE VALIDATION ---
-                const lieuSelect = premiumDetailsContainer.querySelector('select[name="option_lieu_opt_premium"]');
-                const infoInput = premiumDetailsContainer.querySelector('input[name="option_info_opt_premium"]');
-                const commentTextarea = premiumDetailsContainer.querySelector('textarea[name="option_comment_opt_premium"]');
+                // --- LOGIC FOR NEW FORM ---
+                const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
+                const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
+                const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
+                
+                directionRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const direction = e.target.value;
+                        if (direction === 'terminal_to_agence') {
+                            formTerminalToAgence.classList.remove('hidden');
+                            formAgenceToTerminal.classList.add('hidden');
+                        } else {
+                            formTerminalToAgence.classList.add('hidden');
+                            formAgenceToTerminal.classList.remove('hidden');
+                        }
+                        validatePremium();
+                    });
+                });
+                
+                const allPremiumInputs = premiumDetailsContainer.querySelectorAll('.premium-input');
+                allPremiumInputs.forEach(input => input.addEventListener('input', validatePremium));
 
-                const validatePremium = () => {
-                    const isInCart = cartItems.some(item => item.key === 'premium');
-                    const areFieldsValid = lieuSelect.value && infoInput.value.trim() !== '' && commentTextarea.value.trim() !== '';
-
-                    if (areFieldsValid || isInCart) {
-                        addPremiumBtn.classList.remove('hidden');
-                    } else {
-                        addPremiumBtn.classList.add('hidden');
+                function validatePremium() {
+                    const direction = premiumDetailsContainer.querySelector('input[name="premium_direction"]:checked')?.value;
+                    let areFieldsValid = false;
+                    let currentFormFields = [];
+                    
+                    if (direction) {
+                        const formContainer = document.getElementById(`premium_fields_${direction}`);
+                        currentFormFields = [...formContainer.querySelectorAll('.premium-input')];
+                        areFieldsValid = currentFormFields.every(input => input.value.trim() !== '');
                     }
-                };
 
-                // Attacher les listeners et valider l'état initial
-                lieuSelect.addEventListener('change', validatePremium);
-                infoInput.addEventListener('input', validatePremium);
-                commentTextarea.addEventListener('input', validatePremium);
-                validatePremium(); // Appel initial pour définir la visibilité
-                // --- FIN DE LA NOUVELLE LOGIQUE ---
+                    const isInCart = cartItems.some(item => item.key === 'premium');
+                    addPremiumBtn.classList.toggle('hidden', !(areFieldsValid || isInCart));
+
+                    // Update legacy hidden fields
+                    if (areFieldsValid) {
+                        const info = [];
+                        currentFormFields.forEach(input => {
+                            const label = input.previousElementSibling?.textContent || input.name;
+                            info.push(`${label}: ${input.value}`);
+                        });
+                        
+                        document.querySelector('input[name="option_info_opt_premium"]').value = `Direction: ${direction}`;
+                        document.querySelector('textarea[name="option_comment_opt_premium"]').value = info.join(' | ');
+                    }
+                }
+                
+                validatePremium(); // Initial validation check
+
             } else {
                 premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
                 premiumAvailableContent.classList.add('hidden');
@@ -1281,12 +1359,6 @@
                 addPriorityBtn.onclick = null;
                 addPremiumBtn.onclick = null;
                 
-                // Nettoyer le listener de validation premium s'il existe
-                const lieuSelect = document.querySelector('select[name="option_lieu_opt_premium"]');
-                if (lieuSelect) {
-                    lieuSelect.removeEventListener('change', () => {}); // Note: this is not ideal, but works for this simple case
-                }
-
                 resolve(resolutionValue);
             };
 
