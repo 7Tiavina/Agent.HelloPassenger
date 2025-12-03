@@ -410,7 +410,7 @@
                                     'Accessoires' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
                                     'Bagage cabine' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>',
                                     'Bagage soute' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>',
-                                    'Bagage spécial' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+                                    'Bagage spécial' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
                                     'Vestiaire' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>'
                                 ];
                                 $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
@@ -675,10 +675,10 @@
             if (modalResolve) modalResolve(null);
         };
         document.getElementById('custom-modal-confirm-btn').onclick = () => {
-            const isPrompt = !document.getElementById('custom-modal-prompt-container').classList.contains('hidden');
+            const isPrompt = !promptContainer.classList.contains('hidden');
             if (isPrompt) {
                 const value = document.getElementById('custom-modal-input').value;
-                if (value.trim() === '' || !/^\S+@\S+\.\S+$/.test(value)) {
+                if (value.trim() === '' || !/^\[S]+@\S+\.\S+$/.test(value)) {
                     document.getElementById('custom-modal-error').textContent = 'Veuillez entrer une adresse e-mail valide.';
                     document.getElementById('custom-modal-error').classList.remove('hidden');
                     return;
@@ -720,7 +720,7 @@
         'Accessoires': { type: 'accessory', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Petits objets comme un sac à main, un ordinateur portable ou un casque.' },
         'Bagage cabine': { type: 'cabin', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>', description: 'Valise de taille cabine, généralement jusqu\'à 55x35x25 cm.' },
         'Bagage soute': { type: 'hold', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>', description: 'Grande valise enregistrée en soute.' },
-        'Bagage spécial': { type: 'special', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Objets volumineux ou hors format comme un équipement de sport ou un instrument de musique.' },
+        'Bagage spécial': { type: 'special', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', description: 'Objets volumineux ou hors format comme un équipement de sport ou un instrument de musique.' },
         'Vestiaire': { type: 'cloakroom', icon: '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>', description: 'Pour les manteaux, vestes ou autres vêtements sur cintre.' }
     };
 
@@ -731,7 +731,7 @@
         // --- EVENT LISTENERS ---
         document.getElementById('reset-form-btn').addEventListener('click', async function() {
             const confirmed = await showCustomConfirm(
-                'Réinitialiser la commande', 
+                'Réinitialiser la commande',
                 'Voulez-vous vraiment continuer ? Toutes les données saisies pour votre commande actuelle seront définitivement perdues.'
             );
             if (confirmed) {
@@ -1192,7 +1192,7 @@
 
                 if (formContainer) {
                     let isFormValid = true;
-                    formContainer.querySelectorAll('input, textarea').forEach(input => {
+                    formContainer.querySelectorAll('input, textarea, select').forEach(input => {
                         if (!input.value.trim()) {
                             isFormValid = false;
                         }
@@ -1239,6 +1239,7 @@
             if (isPriorityAvailable) {
                 prioritySection.classList.remove('hidden');
             }
+
             if (isPremiumAvailable) {
                 premiumSection.classList.remove('hidden');
                 premiumAvailableContent.classList.remove('hidden');
@@ -1265,98 +1266,66 @@
                     <!-- Formulaire pour Terminal -> Agence -->
                     <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
                         <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Terminal → Agence BDM</h4>
-                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" data-field="flight_number_arrival" class="input-style w-full premium-input"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_arrival" class="input-style w-full"></div>
                         <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" data-field="date_arrival" class="input-style w-full premium-input"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" data-field="time_arrival" class="input-style w-full premium-input"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full"></div>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Terminal d’arrivée</label><input type="text" data-field="terminal_arrival" class="input-style w-full premium-input"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" data-field="baggage_count_arrival" class="input-style w-full premium-input" min="1"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Terminal d’arrivée</label><input type="text" name="terminal_arrival" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" name="baggage_count_arrival" class="input-style w-full" min="1"></div>
                         <div class="grid grid-cols-2 gap-3">
-                             <div><label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label><input type="text" data-field="pickup_location_arrival" class="input-style w-full premium-input"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge</label><input type="time" data-field="pickup_time_arrival" class="input-style w-full premium-input"></div>
+                             <div>
+                                 <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label>
+                                 <select name="pickup_location_arrival" class="input-style custom-select w-full">
+                                    <option value="" selected disabled>Sélection</option>
+                                    ${lieuxOptionsHTML}
+                                 </select>
+                             </div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge</label><input type="time" name="pickup_time_arrival" class="input-style w-full"></div>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea data-field="instructions_arrival" class="input-style w-full premium-input" rows="2"></textarea></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
                     </div>
 
                     <!-- Formulaire pour Agence -> Terminal -->
                     <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
                         <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Agence BDM → Terminal</h4>
-                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" data-field="flight_number_departure" class="input-style w-full premium-input"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_departure" class="input-style w-full"></div>
                         <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" data-field="date_departure" class="input-style w-full premium-input"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" data-field="time_departure" class="input-style w-full premium-input"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full"></div>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Terminal de départ</label><input type="text" data-field="terminal_departure" class="input-style w-full premium-input"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" data-field="baggage_count_departure" class="input-style w-full premium-input" min="1"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Terminal de départ</label><input type="text" name="terminal_departure" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" name="baggage_count_departure" class="input-style w-full" min="1"></div>
                          <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-sm font-medium text-gray-700">Lieu de restitution</label><input type="text" data-field="restitution_location_departure" class="input-style w-full premium-input"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure de restitution</label><input type="time" data-field="restitution_time_departure" class="input-style w-full premium-input"></div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Lieu de restitution</label>
+                                <select name="restitution_location_departure" class="input-style custom-select w-full">
+                                    <option value="" selected disabled>Sélectionnez un lieu</option>
+                                    ${lieuxOptionsHTML}
+                                </select>
+                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700">Heure de restitution</label><input type="time" name="restitution_time_departure" class="input-style w-full"></div>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea data-field="instructions_departure" class="input-style w-full premium-input" rows="2"></textarea></div>
-                    </div>
-                    
-                    <!-- Hidden legacy fields for data submission -->
-                    <div id="legacy-premium-fields" class="hidden">
-                        <select name="option_lieu_opt_premium" class="input-style custom-select w-full">
-                            <option value="" selected disabled>Sélectionnez un lieu</option>
-                            ${lieuxOptionsHTML}
-                        </select>
-                        <input type="text" name="option_info_opt_premium">
-                        <textarea name="option_comment_opt_premium"></textarea>
+                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
                     </div>
                 `;
 
-                // --- LOGIC FOR NEW FORM ---
+                // Add listeners for radio buttons
                 const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
                 const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
                 const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
                 
                 directionRadios.forEach(radio => {
                     radio.addEventListener('change', (e) => {
-                        const direction = e.target.value;
-                        if (direction === 'terminal_to_agence') {
+                        if (e.target.value === 'terminal_to_agence') {
                             formTerminalToAgence.classList.remove('hidden');
                             formAgenceToTerminal.classList.add('hidden');
                         } else {
                             formTerminalToAgence.classList.add('hidden');
                             formAgenceToTerminal.classList.remove('hidden');
                         }
-                        validatePremium();
                     });
                 });
-                
-                const allPremiumInputs = premiumDetailsContainer.querySelectorAll('.premium-input');
-                allPremiumInputs.forEach(input => input.addEventListener('input', validatePremium));
-
-                function validatePremium() {
-                    const direction = premiumDetailsContainer.querySelector('input[name="premium_direction"]:checked')?.value;
-                    let areFieldsValid = false;
-                    let currentFormFields = [];
-                    
-                    if (direction) {
-                        const formContainer = document.getElementById(`premium_fields_${direction}`);
-                        currentFormFields = [...formContainer.querySelectorAll('.premium-input')];
-                        areFieldsValid = currentFormFields.every(input => input.value.trim() !== '');
-                    }
-
-                    const isInCart = cartItems.some(item => item.key === 'premium');
-                    addPremiumBtn.classList.toggle('hidden', !(areFieldsValid || isInCart));
-
-                    // Update legacy hidden fields
-                    if (areFieldsValid) {
-                        const info = [];
-                        currentFormFields.forEach(input => {
-                            const label = input.previousElementSibling?.textContent || input.name;
-                            info.push(`${label}: ${input.value}`);
-                        });
-                        
-                        document.querySelector('input[name="option_info_opt_premium"]').value = `Direction: ${direction}`;
-                        document.querySelector('textarea[name="option_comment_opt_premium"]').value = info.join(' | ');
-                    }
-                }
-                
-                validatePremium(); // Initial validation check
 
             } else {
                 premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
@@ -1414,7 +1383,7 @@
             const duration_in_minutes = Math.round((end - start) / (1000 * 60));
 
             if (duration_in_minutes > 0) {
-                if (duration_in_minutes < 1440) { // Moins d'un jour (1440 minutes = 24 heures)
+                if (duration_in_minutes < 1440) { // Moins d\'un jour (1440 minutes = 24 heures)
                     const hours = Math.floor(duration_in_minutes / 60);
                     const minutes = duration_in_minutes % 60;
                     duration_display = hours + ' heure(s)';
@@ -1706,7 +1675,7 @@
                     if (day === 'today' || day === 'tomorrow') {
                         qdm_temp_depot_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
                     }
-                } else {
+                } else { // editing retrait
                     qdm_retrait_day_selection = day;
                     if (day === 'today' || day === 'tomorrow') {
                         qdm_temp_retrait_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
@@ -1772,7 +1741,7 @@
                             qdm_temp_retrait_date = minRetraitTime;
                         }
                     }
-                } else {
+                } else { // editing retrait
                     qdm_temp_retrait_date.setHours(hour, minute);
                 }
                 updateQdmDisplay();
@@ -1790,7 +1759,7 @@
                         qdm_temp_retrait_date = minRetraitTime;
                     }
                 }
-            } else {
+            } else { // editing retrait
                 qdm_temp_retrait_date.setHours(hour, minute);
             }
             updateQdmDisplay();
@@ -1902,8 +1871,7 @@
                             guestEmail = email;
                             saveStateToSession();
                             if (loader) loader.classList.remove('hidden'); // Show loader AFTER email is provided
-                        } else {
-                            // User cancelled the prompt, so hide loader and return
+                        } else { // User cancelled the prompt, so hide loader and return
                             if (loader) loader.classList.add('hidden');
                             return;
                         }
