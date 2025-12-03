@@ -43,9 +43,7 @@ class PaymentController extends Controller
                 'products' => 'required|array',
                 'options' => 'nullable|array',
                 'options.*.id' => 'required|string',
-                'options.*.lieu_id' => 'nullable|string',
-                'options.*.informations_complementaires' => 'nullable|string|max:255',
-                'options.*.commentaire' => 'nullable|string',
+                'options.*.details' => 'nullable|array',
             ]);
 
             // --- Server-side definitions for security ---
@@ -91,6 +89,8 @@ class PaymentController extends Controller
                     
                     $optionDetails = $staticOptions[$optionKey];
 
+                    $details = $selectedOption['details'] ?? null;
+
                     $commandeLignes[] = [
                         "idProduit" => $optionDetails['id'], // Use the real GUID
                         "idService" => $serviceId,
@@ -99,9 +99,7 @@ class PaymentController extends Controller
                         "prixTTC" => $optionDetails['prixUnitaire'],
                         "quantite" => 1,
                         "libelleProduit" => $optionDetails['libelle'],
-                        "idLieu" => $selectedOption['lieu_id'] ?? null,
-                        "informationsComplementaires" => $selectedOption['informations_complementaires'] ?? null,
-                        "commentaire" => $selectedOption['commentaire'] ?? null,
+                        "details" => $details // Store the whole details object
                     ];
                 }
             }
@@ -448,22 +446,25 @@ class PaymentController extends Controller
             }
 
             // Extraire les informations spécifiques pour 'commandeInfos' à partir des options
-            $firstOptionWithLieu = collect($lignesOptions)->firstWhere('idLieu');
-            $firstOptionWithCommentaire = collect($lignesOptions)->firstWhere('commentaire');
-            $firstOptionWithInfo = collect($lignesOptions)->firstWhere('informationsComplementaires');
+            $premiumOption = collect($lignesOptions)->firstWhere('libelleProduit', 'Service Premium');
+            $commandeInfos = [];
 
-            $commandeInfos = [
-                "modeTransport" => $firstOptionWithInfo['informationsComplementaires'] ?? null,
-                "lieu" => $firstOptionWithLieu['idLieu'] ?? null,
-                "commentaires" => $firstOptionWithCommentaire['commentaire'] ?? null
-            ];
-
+            if ($premiumOption && isset($premiumOption['details'])) {
+                // Flatten the details from the premium option for the BDM API
+                $details = $premiumOption['details'];
+                foreach($details as $key => $value) {
+                    // Convert snake_case from form to camelCase for the API
+                    $camelKey = lcfirst(str_replace('_', '', ucwords($key, '_')));
+                    $commandeInfos[$camelKey] = $value;
+                }
+            }
+            
             // Préparation du payload pour l'API BDM avec les clés en camelCase
             $payload = [
                 'commandeLignes' => $lignesProduits,
-                'commandeOptions' => $lignesOptions,
+                'commandeOptions' => $lignesOptions, // This now contains the 'details' object for each option
                 'client' => $clientData,
-                'commandeInfos' => $commandeInfos
+                'commandeInfos' => $commandeInfos // This is now populated from the premium details
             ];
 
             $response = Http::withHeaders([

@@ -777,6 +777,7 @@
             saveStateToSession();
         });
         document.getElementById('check-availability-btn').addEventListener('click', async () => {
+            saveStateToSession(); // Force save state before check
             const isAvailable = await checkAvailability();
             if (isAvailable) {
                 document.getElementById('step-1').style.display = 'none';
@@ -784,6 +785,7 @@
                 document.getElementById('back-to-step-1-btn').classList.remove('hidden');
                 displaySelectedDates();
                 getQuoteAndDisplay();
+                saveStateToSession(); // Save again to store new visibility state
             }
         });
         
@@ -815,6 +817,7 @@
 
         [dateDepotInput, dateRecuperationInput, heureDepotInput, heureRecuperationInput].forEach(input => {
             input.addEventListener('change', saveStateToSession);
+            input.addEventListener('input', saveStateToSession);
         });
 
         dateDepotInput.addEventListener('change', function() {
@@ -1174,34 +1177,47 @@
         } else {
             // Item does not exist, so add it
             const option = staticOptions[optionKey];
-            let infoComplementaires = '';
-            let commentaire = '';
-            let lieuId = null;
+            let premiumDetails = {};
 
-            const modalContent = document.getElementById(`advert-option-${optionKey}`);
             if (optionKey === 'premium') {
-                const select = modalContent.querySelector('select[name^="option_lieu_"]');
-                if(select) lieuId = select.value;
+                const direction = document.querySelector('input[name="premium_direction"]:checked')?.value;
+                if (!direction) {
+                    showCustomAlert('Sélection requise', 'Veuillez choisir un sens pour la prise en charge premium.');
+                    return; // Stop if no direction is selected
+                }
+                
+                premiumDetails.direction = direction;
+                const formId = `premium_fields_${direction}`;
+                const formContainer = document.getElementById(formId);
+
+                if (formContainer) {
+                    let isFormValid = true;
+                    formContainer.querySelectorAll('input, textarea').forEach(input => {
+                        if (!input.value.trim()) {
+                            isFormValid = false;
+                        }
+                        premiumDetails[input.name] = input.value;
+                    });
+                    
+                    if(!isFormValid) {
+                        showCustomAlert('Champs requis', 'Veuillez remplir tous les champs pour le service premium.');
+                        return; // Stop if form is not valid
+                    }
+                }
             }
-            const infoInput = modalContent.querySelector('input[name^="option_info_"]');
-            const commentTextarea = modalContent.querySelector('textarea[name^="option_comment_"]');
-            if (infoInput) infoComplementaires = infoInput.value;
-            if (commentTextarea) commentaire = commentTextarea.value;
 
             cartItems.push({
-                itemCategory: 'option', 
-                id: optionKey, // Use the key itself ('priority' or 'premium') as the ID for the backend
+                itemCategory: 'option',
+                id: optionKey,
                 key: optionKey,
                 libelle: option.libelle,
                 prix: option.prixUnitaire,
-                lieu_id: lieuId,
-                informations_complementaires: infoComplementaires,
-                commentaire: commentaire
+                details: premiumDetails
             });
         }
         
         updateCartDisplay();
-        updateAdvertModalButtons(); // Update button states after toggle
+        updateAdvertModalButtons();
     }
 
     function showOptionsAdvertisementModal() {
@@ -1904,9 +1920,7 @@
             const baggages = cartItems.filter(i => i.itemCategory === 'baggage').map(item => ({ type: item.type, quantity: item.quantity }));
             const options = cartItems.filter(i => i.itemCategory === 'option').map(item => ({
                 id: item.id,
-                lieu_id: item.lieu_id,
-                informations_complementaires: item.informations_complementaires,
-                commentaire: item.commentaire
+                details: item.details || null
             }));
 
             const formData = {
@@ -1934,7 +1948,11 @@
             if (prepareResponse.ok) {
                 window.location.href = resultData.redirect_url;
             } else {
-                await showCustomAlert('Erreur', resultData.message || 'Une erreur inconnue est survenue lors de la préparation du paiement.');
+                let errorMessage = resultData.message || 'Une erreur inconnue est survenue lors de la préparation du paiement.';
+                if (resultData.errors) {
+                    errorMessage += '\n\nDétails des erreurs:\n' + Object.entries(resultData.errors).map(([field, messages]) => `- ${field}: ${messages.join(', ')}`).join('\n');
+                }
+                await showCustomAlert('Erreur de validation', errorMessage);
             }
         } catch (error) {
             console.error('Erreur critique dans handleTotalClick:', error);
