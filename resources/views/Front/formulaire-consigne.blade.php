@@ -1277,7 +1277,7 @@
                              <div>
                                  <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label>
                                  <select name="pickup_location_arrival" class="input-style custom-select w-full">
-                                    <option value="" selected disabled>Sélection</option>
+                                    <option value="" selected disabled>Select</option>
                                     ${lieuxOptionsHTML}
                                  </select>
                              </div>
