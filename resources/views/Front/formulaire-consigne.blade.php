@@ -420,7 +420,7 @@
                                     $libelle = $product['libelle'];
                                     $icon = $product_map_icons[$libelle] ?? $default_icon;
                                 @endphp
-                                <div class="baggage-option p-4 rounded-lg flex flex-col items-center space-y-2" data-product-id="{{ $product['id'] }}">
+                                <div class="baggage-option p-4 rounded-lg flex flex-col items-center justify-between space-y-2" data-product-id="{{ $product['id'] }}">
                                     <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
                                         {!! $icon !!}
                                     </div>
@@ -432,8 +432,7 @@
                                             </svg>
                                         </span>
                                     </div>
-                                    <div class="flex items-center space-x-2 mt-2">
-                                        <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="minus" data-product-id="{{ $product['id'] }}">−</button>
+                                    <div class="flex items-center space-x-2">                                        <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="minus" data-product-id="{{ $product['id'] }}">−</button>
                                         <span class="font-bold text-lg w-5 text-center" data-quantity-display="{{ $product['id'] }}">0</span>
                                         <button type="button" class="quantity-change-btn w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100" data-action="plus" data-product-id="{{ $product['id'] }}">+</button>
                                     </div>
@@ -706,6 +705,22 @@
     const initialProducts = @json($products);
     let cartItems = []; // Unified state management for the cart
     let guestEmail = null; // Add this global variable
+
+    let premiumOptionState = {}; // NEW: state for premium modal
+
+    function isEqual(obj1, obj2) {
+        const keys1 = Object.keys(obj1);
+        const keys2 = Object.keys(obj2);
+        if (keys1.length !== keys2.length) {
+            return false;
+        }
+        for (const key of keys1) {
+            if (obj1[key] !== obj2[key]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     const staticOptions = {
         priority: { libelle: 'Service Priority', prixUnitaire: 15 },
