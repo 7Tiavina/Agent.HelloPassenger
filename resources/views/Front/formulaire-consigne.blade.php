@@ -674,10 +674,11 @@
             if (modalResolve) modalResolve(null);
         };
         document.getElementById('custom-modal-confirm-btn').onclick = () => {
+            const promptContainer = document.getElementById('custom-modal-prompt-container');
             const isPrompt = !promptContainer.classList.contains('hidden');
             if (isPrompt) {
                 const value = document.getElementById('custom-modal-input').value;
-                if (value.trim() === '' || !/^\[S]+@\S+\.\S+$/.test(value)) {
+                if (value.trim() === '' || !/^\S+@\S+\.\S+$/.test(value)) {
                     document.getElementById('custom-modal-error').textContent = 'Veuillez entrer une adresse e-mail valide.';
                     document.getElementById('custom-modal-error').classList.remove('hidden');
                     return;
