@@ -1832,36 +1832,31 @@
 
     async function handleTotalClick() {
         const loader = document.getElementById('loader');
-        if (loader) loader.classList.remove('hidden'); // Show loader
-
-        if (cartItems.length === 0) {
-            await showCustomAlert('Panier vide', "Votre panier est vide.");
-            if (loader) loader.classList.add('hidden'); // Hide loader
-            return;
-        }
-
-        // --- NEW: Show options modal first if any options are available ---
-        if (isPriorityAvailable || isPremiumAvailable) {
-            // Loader is already visible, keep it that way for options modal.
-            // showOptionsAdvertisementModal will handle hiding loader if user just closes it.
-            const result = await showOptionsAdvertisementModal(); // This promise resolves when modal is dismissed
-            if (result === 'cancelled') { // User explicitly chose to cancel or closed the modal
-                if (loader) loader.classList.add('hidden');
-                return;
-            }
-            if (loader) loader.classList.add('hidden'); // Hide loader if options modal is not cancelled
-            if (loader) loader.classList.add('hidden'); // Hide loader if options modal is not cancelled
-        }
-        // --- END NEW ---
+        if (loader) loader.classList.remove('hidden'); // Show loader at the very beginning
 
         try {
+            if (cartItems.length === 0) {
+                await showCustomAlert('Panier vide', "Votre panier est vide.");
+                if (loader) loader.classList.add('hidden'); // Abort, hide loader
+                return;
+            }
+
+            if (isPriorityAvailable || isPremiumAvailable) {
+                const result = await showOptionsAdvertisementModal();
+                if (result === 'cancelled') {
+                    if (loader) loader.classList.add('hidden'); // Abort, hide loader
+                    return;
+                }
+                // If user continues, loader stays ON.
+            }
+
             const authResponse = await fetch('/check-auth-status');
             const authData = await authResponse.json();
             
             if (!authData.authenticated) {
                 if (!guestEmail) {
-                    await sleep(300); // Shorter delay after options modal, if applicable
-                    if (loader) loader.classList.add('hidden'); // Hide loader before showing auth prompt
+                    if (loader) loader.classList.add('hidden'); // Hide loader for prompt UI
+                    await sleep(300);
 
                     const choice = await showLoginOrGuestPrompt();
 
@@ -1872,11 +1867,9 @@
                             console.error('Global openLoginModal function not found.');
                             await showCustomAlert('Erreur', 'Impossible d\'ouvrir la fenêtre de connexion.');
                         }
-                        // Stop the process here; the global login modal will handle the rest.
-                        if (loader) loader.classList.add('hidden');
+                        if (loader) loader.classList.add('hidden'); // Abort from this flow, hide loader
                         return;
                     } else if (choice === 'guest') {
-                        // Do NOT show loader here, as user needs to interact with the prompt
                         const email = await showCustomPrompt(
                             'Comment pouvons-nous vous joindre ?',
                             'C’est sur ce mail que vous recevrez la confirmation de réservation.',
@@ -1886,18 +1879,18 @@
                         if (email) {
                             guestEmail = email;
                             saveStateToSession();
-                            if (loader) loader.classList.remove('hidden'); // Show loader AFTER email is provided
-                        } else { // User cancelled the prompt, so hide loader and return
-                            if (loader) loader.classList.add('hidden');
+                            if (loader) loader.classList.remove('hidden'); // Continue, re-show loader
+                        } else {
+                            if (loader) loader.classList.add('hidden'); // Abort, hide loader
                             return;
                         }
-                    } else { // User cancelled the initial choice prompt
-                        if (loader) loader.classList.add('hidden');
+                    } else {
+                        if (loader) loader.classList.add('hidden'); // Abort, hide loader
                         return;
                     }
                 }
             } else {
-                guestEmail = null; // Clear guest email if user logs in
+                guestEmail = null;
                 saveStateToSession();
             }
 
@@ -1930,6 +1923,7 @@
 
             const resultData = await prepareResponse.json();
             if (prepareResponse.ok) {
+                // Success: Redirecting. The loader will be "hidden" by the page navigation.
                 window.location.href = resultData.redirect_url;
             } else {
                 let errorMessage = resultData.message || 'Une erreur inconnue est survenue lors de la préparation du paiement.';
@@ -1937,13 +1931,14 @@
                     errorMessage += '\n\nDétails des erreurs:\n' + Object.entries(resultData.errors).map(([field, messages]) => `- ${field}: ${messages.join(', ')}`).join('\n');
                 }
                 await showCustomAlert('Erreur de validation', errorMessage);
+                if (loader) loader.classList.add('hidden'); // Error, hide loader
             }
         } catch (error) {
             console.error('Erreur critique dans handleTotalClick:', error);
             await showCustomAlert('Erreur', 'Une erreur technique est survenue.');
-        } finally {
-            if (loader) loader.classList.add('hidden'); // Ensure loader is hidden
+            if (loader) loader.classList.add('hidden'); // Error, hide loader
         }
+        // No 'finally' block, loader is handled in each path.
     }
 
 </script>
