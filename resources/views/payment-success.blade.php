@@ -132,7 +132,8 @@
 
             pdf.addImage(imgData, 'PNG', x, y, newCanvasWidth, newCanvasHeight);
             
-            pdf.save(`facture-{{ $lastCommandeId }}.pdf`);
+            const commandeRef = "{{ $commande->paymentClient->monetico_order_id ?? $commande->id }}";
+            pdf.save(`facture-HelloPassenger-${commandeRef}.pdf`);
 
         } catch (err) {
             console.error("PDF Generation Error:", err);

@@ -615,12 +615,20 @@ class PaymentController extends Controller
             return redirect()->route('form-consigne')->with('error', 'La session de paiement a expiré. Veuillez réessayer.');
         }
 
+        // Fetch the Commande object with its paymentClient to get the monetico_order_id
+        $commande = Commande::with('paymentClient')->find($lastCommandeId);
+
+        if (!$commande) {
+            return redirect()->route('form-consigne')->with('error', 'Commande introuvable.');
+        }
+
         // Forget the session data after using it
         Session::forget(['api_payment_result', 'last_commande_id']);
 
         return view('payment-success', [
             'apiResult' => $apiResult,
-            'lastCommandeId' => $lastCommandeId
+            'lastCommandeId' => $lastCommandeId,
+            'commande' => $commande, // Pass the full commande object
         ]);
     }
 
