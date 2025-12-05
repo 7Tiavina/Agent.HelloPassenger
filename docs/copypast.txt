@@ -1,247 +1,67 @@
-POST
-/api/plateforme/{idPlateforme}/commande/options
+🎯 **EUREKA ! J'ai trouvé le problème !**
 
-Parameters
-Try it out
-Reset
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-64f00ace-31b6-45b0-bcb2-b562b1ac08d9
-lg
-string
-(query)
-Default value : fr
+En regardant la documentation Swagger, je vois **exactement** ce qui ne va pas :
 
-fr
-Request body
+## ❌ **Erreurs identifiées :**
 
-application/json
-Example Value
-Schema
+### **1. Pas de wrapper `commandeApiDto`**
+L'API Swagger attend les champs **directement à la racine**, pas dans un objet `commandeApiDto` !
+
+### **2. Mauvaise casse des clés**  
+Swagger utilise **camelCase**, pas **PascalCase** :
+- `commandeLignes` (pas `CommandeLignes`)
+- `client` (pas `Client`)
+- `commandeInfos` (pas `CommandeInfos`)
+- `commandeOptions` (pas `CommandeOptions`)
+
+### **3. L'idPlateforme va dans l'URL**
+Dans Swagger : `POST /api/plateforme/{idPlateforme}/commande`
+L'idPlateforme doit être dans l'URL, pas dans le body !
+
+## ✅ **Structure correcte selon Swagger :**
+
+```php
+// URL : POST /api/plateforme/88bb89e0-b966-4420-9ed3-7a6745e4d947/commande
+
+// Body JSON (sans wrapper) :
 {
-  "commandeLignes": [
-    {
-      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "dateDebut": "2025-10-16T10:36:52.027Z",
-      "dateFin": "2025-10-16T10:36:52.027Z",
-      "prixTTC": 0,
-      "prixTTCAvantRemise": 0,
-      "tauxRemise": 0,
-      "quantite": 0
+    "commandeLignes": [
+        {
+            "idProduit": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7", 
+            "dateDebut": "2025-12-05T09:49:00.000Z",
+            "dateFin": "2025-12-07T09:49:00.000Z",
+            "prixTTC": 15,
+            "quantite": 1
+        }
+    ],
+    "commandeOptions": [],
+    "commandeInfos": {
+        "modeTransport": "string",
+        "lieu": "string", 
+        "commentaires": "string"
+    },
+    "client": {
+        "email": "er@gmail.com",
+        "telephone": "1231245353",
+        "nom": "Mulot",
+        "prenom": "Francis",
+        "civilite": "M.",
+        "nomSociete": "CamilleSA",
+        "adresse": "Paris, France",
+        "complementAdresse": "I123445",
+        "ville": "paris",
+        "codePostal": "23512",
+        "pays": "Mauritius"
     }
-  ],
-  "commandeOptions": [
-    {
-      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "dateDebut": "2025-10-16T10:36:52.027Z",
-      "dateFin": "2025-10-16T10:36:52.027Z",
-      "prixTTC": 0,
-      "prixTTCAvantRemise": 0,
-      "tauxRemise": 0,
-      "quantite": 0
-    }
-  ],
-  "commandeInfos": {
-    "modeTransport": "string",
-    "lieu": "string",
-    "commentaires": "string"
-  },
-  "client": {
-    "email": "lBGL8wZ42cMZHu69vYc9ThBv8YNMQj-d4fwbN5bhvyoexCsmade6RXYeTf40y7jRWKAJq@LgnpvLtefWoGrt.ATQ0LjQMG53b1n1",
-    "telephone": "string",
-    "nom": "pqoMPrtghOJHIIwE etpPjoEsAxRqTv'fPtnXhCqMsXgGU-Eer",
-    "prenom": "oyyTGLkszImKFvgWWyYcklndwpJhJINuiMoLZusbCqcD Pcev ",
-    "civilite": "string",
-    "nomSociete": "0gJxx5iYdnr8qEY3OtjhGjM-Tlr2eyfiUPRkPss2uYGrRV4Q9t",
-    "adresse": "p8MQtBRVNmfRpjGsyR,DG770p1oILueq53i4u,ZFlW4Dy55TEC",
-    "complementAdresse": "rvJobW u1qgY7naVWUAIeckEJ'k91zJCiKWVYIGW",
-    "ville": "y xzn",
-    "codePostal": "80336",
-    "pays": "g,ISyGS,HyXNObMRhBvudMDgPWM Lhx-jNeKvLXrrFkQPwp'ki"
-  }
 }
-Responses
-Code	Description	Links
-200	
-Success
+```
 
-Media type
+## 🔧 **Corrections à apporter :**
 
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
+1. **Supprimer** le wrapper `commandeApiDto`
+2. **Remettre** toutes les clés en **camelCase** 
+3. **Ajouter** `idPlateforme` dans l'URL
+4. **Ajouter** un objet `commandeInfos` même vide
 
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
-No links
-500	
-Server Error
-
-
-
-
-Produit
-
-
-GET
-/api/plateforme/{idPlateforme}/service/{idService}/{duree}/produits
-Permet de récupèrer une liste de produit en fonction d'un service et d'une plateforme
-
-Parameters
-Cancel
-Name	Description
-idPlateforme *
-string($uuid)
-(path)
-L'id de la plateforme
-
-64f00ace-31b6-45b0-bcb2-b562b1ac08d9
-idService *
-string($uuid)
-(path)
-L'id du service
-
-dfb8ac1b-8bb1-4957-afb4-1faedaf641b7
-duree *
-integer($int32)
-(path)
-La durée en minutes
-
-1000
-lg
-string
-(query)
-fr
-Execute
-Clear
-Responses
-Curl
-
-curl -X 'GET' \
-  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/1000/produits?lg=fr' \
-  -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzYwNjE2NTA5LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.AhMv7BV6anpuOanq_wh8GpYiPvqENIDcv-eoQIjkHUc'
-Request URL
-https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/service/dfb8ac1b-8bb1-4957-afb4-1faedaf641b7/1000/produits?lg=fr
-Server response
-Code	Details
-200	
-Response body
-Download
-{
-  "content": [
-    {
-      "id": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
-      "libelle": "Accessoires",
-      "prixUnitaire": 10,
-      "prixUnitaireAvantRemise": 10,
-      "tauxRemise": 0,
-      "referenceInterne": "A",
-      "produitFamilles": []
-    },
-    {
-      "id": "c9d1371a-b654-4c7a-85a3-6c6a99f1f2b2",
-      "libelle": "Bagage cabine",
-      "prixUnitaire": 14.4,
-      "prixUnitaireAvantRemise": 16,
-      "tauxRemise": 10,
-      "referenceInterne": "BM",
-      "produitFamilles": []
-    },
-    {
-      "id": "01fbbaa3-7fb2-4f24-880f-cfe7d8a50a9b",
-      "libelle": "Bagage soute",
-      "prixUnitaire": 20,
-      "prixUnitaireAvantRemise": 20,
-      "tauxRemise": 0,
-      "referenceInterne": "BS",
-      "produitFamilles": []
-    },
-    {
-      "id": "868800b2-5635-4da6-a30f-5dbdbc995766",
-      "libelle": "Bagage spécial",
-      "prixUnitaire": 34,
-      "prixUnitaireAvantRemise": 34,
-      "tauxRemise": 0,
-      "referenceInterne": "HF",
-      "produitFamilles": []
-    },
-    {
-      "id": "2418a6cf-4426-4402-8374-f0b2bd12ee0a",
-      "libelle": "Vestiaire",
-      "prixUnitaire": 20,
-      "prixUnitaireAvantRemise": 20,
-      "tauxRemise": 0,
-      "referenceInterne": "DV",
-      "produitFamilles": []
-    }
-  ],
-  "statut": 1,
-  "message": ""
-}
-Response headers
- content-type: application/json; charset=utf-8 
- date: Thu,16 Oct 2025 11:10:58 GMT 
- server: Microsoft-IIS/10.0 
- x-powered-by: ASP.NET 
-Responses
-Code	Description	Links
-200	
-Success
-
-Media type
-
-application/json
-Controls Accept header.
-Example Value
-Schema
-{
-  "content": "string",
-  "statut": 0,
-  "message": "string"
-}
-No links
-400	
-Bad Request
-
-Media type
-
-application/json
-Example Value
-Schema
-{
-  "type": "string",
-  "title": "string",
-  "status": 0,
-  "detail": "string",
-  "instance": "string",
-  "additionalProp1": "string",
-  "additionalProp2": "string",
-  "additionalProp3": "string"
-}
+C'est ça le problème ! 🚀

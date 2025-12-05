@@ -447,7 +447,7 @@ class PaymentController extends Controller
 
             // Extraire les informations spécifiques pour 'commandeInfos' à partir des options
             $premiumOption = collect($lignesOptions)->firstWhere('libelleProduit', 'Service Premium');
-            $commandeInfos = [];
+            $commandeInfos = new \stdClass(); // Initialize as an empty object to ensure it becomes {} in JSON
 
             if ($premiumOption && isset($premiumOption['details'])) {
                 // Flatten the details from the premium option for the BDM API
@@ -455,17 +455,19 @@ class PaymentController extends Controller
                 foreach($details as $key => $value) {
                     // Convert snake_case from form to camelCase for the API
                     $camelKey = lcfirst(str_replace('_', '', ucwords($key, '_')));
-                    $commandeInfos[$camelKey] = $value;
+                    $commandeInfos->$camelKey = $value;
                 }
             }
             
-            // Préparation du payload pour l'API BDM avec les clés en camelCase
+            // Préparation du payload pour l'API BDM (NO WRAPPER, camelCase)
             $payload = [
                 'commandeLignes' => $lignesProduits,
-                'commandeOptions' => $lignesOptions, // This now contains the 'details' object for each option
+                'commandeOptions' => $lignesOptions,
                 'client' => $clientData,
-                'commandeInfos' => $commandeInfos // This is now populated from the premium details
+                'commandeInfos' => $commandeInfos,
             ];
+
+            Log::info('Données envoyées à l\'API Commande BDM:', ['payload' => $payload]);
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,

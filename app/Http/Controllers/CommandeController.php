@@ -49,20 +49,65 @@ class CommandeController extends Controller
     {
         $commande = Commande::findOrFail($id);
 
-        // Optionnel : vérifier les droits
-        // if ($commande->client_id !== Auth::guard('client')->id()) {
-        //     abort(403, 'Accès non autorisé.');
-        // }
+        // --- 1. CONTENU TEXTE SIMPLE POUR LE PDF --- //
+        $text = "Facture HelloPassenger\n\n";
+        $text .= "Référence : " . ($commande->paymentClient->monetico_order_id ?? $commande->id) . "\n";
+        $text .= "Client : " . $commande->nom . " " . $commande->prenom . "\n";
+        $text .= "Email  : " . $commande->email . "\n";
+        $text .= "Téléphone : " . $commande->telephone . "\n\n";
+        $text .= "Détails de la commande :\n";
+        $text .= "- Service : " . $commande->service . "\n";
+        $text .= "- Prix : " . $commande->prix . " Rs\n";
+        $text .= "- Date : " . $commande->created_at->format('d/m/Y H:i') . "\n\n";
+        $text .= "Merci pour votre confiance.\nHelloPassenger";
 
-        // Récupérer la référence de la commande pour le nom du fichier
+        // --- 2. GENERATION PDF BRUT --- //
+        $pdf = "%PDF-1.4
+    1 0 obj
+    << /Type /Catalog /Pages 2 0 R >>
+    endobj
+    2 0 obj
+    << /Type /Pages /Kids [3 0 R] /Count 1 >>
+    endobj
+    3 0 obj
+    << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+    endobj
+    4 0 obj
+    << /Length " . strlen($text) . " >>
+    stream
+    BT
+    /F1 12 Tf
+    50 750 Td
+    (" . str_replace(["\n", "(", ")"], [" ) Tj\n0 -15 Td (", "\\(", "\\)"], $text) . ") Tj
+    ET
+    endstream
+    endobj
+    5 0 obj
+    << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    endobj
+    xref
+    0 6
+    0000000000 65535 f
+    0000000010 00000 n
+    0000000053 00000 n
+    0000000102 00000 n
+    0000000250 00000 n
+    0000000400 00000 n
+    trailer
+    << /Size 6 /Root 1 0 R >>
+    startxref
+    520
+    %%EOF";
+
+        // Nom du fichier
         $reference = $commande->paymentClient->monetico_order_id ?? $commande->id;
-        $fileName = 'facture-' . $reference . '.pdf';
+        $fileName = "facture-$reference.pdf";
 
-        // Générer le PDF à partir de la vue
-        $pdf = PDF::loadView('invoices.default', compact('commande'));
-
-        // Retourner le PDF en téléchargement
-        return $pdf->download($fileName);
+        // --- 3. RETOURNER LE PDF --- //
+        return response($pdf)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"$fileName\"");
     }
+
 }
 
