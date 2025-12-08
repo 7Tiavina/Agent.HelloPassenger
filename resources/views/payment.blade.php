@@ -344,22 +344,22 @@
             <!-- Colonne de droite : Informations et Paiement -->
             <div class="space-y-8">
                 <!-- Bloc d'informations client -->
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Vos informations</h2>
-                    <div class="text-sm text-gray-600 space-y-2">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Vos informations</h2>
+                    <div class="text-sm text-gray-600 space-y-2 text-left mx-auto max-w-sm">
                         <p id="display-user-name"><strong>Nom:</strong> {{ $user->prenom }} {{ $user->nom }}</p>
                         <p id="display-user-email"><strong>Email:</strong> {{ $user->email }}</p>
                         <p id="display-user-phone"><strong>Téléphone:</strong> {{ $user->telephone ?? 'Non renseigné' }}</p>
                         <p id="display-user-address"><strong>Adresse:</strong> {{ $user->adresse ?? 'Non renseignée' }}</p>
                     </div>
-                    <button id="openClientProfileModalBtn" class="mt-4 bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Modifier</button>
+                    <button id="openClientProfileModalBtn" class="mt-4 bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover mx-auto">Modifier</button>
                 </div>
 
                 <!-- Bloc de paiement -->
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Paiement sécurisé</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Paiement sécurisé</h2>
                     @if($isProfileComplete)
-                        <div class="kr-smart-form" kr-form-token="{{ $formToken }}"></div>
+                        <div class="kr-smart-form mx-auto" kr-form-token="{{ $formToken }}"></div>
                     @else
                         <div class="p-4 bg-gray-100 rounded-md text-center text-gray-600">
                             Veuillez compléter vos informations pour activer le paiement.
