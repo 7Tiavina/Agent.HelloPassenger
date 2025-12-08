@@ -1900,8 +1900,12 @@
                 details: item.details || null
             }));
 
+            const airportSelect = document.getElementById('airport-select');
+            const airportName = airportSelect.options[airportSelect.selectedIndex].text;
+
             const formData = {
                 airportId: airportId,
+                airportName: airportName,
                 dateDepot: document.getElementById('date-depot').value,
                 heureDepot: document.getElementById('heure-depot').value,
                 dateRecuperation: document.getElementById('date-recuperation').value,
@@ -1924,6 +1928,7 @@
             const resultData = await prepareResponse.json();
             if (prepareResponse.ok) {
                 // Success: Redirecting. The loader will be "hidden" by the page navigation.
+                await sleep(1900); // Add artificial delay
                 window.location.href = resultData.redirect_url;
             } else {
                 let errorMessage = resultData.message || 'Une erreur inconnue est survenue lors de la préparation du paiement.';

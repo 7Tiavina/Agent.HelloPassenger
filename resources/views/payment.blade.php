@@ -281,8 +281,26 @@
                     {{-- Display Block for Dates and Duration --}}
                     @if($duration_display || ($dateDebut && $dateFin))
                     <div class="border-b border-gray-200 pb-4 mb-4">
+                        <div class="space-y-2">
+                            <div class="flex items-center text-gray-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 mr-2 text-yellow-custom">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                                </svg>
+                                <p class="text-base"><strong>Service :</strong> <span class="font-bold text-gray-900">Consigne de bagage</span></p>
+                            </div>
+
+                            @if(isset($commandeData['airportName']))
+                            <div class="flex items-center text-gray-800 mt-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 mr-2 text-yellow-custom">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                </svg>
+                                <p class="text-base"><strong>Aéroport :</strong> <span class="font-bold text-gray-900">{{ $commandeData['airportName'] }}</span></p>
+                            </div>
+                            @endif
+                        </div>
+                        
                         @if($duration_display)
-                        <p class="font-semibold text-gray-700">Durée totale</p>
+                        <p class="font-semibold text-gray-700 mt-3">Durée totale</p>
                         <p class="text-lg font-bold text-gray-900">{{ $duration_display }}</p>
                         @endif
                         

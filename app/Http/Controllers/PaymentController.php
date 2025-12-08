@@ -35,6 +35,7 @@ class PaymentController extends Controller
 
             $validatedData = $request->validate([
                 'airportId' => 'required|string',
+                'airportName' => 'required|string',
                 'dateDepot' => 'required|date',
                 'heureDepot' => 'required|string',
                 'dateRecuperation' => 'required|date',
@@ -164,6 +165,7 @@ class PaymentController extends Controller
 
             $commandeData = [
                 'idPlateforme' => $validatedData['airportId'],
+                'airportName' => $validatedData['airportName'],
                 'commandeLignes' => $commandeLignes,
                 'client' => $clientData,
                 'total_prix_ttc' => array_reduce($commandeLignes, fn($sum, $item) => $sum + $item['prixTTC'], 0),
