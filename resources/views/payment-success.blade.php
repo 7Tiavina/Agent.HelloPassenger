@@ -19,7 +19,7 @@
 
 @include('Front.header-front')
 
-<div class="container mx-auto max-w-4xl my-12 px-4">
+<div class="container mx-auto max-w-7xl my-12 px-4">
     <div class="bg-white p-8 rounded-lg shadow-lg text-center border border-gray-200">
         
         <!-- Icône de succès -->
@@ -47,7 +47,7 @@
         <!-- Aperçu de la facture -->
         <div class="bg-gray-100 p-4 rounded-lg border border-gray-200">
             <h2 class="text-xl font-semibold text-left mb-4">Aperçu de la facture</h2>
-            <div class="w-full h-[600px] border rounded-md bg-white">
+            <div class="w-full h-[80vh] border rounded-md bg-white">
                 <iframe id="invoice-iframe" src="{{ route('invoices.show', ['id' => $lastCommandeId]) }}" class="w-full h-full" frameborder="0"></iframe>
             </div>
         </div>
