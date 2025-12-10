@@ -823,30 +823,20 @@
         const heureDepotInput = document.getElementById('heure-depot');
         const heureRecuperationInput = document.getElementById('heure-recuperation');
 
-        // Set min date for date-depot to today
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const dd = String(today.getDate()).padStart(2, '0');
-        const todayFormatted = `${yyyy}-${mm}-${dd}`;
-        dateDepotInput.min = todayFormatted;
+        // Initial application of constraints
+        applyDateInputConstraints();
 
+        // Add event listeners to re-apply constraints on change
+        dateDepotInput.addEventListener('change', applyDateInputConstraints);
+        dateRecuperationInput.addEventListener('change', applyDateInputConstraints);
+        heureDepotInput.addEventListener('change', applyDateInputConstraints);
+        heureRecuperationInput.addEventListener('change', applyDateInputConstraints);
+
+        // Also save state on any input event (change events will trigger applyDateInputConstraints which calls saveStateToSession)
         [dateDepotInput, dateRecuperationInput, heureDepotInput, heureRecuperationInput].forEach(input => {
-            input.addEventListener('change', saveStateToSession);
             input.addEventListener('input', saveStateToSession);
         });
 
-        dateDepotInput.addEventListener('change', function() {
-            if (this.value) {
-                dateRecuperationInput.min = this.value;
-                // If new depot date is after current retrieval date, adjust retrieval date
-                if (dateRecuperationInput.value < this.value) {
-                    dateRecuperationInput.value = this.value; // Set retrieval date to new depot date
-                    heureRecuperationInput.value = heureDepotInput.value; // Also adjust time
-                    saveStateToSession();
-                }
-            }
-        });
 
         // --- TOOLTIP LOGIC ---
         const tooltip = document.getElementById('baggage-tooltip');
@@ -1375,6 +1365,78 @@
             
             modal.classList.remove('hidden');
         });
+    }
+
+    function applyDateInputConstraints() {
+        const dateDepotInput = document.getElementById('date-depot');
+        const dateRecuperationInput = document.getElementById('date-recuperation');
+        const heureDepotInput = document.getElementById('heure-depot');
+        const heureRecuperationInput = document.getElementById('heure-recuperation');
+
+        const today = new Date();
+        const pad = (num) => num.toString().padStart(2, '0');
+        const todayFormatted = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+        // --- date-depot constraints ---
+        dateDepotInput.min = todayFormatted;
+        if (dateRecuperationInput.value) {
+            dateDepotInput.max = dateRecuperationInput.value;
+        } else {
+            dateDepotInput.max = ''; // No max if pickup date not set
+        }
+
+        // --- heure-depot constraints ---
+        heureDepotInput.min = '08:00';
+        heureDepotInput.max = '21:00';
+
+        const depotDateVal = dateDepotInput.value;
+        if (depotDateVal === todayFormatted) {
+            const nextHour = new Date().getHours() + 1;
+            heureDepotInput.min = `${pad(Math.max(8, nextHour))}:00`;
+        }
+
+        // --- date-recuperation constraints ---
+        if (dateDepotInput.value) {
+            const minRecuperationDate = new Date(dateDepotInput.value);
+            minRecuperationDate.setDate(minRecuperationDate.getDate() + 1); // Pickup must be strictly after depot
+            dateRecuperationInput.min = `${minRecuperationDate.getFullYear()}-${pad(minRecuperationDate.getMonth() + 1)}-${pad(minRecuperationDate.getDate())}`;
+
+            const maxRecuperationDate = new Date(dateDepotInput.value);
+            maxRecuperationDate.setDate(maxRecuperationDate.getDate() + 30);
+            dateRecuperationInput.max = `${maxRecuperationDate.getFullYear()}-${pad(maxRecuperationDate.getMonth() + 1)}-${pad(maxRecuperationDate.getDate())}`;
+        } else {
+            dateRecuperationInput.min = todayFormatted; // Fallback if depot not set
+            dateRecuperationInput.max = '';
+        }
+
+        // --- heure-recuperation constraints ---
+        heureRecuperationInput.min = '08:00';
+        heureRecuperationInput.max = '21:00';
+
+        // 3-hour gap for same-day bookings
+        if (dateDepotInput.value === dateRecuperationInput.value && heureDepotInput.value) {
+            const depotHour = parseInt(heureDepotInput.value.substring(0, 2), 10);
+            const minRecuperationHour = Math.max(8, depotHour + 3);
+            heureRecuperationInput.min = `${pad(minRecuperationHour)}:00`;
+        }
+        
+        // Adjust hour values if they become invalid after min/max changes
+        // This is important to "clamp" the value if a constraint makes it invalid
+        if (heureDepotInput.value && heureDepotInput.min && heureDepotInput.value < heureDepotInput.min) {
+            heureDepotInput.value = heureDepotInput.min;
+        }
+        if (heureDepotInput.value && heureDepotInput.max && heureDepotInput.value > heureDepotInput.max) {
+            heureDepotInput.value = heureDepotInput.max;
+        }
+        if (heureRecuperationInput.value && heureRecuperationInput.min && heureRecuperationInput.value < heureRecuperationInput.min) {
+            heureRecuperationInput.value = heureRecuperationInput.min;
+        }
+        if (heureRecuperationInput.value && heureRecuperationInput.max && heureRecuperationInput.value > heureRecuperationInput.max) {
+            heureRecuperationInput.value = heureRecuperationInput.max;
+        }
+
+        // Recalculate if values were clamped
+        saveStateToSession();
     }
 
     function updateCartDisplay() {
