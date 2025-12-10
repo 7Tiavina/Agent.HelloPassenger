@@ -1606,7 +1606,7 @@
 
         const selectedHour = date.getHours(); // Get the hour of the current temporary date
 
-        for (let i = 7; i <= 21; i++) { // Loop from 7 to 21
+        for (let i = 8; i <= 21; i++) { // Loop from 8 to 21
             const hour = i.toString().padStart(2, '0') + ':00';
             const button = document.createElement('button');
             button.textContent = hour;
@@ -1734,7 +1734,7 @@
                     const dateToUpdate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
                     dateToUpdate.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
 
-                    let defaultHour = 7;
+                    let defaultHour = 8;
                     if (day === 'today') {
                         const nextHour = new Date().getHours() + 1;
                         if (nextHour > defaultHour) defaultHour = nextHour;
@@ -1745,7 +1745,7 @@
                          if (minRetraitHour > defaultHour) defaultHour = minRetraitHour;
                     }
                     
-                    if (defaultHour < 7) defaultHour = 7;
+                    if (defaultHour < 8) defaultHour = 8;
                     if (defaultHour > 21) defaultHour = 21;
                     
                     dateToUpdate.setHours(defaultHour, 0, 0, 0);
