@@ -1237,219 +1237,531 @@
         updateAdvertModalButtons();
     }
 
-    function showOptionsAdvertisementModal() {
-        return new Promise(resolve => {
-            const modal = document.getElementById('options-advert-modal');
-            const closeBtn = document.getElementById('close-options-advert-modal');
-            const prioritySection = document.getElementById('advert-option-priority');
-            const premiumSection = document.getElementById('advert-option-premium');
-            const premiumAvailableContent = document.getElementById('premium-available-content');
-            const premiumUnavailableMessage = document.getElementById('premium-unavailable-message');
-            const addPriorityBtn = document.getElementById('add-priority-from-modal');
-            const addPremiumBtn = document.getElementById('add-premium-from-modal');
-            const continueBtn = document.getElementById('continue-from-options-modal');
+        function showOptionsAdvertisementModal() {
 
-            // Reset visibility
-            prioritySection.classList.add('hidden');
-            premiumSection.classList.add('hidden');
-            
-            if (isPriorityAvailable) {
-                prioritySection.classList.remove('hidden');
-            }
+            return new Promise(resolve => {
 
-            if (isPremiumAvailable) {
-                premiumSection.classList.remove('hidden');
-                premiumAvailableContent.classList.remove('hidden');
-                premiumUnavailableMessage.classList.add('hidden');
+                const modal = document.getElementById('options-advert-modal');
 
-                const premiumDetailsContainer = document.getElementById('premium-details-modal');
-                const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+                const closeBtn = document.getElementById('close-options-advert-modal');
 
-                const depotDate = document.getElementById('date-depot').value;
-                const depotHeure = document.getElementById('heure-depot').value;
-                const recupDate = document.getElementById('date-recuperation').value;
-                const recupHeure = document.getElementById('heure-recuperation').value;
+                const prioritySection = document.getElementById('advert-option-priority');
 
-                premiumDetailsContainer.innerHTML = `
-                    <div class="space-y-4">
-                        <p class="font-medium text-gray-700">Sens de la prise en charge :</p>
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
-                                <input type="radio" name="premium_direction" value="terminal_to_agence" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                                <span class="ml-3 text-gray-700 font-medium">Récupération de vos bagages</span>
-                            </label>
-                            <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
-                                <input type="radio" name="premium_direction" value="agence_to_terminal" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                                <span class="ml-3 text-gray-700 font-medium">Restitution de vos bagages</span>
-                            </label>
-                        </div>
-                    </div>
+                const premiumSection = document.getElementById('advert-option-premium');
 
-                    <!-- Formulaire pour Terminal -> Agence -->
-                    <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
-                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la prise en charge personnalisée de vos bagages.</h4>
-                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_arrival" class="input-style w-full"></div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full" value="${depotDate}"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full" value="${depotHeure}"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                             <div>
-                                 <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label>
-                                 <select name="pickup_location_arrival" class="input-style custom-select w-full">
-                                    <option value="" selected disabled>Select</option>
-                                    ${lieuxOptionsHTML}
-                                 </select>
-                             </div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge</label><input type="time" name="pickup_time_arrival" class="input-style w-full"></div>
-                        </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="informations_complementaires_arrival" class="input-style w-full" rows="2"></textarea></div>
-                    </div>
+                const premiumAvailableContent = document.getElementById('premium-available-content');
 
-                    <!-- Formulaire pour Agence -> Terminal -->
-                    <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
-                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la restitution personnalisée de vos bagages.</h4>
-                        <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_departure" class="input-style w-full"></div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full" value="${recupDate}"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full" value="${recupHeure}"></div>
-                        </div>
-                         <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Lieu de restitution</label>
-                                <select name="restitution_location_departure" class="input-style custom-select w-full">
-                                    <option value="" selected disabled>Sélectionnez un lieu</option>
-                                    ${lieuxOptionsHTML}
-                                </select>
+                const premiumUnavailableMessage = document.getElementById('premium-unavailable-message');
+
+                const addPriorityBtn = document.getElementById('add-priority-from-modal');
+
+                const addPremiumBtn = document.getElementById('add-premium-from-modal');
+
+                const continueBtn = document.getElementById('continue-from-options-modal');
+
+    
+
+                // Reset visibility
+
+                prioritySection.classList.add('hidden');
+
+                premiumSection.classList.add('hidden');
+
+                
+
+                if (isPriorityAvailable) {
+
+                    prioritySection.classList.remove('hidden');
+
+                }
+
+    
+
+                if (isPremiumAvailable) {
+
+                    premiumSection.classList.remove('hidden');
+
+                    premiumAvailableContent.classList.remove('hidden');
+
+                    premiumUnavailableMessage.classList.add('hidden');
+
+    
+
+                    const premiumDetailsContainer = document.getElementById('premium-details-modal');
+
+                    const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+
+    
+
+                    const depotDate = document.getElementById('date-depot').value;
+
+                    const depotHeure = document.getElementById('heure-depot').value;
+
+                    const recupDate = document.getElementById('date-recuperation').value;
+
+                    const recupHeure = document.getElementById('heure-recuperation').value;
+
+    
+
+                    premiumDetailsContainer.innerHTML = `
+
+                        <div class="space-y-4">
+
+                            <p class="font-medium text-gray-700">Sens de la prise en charge :</p>
+
+                            <div class="flex flex-col sm:flex-row gap-4">
+
+                                <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
+
+                                    <input type="radio" name="premium_direction" value="terminal_to_agence" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
+
+                                    <span class="ml-3 text-gray-700 font-medium">Récupération de vos bagages</span>
+
+                                </label>
+
+                                <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
+
+                                    <input type="radio" name="premium_direction" value="agence_to_terminal" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
+
+                                    <span class="ml-3 text-gray-700 font-medium">Restitution de vos bagages</span>
+
+                                </label>
+
                             </div>
-                            <div><label class="block text-sm font-medium text-gray-700">Heure de restitution</label><input type="time" name="restitution_time_departure" class="input-style w-full"></div>
+
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="informations_complementaires_departure" class="input-style w-full" rows="2"></textarea></div>
-                    </div>
-                `;
 
-                // Add listeners for radio buttons
-                const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
-                const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
-                const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
-                
-                directionRadios.forEach(radio => {
-                    radio.addEventListener('change', (e) => {
-                        if (e.target.value === 'terminal_to_agence') {
-                            formTerminalToAgence.classList.remove('hidden');
-                            formAgenceToTerminal.classList.add('hidden');
-                        } else {
-                            formTerminalToAgence.classList.add('hidden');
-                            formAgenceToTerminal.classList.remove('hidden');
-                        }
-                    });
-                });
+    
 
-                // Auto-calculate pickup and restitution times
-                const timeArrivalInput = document.querySelector('[name="time_arrival"]');
-                const pickupTimeArrivalInput = document.querySelector('[name="pickup_time_arrival"]');
-                const timeDepartureInput = document.querySelector('[name="time_departure"]');
-                const restitutionTimeDepartureInput = document.querySelector('[name="restitution_time_departure"]');
+                        <!-- Formulaire pour Terminal -> Agence -->
 
-                function updatePickupTime() {
-                    if (!timeArrivalInput.value) return;
-                    const [hours, minutes] = timeArrivalInput.value.split(':').map(Number);
-                    const arrivalDateTime = new Date();
-                    arrivalDateTime.setHours(hours, minutes, 0, 0);
-                    arrivalDateTime.setMinutes(arrivalDateTime.getMinutes() + 45);
+                        <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
 
-                    const newHours = String(arrivalDateTime.getHours()).padStart(2, '0');
-                    const newMinutes = String(arrivalDateTime.getMinutes()).padStart(2, '0');
+                            <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la prise en charge personnalisée de vos bagages.</h4>
+
+                            <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_arrival" class="input-style w-full"></div>
+
+                            <div class="grid grid-cols-2 gap-3">
+
+                                <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full" value="${depotDate}"></div>
+
+                                <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full" value="${depotHeure}"></div>
+
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+
+                                 <div>
+
+                                     <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label>
+
+                                     <select name="pickup_location_arrival" class="input-style custom-select w-full">
+
+                                        <option value="" selected disabled>Select</option>
+
+                                        ${lieuxOptionsHTML}
+
+                                     </select>
+
+                                 </div>
+
+                                <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge</label><input type="time" name="pickup_time_arrival" class="input-style w-full"></div>
+
+                            </div>
+
+                            <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
+
+                            <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="informations_complementaires_arrival" class="input-style w-full" rows="2"></textarea></div>
+
+                        </div>
+
+    
+
+                        <!-- Formulaire pour Agence -> Terminal -->
+
+                        <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
+
+                            <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la restitution personnalisée de vos bagages.</h4>
+
+                            <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_departure" class="input-style w-full"></div>
+
+                            <div class="grid grid-cols-2 gap-3">
+
+                                <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full" value="${recupDate}"></div>
+
+                                <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full" value="${recupHeure}"></div>
+
+                            </div>
+
+                             <div class="grid grid-cols-2 gap-3">
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700">Lieu de restitution</label>
+
+                                    <select name="restitution_location_departure" class="input-style custom-select w-full">
+
+                                        <option value="" selected disabled>Sélectionnez un lieu</option>
+
+                                        ${lieuxOptionsHTML}
+
+                                    </select>
+
+                                </div>
+
+                                <div><label class="block text-sm font-medium text-gray-700">Heure de restitution</label><input type="time" name="restitution_time_departure" class="input-style w-full"></div>
+
+                            </div>
+
+                            <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
+
+                            <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="informations_complementaires_departure" class="input-style w-full" rows="2"></textarea></div>
+
+                        </div>
+
+                    `;
+
+    
+
+                    // Add listeners for radio buttons
+
+                    const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
+
+                    const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
+
+                    const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
+
                     
-                    // Set the min attribute
-                    pickupTimeArrivalInput.min = `${newHours}:${newMinutes}`;
-                    // Also clamp the current value if it's less than the new min
-                    if (pickupTimeArrivalInput.value < pickupTimeArrivalInput.min) {
-                        pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
-                    } else if (!pickupTimeArrivalInput.value) { // If not set, set the value
-                        pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
-                    }
-                }
 
-                function updateRestitutionTime() {
-                    if (!timeDepartureInput.value) return;
-                    const [hours, minutes] = timeDepartureInput.value.split(':').map(Number);
-                    const departureDateTime = new Date();
-                    departureDateTime.setHours(hours, minutes, 0, 0);
-                    departureDateTime.setHours(departureDateTime.getHours() - 2);
+                    directionRadios.forEach(radio => {
 
-                    const newHours = String(departureDateTime.getHours()).padStart(2, '0');
-                    const newMinutes = String(departureDateTime.getMinutes()).padStart(2, '0');
+                        radio.addEventListener('change', (e) => {
 
-                    // Set the max attribute
-                    restitutionTimeDepartureInput.max = `${newHours}:${newMinutes}`;
-                    // Also clamp the current value if it's greater than the new max
-                    if (restitutionTimeDepartureInput.value > restitutionTimeDepartureInput.max) {
-                        restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
-                    } else if (!restitutionTimeDepartureInput.value) { // If not set, set the value
-                        restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
-                    }
-                }
+                            if (e.target.value === 'terminal_to_agence') {
 
-                if (timeArrivalInput) {
-                    timeArrivalInput.addEventListener('input', updatePickupTime);
-                    updatePickupTime(); // Initial calculation
-                }
-                                if (timeDepartureInput) {
-                                    timeDepartureInput.addEventListener('input', updateRestitutionTime);
-                                    updateRestitutionTime(); // Initial calculation
-                                }
-                                // Add direct clamping listeners to the dependent time inputs
-                                if (pickupTimeArrivalInput) {
-                                    pickupTimeArrivalInput.addEventListener('input', () => {
-                                        if (pickupTimeArrivalInput.min && pickupTimeArrivalInput.value < pickupTimeArrivalInput.min) {
-                                            pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
-                                        }
-                                    });
-                                }
-                
-                                if (restitutionTimeDepartureInput) {
-                                    restitutionTimeDepartureInput.addEventListener('input', () => {
-                                        if (restitutionTimeDepartureInput.max && restitutionTimeDepartureInput.value > restitutionTimeDepartureInput.max) {
-                                            restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
-                                        }
-                                    });
-                                }
+                                formTerminalToAgence.classList.remove('hidden');
+
+                                formAgenceToTerminal.classList.add('hidden');
+
                             } else {
-                premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
-                premiumAvailableContent.classList.add('hidden');
-                premiumUnavailableMessage.classList.remove('hidden');
-            }
 
-            updateAdvertModalButtons(); // Set initial button states
+                                formTerminalToAgence.classList.add('hidden');
 
-            const closeModalAndResolve = (resolutionValue = 'continued') => {
-                modal.classList.add('hidden');
-                // Clean up event listeners
-                continueBtn.onclick = null;
-                closeBtn.onclick = null;
-                modal.onclick = null;
-                addPriorityBtn.onclick = null;
-                addPremiumBtn.onclick = null;
-                
-                resolve(resolutionValue);
-            };
+                                formAgenceToTerminal.classList.remove('hidden');
 
-            addPriorityBtn.onclick = () => toggleOptionFromModal('priority');
-            addPremiumBtn.onclick = () => toggleOptionFromModal('premium');
-            continueBtn.onclick = () => closeModalAndResolve('continued');
-            closeBtn.onclick = () => closeModalAndResolve('cancelled');
-            modal.onclick = (e) => {
-                if (e.target === modal) {
-                    closeModalAndResolve('cancelled');
+                            }
+
+                        });
+
+                    });
+
+    
+
+                    // Auto-calculate pickup and restitution times
+
+                    const timeArrivalInput = document.querySelector('[name="time_arrival"]');
+
+                    const pickupTimeArrivalInput = document.querySelector('[name="pickup_time_arrival"]');
+
+                    const timeDepartureInput = document.querySelector('[name="time_departure"]');
+
+                    const restitutionTimeDepartureInput = document.querySelector('[name="restitution_time_departure"]');
+
+    
+
+                    function updatePickupTime() {
+
+                        if (!timeArrivalInput.value) return;
+
+                        const [hours, minutes] = timeArrivalInput.value.split(':').map(Number);
+
+                        const arrivalDateTime = new Date();
+
+                        arrivalDateTime.setHours(hours, minutes, 0, 0);
+
+                        arrivalDateTime.setMinutes(arrivalDateTime.getMinutes() + 45);
+
+    
+
+                        const newHours = String(arrivalDateTime.getHours()).padStart(2, '0');
+
+                        const newMinutes = String(arrivalDateTime.getMinutes()).padStart(2, '0');
+
+                        
+
+                        // Set the min attribute
+
+                        pickupTimeArrivalInput.min = `${newHours}:${newMinutes}`;
+
+                        // Also clamp the current value if it's less than the new min
+
+                        if (pickupTimeArrivalInput.value < pickupTimeArrivalInput.min) {
+
+                            pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
+
+                        } else if (!pickupTimeArrivalInput.value) { // If not set, set the value
+
+                            pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
+
+                        }
+
+                    }
+
+    
+
+                    function updateRestitutionTime() {
+
+                        if (!timeDepartureInput.value) return;
+
+                        const [hours, minutes] = timeDepartureInput.value.split(':').map(Number);
+
+                        const departureDateTime = new Date();
+
+                        departureDateTime.setHours(hours, minutes, 0, 0);
+
+                        departureDateTime.setHours(departureDateTime.getHours() - 2);
+
+    
+
+                        const newHours = String(departureDateTime.getHours()).padStart(2, '0');
+
+                        const newMinutes = String(departureDateTime.getMinutes()).padStart(2, '0');
+
+    
+
+                        // Set the max attribute
+
+                        restitutionTimeDepartureInput.max = `${newHours}:${newMinutes}`;
+
+                        // Also clamp the current value if it's greater than the new max
+
+                        if (restitutionTimeDepartureInput.value > restitutionTimeDepartureInput.max) {
+
+                            restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
+
+                        } else if (!restitutionTimeDepartureInput.value) { // If not set, set the value
+
+                            restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
+
+                        }
+
+                    }
+
+    
+
+                    if (timeArrivalInput) {
+
+                        timeArrivalInput.addEventListener('input', updatePickupTime);
+
+                        updatePickupTime(); // Initial calculation
+
+                    }
+
+                    if (timeDepartureInput) {
+
+                        timeDepartureInput.addEventListener('input', updateRestitutionTime);
+
+                        updateRestitutionTime(); // Initial calculation
+
+                    }
+
+    
+
+                    // Add direct clamping listeners to the dependent time inputs
+
+                    if (pickupTimeArrivalInput) {
+
+                        pickupTimeArrivalInput.addEventListener('input', () => {
+
+                            if (pickupTimeArrivalInput.min && pickupTimeArrivalInput.value < pickupTimeArrivalInput.min) {
+
+                                pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
+
+                            }
+
+                        });
+
+                    }
+
+    
+
+                    if (restitutionTimeDepartureInput) {
+
+                        restitutionTimeDepartureInput.addEventListener('input', () => {
+
+                            if (restitutionTimeDepartureInput.max && restitutionTimeDepartureInput.value > restitutionTimeDepartureInput.max) {
+
+                                restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
+
+                            }
+
+                        });
+
+                    }
+
+                } else {
+
+                    premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
+
+                    premiumAvailableContent.classList.add('hidden');
+
+                    premiumUnavailableMessage.classList.remove('hidden');
+
                 }
-            };
-            
-            modal.classList.remove('hidden');
-        });
-    }
+
+    
+
+                updateAdvertModalButtons(); // Set initial button states
+
+    
+
+                const closeModalAndResolve = (resolutionValue = 'continued') => {
+
+                    modal.classList.add('hidden');
+
+                    // Clean up event listeners
+
+                    continueBtn.onclick = null;
+
+                    closeBtn.onclick = null;
+
+                    modal.onclick = null;
+
+                    addPriorityBtn.onclick = null;
+
+                    addPremiumBtn.onclick = null;
+
+                    
+
+                    resolve(resolutionValue);
+
+                };
+
+    
+
+                continueBtn.onclick = async () => {
+
+                    const premiumOptionInCart = cartItems.some(item => item.key === 'premium');
+
+                    
+
+                    if (premiumOptionInCart) {
+
+                        const direction = document.querySelector('input[name="premium_direction"]:checked')?.value;
+
+                        if (!direction) {
+
+                            closeModalAndResolve('continued');
+
+                            return;
+
+                        }
+
+    
+
+                        const formContainer = document.getElementById(`premium_fields_${direction}`);
+
+                        const newDepotDate = formContainer.querySelector('[name="date_arrival"]')?.value || document.getElementById('date-depot').value;
+
+                        const newDepotHeure = formContainer.querySelector('[name="time_arrival"]')?.value || document.getElementById('heure-depot').value;
+
+                        const newRecupDate = formContainer.querySelector('[name="date_departure"]')?.value || document.getElementById('date-recuperation').value;
+
+                        const newRecupHeure = formContainer.querySelector('[name="time_departure"]')?.value || document.getElementById('heure-recuperation').value;
+
+                        
+
+                        const oldDepotDate = document.getElementById('date-depot').value;
+
+                        const oldDepotTime = document.getElementById('heure-depot').value;
+
+                        const oldRecupDate = document.getElementById('date-recuperation').value;
+
+                        const oldRecupTime = document.getElementById('heure-recuperation').value;
+
+    
+
+                        const datesHaveChanged = newDepotDate !== oldDepotDate || newDepotHeure !== oldDepotTime || newRecupDate !== oldRecupDate || newRecupHeure !== oldRecupTime;
+
+    
+
+                        if (datesHaveChanged) {
+
+                            document.getElementById('date-depot').value = newDepotDate;
+
+                            document.getElementById('heure-depot').value = newDepotHeure;
+
+                            document.getElementById('date-recuperation').value = newRecupDate;
+
+                            document.getElementById('heure-recuperation').value = newRecupHeure;
+
+                            
+
+                            const loader = document.getElementById('loader');
+
+                            loader.classList.remove('hidden');
+
+    
+
+                            const isAvailable = await checkAvailability();
+
+    
+
+                            if (!isAvailable) {
+
+                                loader.classList.add('hidden');
+
+                                document.getElementById('date-depot').value = oldDepotDate;
+
+                                document.getElementById('heure-depot').value = oldDepotTime;
+
+                                document.getElementById('date-recuperation').value = oldRecupDate;
+
+                                document.getElementById('heure-recuperation').value = oldRecupTime;
+
+                                return; // Stay in modal
+
+                            }
+
+                            
+
+                            await getQuoteAndDisplay();
+
+                            loader.classList.add('hidden');
+
+                        }
+
+                    }
+
+                    closeModalAndResolve('continued');
+
+                };
+
+    
+
+                addPriorityBtn.onclick = () => toggleOptionFromModal('priority');
+
+                addPremiumBtn.onclick = () => toggleOptionFromModal('premium');
+
+                closeBtn.onclick = () => closeModalAndResolve('cancelled');
+
+                modal.onclick = (e) => {
+
+                    if (e.target === modal) {
+
+                        closeModalAndResolve('cancelled');
+
+                    }
+
+                };
+
+                
+
+                modal.classList.remove('hidden');
+
+            });
+
+        }
 
     function updateCartDisplay() {
         const cartItemsContainer = document.getElementById('cart-items-container');
