@@ -131,12 +131,12 @@
 <body class="min-h-screen bg-white">
 
 <!-- Loader Overlay -->
-<div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center">
+<div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center">
     <div class="custom-spinner !w-12 !h-12 !border-4"></div>
 </div>
 
 <!-- Custom Modal -->
-<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10004] flex items-center justify-center px-4">
+<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center px-4">
     <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-3 border-b border-gray-200">
@@ -165,7 +165,7 @@
 </div>
 
 <!-- Options Advertisement Modal -->
-<div id="options-advert-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10004] flex items-center justify-center p-4">
+<div id="options-advert-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10000] flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all max-h-[90vh] overflow-y-auto relative">
         <!-- Close Button -->
         <button id="close-options-advert-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
@@ -526,7 +526,7 @@
         const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
 
         modalTitle.textContent = title;
-        modalMessage.innerHTML = message;
+        modalMessage.textContent = message;
 
         promptContainer.classList.add('hidden');
         modalCancelBtn.classList.add('hidden');
@@ -823,20 +823,30 @@
         const heureDepotInput = document.getElementById('heure-depot');
         const heureRecuperationInput = document.getElementById('heure-recuperation');
 
-        // Initial application of constraints
-        applyDateInputConstraints();
+        // Set min date for date-depot to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
+        dateDepotInput.min = todayFormatted;
 
-        // Add event listeners to re-apply constraints on change
-        dateDepotInput.addEventListener('change', applyDateInputConstraints);
-        dateRecuperationInput.addEventListener('change', applyDateInputConstraints);
-        heureDepotInput.addEventListener('change', applyDateInputConstraints);
-        heureRecuperationInput.addEventListener('change', applyDateInputConstraints);
-
-        // Also save state on any input event (change events will trigger applyDateInputConstraints which calls saveStateToSession)
         [dateDepotInput, dateRecuperationInput, heureDepotInput, heureRecuperationInput].forEach(input => {
+            input.addEventListener('change', saveStateToSession);
             input.addEventListener('input', saveStateToSession);
         });
 
+        dateDepotInput.addEventListener('change', function() {
+            if (this.value) {
+                dateRecuperationInput.min = this.value;
+                // If new depot date is after current retrieval date, adjust retrieval date
+                if (dateRecuperationInput.value < this.value) {
+                    dateRecuperationInput.value = this.value; // Set retrieval date to new depot date
+                    heureRecuperationInput.value = heureDepotInput.value; // Also adjust time
+                    saveStateToSession();
+                }
+            }
+        });
 
         // --- TOOLTIP LOGIC ---
         const tooltip = document.getElementById('baggage-tooltip');
@@ -1068,7 +1078,7 @@
             if (result.statut === 1 && result.content === true) {
                 return true;
             } else {
-                await showCustomAlert('Agence fermée', "Notre agence est ouverte de 07h00 à 21h00 7/7. Pour toutes demandes hors horaire merci de nous contacter au +33 <strong>1 34 38 58 98</strong>.");
+                await showCustomAlert('Indisponible', result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
                 return false;
             }
         } catch (error) {
@@ -1260,18 +1270,18 @@
                         <div class="flex flex-col sm:flex-row gap-4">
                             <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
                                 <input type="radio" name="premium_direction" value="terminal_to_agence" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                                <span class="ml-3 text-gray-700 font-medium">Terminal → Agence BDM</span>
+                                <span class="ml-3 text-gray-700 font-medium">Récupération de vos bagages</span>
                             </label>
                             <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
                                 <input type="radio" name="premium_direction" value="agence_to_terminal" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                                <span class="ml-3 text-gray-700 font-medium">Agence BDM → Terminal</span>
+                                <span class="ml-3 text-gray-700 font-medium">Restitution de vos bagages</span>
                             </label>
                         </div>
                     </div>
 
                     <!-- Formulaire pour Terminal -> Agence -->
                     <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
-                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Terminal → Agence BDM</h4>
+                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la prise en charge personnalisée de vos bagages.</h4>
                         <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_arrival" class="input-style w-full"></div>
                         <div class="grid grid-cols-2 gap-3">
                             <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full"></div>
@@ -1294,7 +1304,7 @@
 
                     <!-- Formulaire pour Agence -> Terminal -->
                     <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
-                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Agence BDM → Terminal</h4>
+                        <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la restitution personnalisée de vos bagages.</h4>
                         <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_departure" class="input-style w-full"></div>
                         <div class="grid grid-cols-2 gap-3">
                             <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full"></div>
@@ -1367,102 +1377,6 @@
         });
     }
 
-    function applyDateInputConstraints() {
-        const dateDepotInput = document.getElementById('date-depot');
-        const dateRecuperationInput = document.getElementById('date-recuperation');
-        const heureDepotInput = document.getElementById('heure-depot');
-        const heureRecuperationInput = document.getElementById('heure-recuperation');
-
-        const today = new Date();
-        const pad = (num) => num.toString().padStart(2, '0');
-        const todayFormatted = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-
-        // --- date-depot constraints ---
-        dateDepotInput.min = todayFormatted;
-        if (dateRecuperationInput.value) {
-            dateDepotInput.max = dateRecuperationInput.value;
-        } else {
-            dateDepotInput.max = ''; // No max if pickup date not set
-        }
-
-        // --- heure-depot constraints ---
-        heureDepotInput.min = '07:01';
-        heureDepotInput.max = '21:00';
-
-        const depotDateVal = dateDepotInput.value;
-        if (depotDateVal === todayFormatted) {
-            const nextHour = new Date().getHours() + 1;
-            heureDepotInput.min = `${pad(Math.max(7, nextHour))}:00`;
-            // If the next hour is 7, we need to set minutes to 1. But for input type="time", it's 'HH:MM'.
-            // So we'll leave it as 'HH:00' here and let the input itself clamp to '07:01'.
-            if (parseInt(heureDepotInput.min.substring(0, 2), 10) === 7) {
-                heureDepotInput.min = '07:01';
-            }
-        }
-
-        // --- date-recuperation constraints ---
-        if (dateDepotInput.value) {
-            const minRecuperationDate = new Date(dateDepotInput.value);
-            minRecuperationDate.setDate(minRecuperationDate.getDate() + 1); // Pickup must be strictly after depot
-            dateRecuperationInput.min = `${minRecuperationDate.getFullYear()}-${pad(minRecuperationDate.getMonth() + 1)}-${pad(minRecuperationDate.getDate())}`;
-
-            const maxRecuperationDate = new Date(dateDepotInput.value);
-            maxRecuperationDate.setDate(maxRecuperationDate.getDate() + 30);
-            dateRecuperationInput.max = `${maxRecuperationDate.getFullYear()}-${pad(maxRecuperationDate.getMonth() + 1)}-${pad(maxRecuperationDate.getDate())}`;
-        } else {
-            dateRecuperationInput.min = todayFormatted; // Fallback if depot not set
-            dateRecuperationInput.max = '';
-        }
-
-        // --- heure-recuperation constraints ---
-        heureRecuperationInput.min = '07:01';
-        heureRecuperationInput.max = '21:00';
-
-        // 3-hour gap for same-day bookings
-        if (dateDepotInput.value === dateRecuperationInput.value && heureDepotInput.value) {
-            const depotHour = parseInt(heureDepotInput.value.substring(0, 2), 10);
-            const depotMinute = parseInt(heureDepotInput.value.substring(3, 5), 10);
-            
-            let minRecuperationHour = depotHour + 3;
-            let minRecuperationMinute = depotMinute;
-
-            if (minRecuperationHour < 7) { // Ensure minimum is 7:01 if calculation falls below
-                minRecuperationHour = 7;
-                minRecuperationMinute = 1;
-            }
-            if (minRecuperationHour === 7 && minRecuperationMinute === 0) { // If calculated to exactly 7:00
-                minRecuperationMinute = 1;
-            }
-
-            // Adjust minutes for 3-hour gap: if current minutes are high, next hour might be needed
-            if (minRecuperationMinute > 59) {
-                minRecuperationHour += Math.floor(minRecuperationMinute / 60);
-                minRecuperationMinute %= 60;
-            }
-            
-            // Cap at 21:00 for max, but minRecuperationHour can exceed 21 here
-            heureRecuperationInput.min = `${pad(minRecuperationHour)}:${pad(minRecuperationMinute)}`;
-        }
-        
-        // Adjust hour values if they become invalid after min/max changes
-        // This is important to "clamp" the value if a constraint makes it invalid
-        if (heureDepotInput.value && heureDepotInput.min && heureDepotInput.value < heureDepotInput.min) {
-            heureDepotInput.value = heureDepotInput.min;
-        }
-        if (heureDepotInput.value && heureDepotInput.max && heureDepotInput.value > heureDepotInput.max) {
-            heureDepotInput.value = heureDepotInput.max;
-        }
-        if (heureRecuperationInput.value && heureRecuperationInput.min && heureRecuperationInput.value < heureRecuperationInput.min) {
-            heureRecuperationInput.value = heureRecuperationInput.min;
-        }
-        if (heureRecuperationInput.value && heureRecuperationInput.max && heureRecuperationInput.value > heureRecuperationInput.max) {
-            heureRecuperationInput.value = heureRecuperationInput.max;
-        }
-
-        // Recalculate if values were clamped
-        saveStateToSession();
-    }
-
     function updateCartDisplay() {
         const cartItemsContainer = document.getElementById('cart-items-container');
         const cartElement = document.getElementById('cart-summary');
@@ -1510,32 +1424,17 @@
                 const product = globalProductsData.find(p => p.id === item.productId);
                 const itemPrice = product ? product.prixUnitaire : 0;
                 
-                let pricePerUnit = 0;
-                let unitLabel = '';
-                const start = new Date(`${dateDepot}T${heureDepot}`);
-                const end = new Date(`${dateRecuperation}T${heureRecuperation}`);
-                const duration_in_minutes = Math.round((end - start) / (1000 * 60));
-
-                if (duration_in_minutes > 0) {
-                    if (duration_in_minutes < 1440) { // Less than a day, show per hour
-                        const total_hours = Math.max(1, duration_in_minutes / 60);
-                        pricePerUnit = itemPrice / total_hours;
-                        unitLabel = '/ heure';
-                    } else { // A day or more, show per day
-                        const total_days = duration_in_minutes / 1440;
-                        pricePerUnit = itemPrice / total_days;
-                        unitLabel = '/ jour';
-                    }
-                } else {
-                    pricePerUnit = itemPrice; // Fallback
+                let pricePerDayPerUnit = itemPrice;
+                if (diffDays > 0) {
+                    pricePerDayPerUnit = itemPrice / diffDays;
                 }
-                
+
                 itemTotal = itemPrice * item.quantity;
                 cartItemsContainer.innerHTML += `
                     <div class="py-2 flex justify-between items-center">
                         <div>
                             <span class="font-medium">${item.quantity} x ${item.libelle}</span>
-                            <span class="block text-xs text-gray-500">${pricePerUnit.toFixed(2)} € ${unitLabel}</span>
+                            <span class="block text-xs text-gray-500">${pricePerDayPerUnit.toFixed(2)} € / jour </span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="font-semibold">${itemTotal.toFixed(2)} €</span>
@@ -1670,25 +1569,6 @@
             selectedBtn.classList.remove('bg-gray-200');
             selectedBtn.classList.add('bg-yellow-custom', 'text-gray-dark');
         }
-
-        const customDateContainer = document.getElementById('qdm-custom-date-container');
-        const customHourContainer = document.getElementById('qdm-custom-hour-container');
-        const hourGrid = document.getElementById('qdm-hour-grid');
-
-        if (currentSelection === 'custom') {
-            customDateContainer.classList.remove('hidden');
-            hourGrid.classList.add('hidden');
-            customHourContainer.classList.remove('hidden');
-            const currentTempDate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
-            const pad = (num) => num.toString().padStart(2, '0');
-            document.getElementById('qdm-custom-date-input').value = `${currentTempDate.getFullYear()}-${pad(currentTempDate.getMonth() + 1)}-${pad(currentTempDate.getDate())}`;
-            document.getElementById('qdm-custom-time-input').value = `${pad(currentTempDate.getHours())}:${pad(currentTempDate.getMinutes())}`;
-        } else { // today or tomorrow
-            customDateContainer.classList.add('hidden');
-            hourGrid.classList.remove('hidden');
-            customHourContainer.classList.add('hidden');
-            generateHourButtons((qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date);
-        }
     }
 
     function generateHourButtons(date) {
@@ -1705,24 +1585,16 @@
             startHour = new Date().getHours() + 1;
         }
 
-        const selectedHour = date.getHours(); // Get the hour of the current temporary date
-
-        for (let i = 7; i <= 21; i++) { // Loop from 7 to 21
+        for (let i = 0; i < 24; i++) {
             const hour = i.toString().padStart(2, '0') + ':00';
             const button = document.createElement('button');
             button.textContent = hour;
             button.classList.add('qdm-hour-btn', 'py-2', 'px-2', 'bg-white', 'rounded-md', 'border', 'border-gray-300', 'hover:bg-gray-100');
             button.dataset.hour = hour;
 
-            let isDisabled = false;
             if (i < startHour) {
-                isDisabled = true;
                 button.disabled = true;
                 button.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
-            }
-            
-            if (i === selectedHour && !isDisabled) {
-                button.classList.add('bg-yellow-custom', 'text-gray-dark', 'font-bold');
             }
 
             hourGrid.appendChild(button);
@@ -1739,14 +1611,10 @@
         qdm_temp_retrait_date = new Date(`${retraitDate}T${retraitHeure}`);
         qdm_editing_mode = 'depot'; // Always start editing depot date
 
-        // Set initial min and max for custom date input (for depot date)
+        // Set initial min for custom date input (for depot date)
         const today = new Date();
-        const pad = (num) => num.toString().padStart(2, '0');
-        const todayFormatted = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+        const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         document.getElementById('qdm-custom-date-input').min = todayFormatted;
-        
-        const retraitDateFormatted = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
-        document.getElementById('qdm-custom-date-input').max = retraitDateFormatted;
 
         // Determine initial day selections based on current dates
         const tomorrow = new Date();
@@ -1782,13 +1650,8 @@
         document.getElementById('quick-depot-block').addEventListener('click', () => {
             qdm_editing_mode = 'depot';
             const today = new Date();
-            const pad = (num) => num.toString().padStart(2, '0');
-            const todayFormatted = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+            const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             document.getElementById('qdm-custom-date-input').min = todayFormatted;
-
-            const retraitDateFormatted = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
-            document.getElementById('qdm-custom-date-input').max = retraitDateFormatted;
-
             document.getElementById('qdm-custom-time-input').min = ''; // No min time for depot
             updateQdmDisplay();
             generateHourButtons(qdm_temp_depot_date);
@@ -1798,11 +1661,6 @@
             const pad = (num) => num.toString().padStart(2, '0');
             const depotDateFormatted = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
             document.getElementById('qdm-custom-date-input').min = depotDateFormatted;
-
-            const maxRetraitDate = new Date(qdm_temp_depot_date);
-            maxRetraitDate.setDate(maxRetraitDate.getDate() + 30);
-            const maxRetraitDateFormatted = `${maxRetraitDate.getFullYear()}-${pad(maxRetraitDate.getMonth() + 1)}-${pad(maxRetraitDate.getDate())}`;
-            document.getElementById('qdm-custom-date-input').max = maxRetraitDateFormatted;
             
             // Set min time for custom retrait time input
             if (qdm_temp_retrait_date.toDateString() === qdm_temp_depot_date.toDateString()) {
@@ -1819,102 +1677,42 @@
         document.querySelectorAll('.qdm-day-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const day = e.target.dataset.day;
+                const customDateContainer = document.getElementById('qdm-custom-date-container');
+                const customHourContainer = document.getElementById('qdm-custom-hour-container');
+                const hourGrid = document.getElementById('qdm-hour-grid');
+                
+                let targetDate = new Date();
+                if (day === 'tomorrow') {
+                    targetDate.setDate(targetDate.getDate() + 1);
+                }
 
                 if (qdm_editing_mode === 'depot') {
                     qdm_depot_day_selection = day;
-                } else {
+                    if (day === 'today' || day === 'tomorrow') {
+                        qdm_temp_depot_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                    }
+                } else { // editing retrait
                     qdm_retrait_day_selection = day;
+                    if (day === 'today' || day === 'tomorrow') {
+                        qdm_temp_retrait_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                    }
                 }
 
                 if (day === 'today' || day === 'tomorrow') {
-                    let targetDate = new Date();
-                    if (day === 'tomorrow') {
-                        targetDate.setDate(targetDate.getDate() + 1);
-                    }
-
-                    const dateToUpdate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
-                    dateToUpdate.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-
-                    let defaultHour = 7;
-                    let defaultMinute = 1;
-
-                    if (day === 'today') {
-                        const now = new Date();
-                        // Get time 1 minute from now
-                        const nextTime = new Date(now.getTime() + 60 * 1000); 
-                        
-                        // Only use nextTime if it's past 07:01, otherwise stick to 07:01
-                        if (nextTime.getHours() > defaultHour || (nextTime.getHours() === defaultHour && nextTime.getMinutes() > defaultMinute)) {
-                            defaultHour = nextTime.getHours();
-                            defaultMinute = nextTime.getMinutes();
-                        }
-                    }
-                    
-                    // Enforce 3-hour gap if modifying pickup date on same day as drop-off
-                    if (qdm_editing_mode === 'retrait' && dateToUpdate.toDateString() === qdm_temp_depot_date.toDateString()) {
-                        let minRetraitHour = qdm_temp_depot_date.getHours() + 3;
-                        let minRetraitMinute = qdm_temp_depot_date.getMinutes();
-
-                        if (minRetraitHour > defaultHour || (minRetraitHour === defaultHour && minRetraitMinute > defaultMinute)) {
-                            defaultHour = minRetraitHour;
-                            defaultMinute = minRetraitMinute;
-                        }
-                    }
-                    
-                    // Clamp to opening hours (07:01 - 21:00)
-                    if (defaultHour < 7 || (defaultHour === 7 && defaultMinute < 1)) {
-                        defaultHour = 7;
-                        defaultMinute = 1;
-                    }
-                    if (defaultHour > 21) { 
-                        defaultHour = 21;
-                        defaultMinute = 0;
-                    }
-                    
-                    dateToUpdate.setHours(defaultHour, defaultMinute, 0, 0);
+                    customDateContainer.classList.add('hidden');
+                    hourGrid.classList.remove('hidden');
+                    customHourContainer.classList.add('hidden');
+                    generateHourButtons((qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date);
+                } else { // custom
+                    customDateContainer.classList.remove('hidden');
+                    hourGrid.classList.add('hidden');
+                    customHourContainer.classList.remove('hidden');
+                    // Set custom date input to current temp date
+                    const currentTempDate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
+                    const pad = (num) => num.toString().padStart(2, '0');
+                    document.getElementById('qdm-custom-date-input').value = `${currentTempDate.getFullYear()}-${pad(currentTempDate.getMonth() + 1)}-${pad(currentTempDate.getDate())}`;
+                    document.getElementById('qdm-custom-time-input').value = `${pad(currentTempDate.getHours())}:${pad(currentTempDate.getMinutes())}`;
                 }
-
-                // If depot date changed, make sure retrait is still valid and update if needed
-                if (qdm_editing_mode === 'depot' && qdm_temp_depot_date >= qdm_temp_retrait_date) {
-                    qdm_temp_retrait_date = new Date(qdm_temp_depot_date);
-                    let newHour = qdm_temp_retrait_date.getHours() + 3;
-                    let newMinute = qdm_temp_retrait_date.getMinutes();
-
-                    // Clamp to opening hours (07:01 - 21:00)
-                    if (newHour < 7 || (newHour === 7 && newMinute < 1)) {
-                        newHour = 7;
-                        newMinute = 1;
-                    }
-                    if (newHour > 21 || (newHour === 21 && newMinute > 0)) { // If exceeds 21:00, move to next day 07:01
-                        qdm_temp_retrait_date.setDate(qdm_temp_retrait_date.getDate() + 1);
-                        newHour = 7;
-                        newMinute = 1;
-                    }
-                    qdm_temp_retrait_date.setHours(newHour, newMinute, 0, 0);
-                } else if (qdm_editing_mode === 'retrait' && qdm_temp_depot_date.toDateString() === qdm_temp_retrait_date.toDateString()) {
-                     // Ensure 3-hour gap for same-day bookings if retrait was edited
-                     const depotTimeInMinutes = qdm_temp_depot_date.getHours() * 60 + qdm_temp_depot_date.getMinutes();
-                     const retraitTimeInMinutes = qdm_temp_retrait_date.getHours() * 60 + qdm_temp_retrait_date.getMinutes();
-                     
-                     if (retraitTimeInMinutes < depotTimeInMinutes + 3 * 60) {
-                         const requiredRetraitTime = new Date(qdm_temp_depot_date.getTime() + 3 * 60 * 60 * 1000);
-                         let newRetraitHour = requiredRetraitTime.getHours();
-                         let newRetraitMinute = requiredRetraitTime.getMinutes();
-
-                         // Clamp to opening hours (07:01 - 21:00)
-                        if (newRetraitHour < 7 || (newRetraitHour === 7 && newRetraitMinute < 1)) {
-                            newRetraitHour = 7;
-                            newRetraitMinute = 1;
-                        }
-                        if (newRetraitHour > 21 || (newRetraitHour === 21 && newRetraitMinute > 0)) { // If exceeds 21:00, move to next day 07:01
-                            qdm_temp_retrait_date.setDate(qdm_temp_retrait_date.getDate() + 1);
-                            newRetraitHour = 7;
-                            newRetraitMinute = 1;
-                        }
-                        qdm_temp_retrait_date.setHours(newRetraitHour, newRetraitMinute, 0, 0);
-                     }
-                }
-                
                 updateQdmDisplay();
             });
         });
@@ -2182,3 +1980,4 @@
 
 </body>
 </html>
+
