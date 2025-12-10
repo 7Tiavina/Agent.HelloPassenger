@@ -215,7 +215,7 @@
                     </div>
                 </div>
                 <div id="premium-unavailable-message" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-90 rounded-lg hidden">
-                    <p class="text-lg font-semibold text-gray-600">Service Premium indisponible</p>
+                    <p class="text-lg font-semibold text-gray-600 text-center">Notre agence est ouverte de 07h01 à 21h00 7/7.<br>Pour toutes demandes hors horaire merci de nous contacter au +33 <strong>1 34 38 58 98</strong>.</p>
                 </div>
             </div>
         </div>
@@ -1483,19 +1483,67 @@
 
     
 
-                                    // Add listeners for radio buttons
+                                                    // Add listeners for radio buttons
 
     
 
-                                    const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
+                                                    const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
 
     
 
-                                    const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
+                                                    const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
 
     
 
-                                    const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
+                                                    const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
+
+    
+
+                                                    
+
+    
+
+                                                    directionRadios.forEach(radio => {
+
+    
+
+                                                        radio.addEventListener('change', (e) => {
+
+    
+
+                                                            if (e.target.value === 'terminal_to_agence') {
+
+    
+
+                                                                formTerminalToAgence.classList.remove('hidden');
+
+    
+
+                                                                formAgenceToTerminal.classList.add('hidden');
+
+    
+
+                                                            } else {
+
+    
+
+                                                                formTerminalToAgence.classList.add('hidden');
+
+    
+
+                                                                formAgenceToTerminal.classList.remove('hidden');
+
+    
+
+                                                            }
+
+    
+
+                                                        });
+
+    
+
+                                                    });
 
     
 
@@ -1503,155 +1551,351 @@
 
     
 
-                                    directionRadios.forEach(radio => {
+                                                                    // Re-evaluate premium availability when dates change inside the modal
 
     
 
-                                        radio.addEventListener('change', (e) => {
+                                    
 
     
 
-                                            if (e.target.value === 'terminal_to_agence') {
+                                                                    const dateArrivalInput = premiumDetailsContainer.querySelector('[name="date_arrival"]');
 
     
 
-                                                formTerminalToAgence.classList.remove('hidden');
+                                    
 
     
 
-                                                formAgenceToTerminal.classList.add('hidden');
+                                                                    const timeArrivalInput = premiumDetailsContainer.querySelector('[name="time_arrival"]');
 
     
 
-                                            } else {
+                                    
 
     
 
-                                                formTerminalToAgence.classList.add('hidden');
+                                                    
 
     
 
-                                                formAgenceToTerminal.classList.remove('hidden');
+                                    
 
     
 
-                                            }
+                                                                    function checkAndTogglePremiumAvailability() {
 
     
 
-                                        });
+                                    
 
     
 
-                                    });
+                                                                        const depotDateTime = new Date(`${dateArrivalInput.value}T${timeArrivalInput.value}`);
 
     
 
-                    
+                                    
 
     
 
-                                    // Pre-fill form if premium is already in cart
+                                                                        const now = new Date();
 
     
 
-                                    const premiumItemInCart = cartItems.find(item => item.key === 'premium');
+                                    
 
     
 
-                                    if (premiumItemInCart && premiumItemInCart.details) {
+                                                                        const diffInMs = depotDateTime - now;
 
     
 
-                                        const details = premiumItemInCart.details;
+                                    
 
     
 
-                                        if (details.direction) {
+                                                                        const diffInHours = diffInMs / (1000 * 60 * 60);
 
     
 
-                                            const radio = premiumDetailsContainer.querySelector(`input[name="premium_direction"][value="${details.direction}"]`);
+                                    
 
     
 
-                                            if (radio) {
+                                                                        const isDepotInFuture = diffInHours >= 72;
 
     
 
-                                                radio.checked = true;
+                                    
 
     
 
-                                                // Manually trigger change to show the correct form
+                                                                        const hasLieux = globalLieuxData.length > 0;
 
     
 
-                                                radio.dispatchEvent(new Event('change'));
+                                    
 
     
 
-                                            }
+                                                                        
 
     
 
-                                        }
+                                    
 
     
 
-                                        // Fill all other fields
+                                                                        if (hasLieux && isDepotInFuture) {
 
     
 
-                                        for (const key in details) {
+                                    
 
     
 
-                                            const input = premiumDetailsContainer.querySelector(`[name="${key}"]`);
+                                                                            premiumAvailableContent.classList.remove('hidden');
 
     
 
-                                            if (input && input.type !== 'radio') {
+                                    
 
     
 
-                                                input.value = details[key];
+                                                                            premiumUnavailableMessage.classList.add('hidden');
 
     
 
-                                            }
+                                    
 
     
 
-                                        }
+                                                                            dateArrivalInput.classList.remove('input-error');
 
     
 
-                                    }
+                                    
 
     
 
-                    
+                                                                            timeArrivalInput.classList.remove('input-error');
 
     
 
-                                    // Auto-calculate pickup and restitution times
+                                    
 
     
 
-                                    const timeArrivalInput = document.querySelector('[name="time_arrival"]');
+                                                                        } else {
 
     
 
-                                    const pickupTimeArrivalInput = document.querySelector('[name="pickup_time_arrival"]');
+                                    
 
     
 
-                                    const timeDepartureInput = document.querySelector('[name="time_departure"]');
+                                                                            premiumAvailableContent.classList.add('hidden');
 
     
 
-                                    const restitutionTimeDepartureInput = document.querySelector('[name="restitution_time_departure"]');
+                                    
+
+    
+
+                                                                            premiumUnavailableMessage.classList.remove('hidden');
+
+    
+
+                                    
+
+    
+
+                                                                            dateArrivalInput.classList.add('input-error');
+
+    
+
+                                    
+
+    
+
+                                                                            timeArrivalInput.classList.add('input-error');
+
+    
+
+                                    
+
+    
+
+                                                                        }
+
+    
+
+                                    
+
+    
+
+                                                                    }
+
+    
+
+                                    
+
+    
+
+                                                    
+
+    
+
+                                    
+
+    
+
+                                                                    if (dateArrivalInput && timeArrivalInput) {
+
+    
+
+                                    
+
+    
+
+                                                                        dateArrivalInput.addEventListener('input', checkAndTogglePremiumAvailability);
+
+    
+
+                                    
+
+    
+
+                                                                        timeArrivalInput.addEventListener('input', checkAndTogglePremiumAvailability);
+
+    
+
+                                    
+
+    
+
+                                                                        // Initial check
+
+    
+
+                                    
+
+    
+
+                                                                        checkAndTogglePremiumAvailability();
+
+    
+
+                                    
+
+    
+
+                                                                    }
+
+    
+
+                                    
+
+    
+
+                                                    // Pre-fill form if premium is already in cart
+
+    
+
+                                                    const premiumItemInCart = cartItems.find(item => item.key === 'premium');
+
+    
+
+                                                    if (premiumItemInCart && premiumItemInCart.details) {
+
+    
+
+                                                        const details = premiumItemInCart.details;
+
+    
+
+                                                        if (details.direction) {
+
+    
+
+                                                            const radio = premiumDetailsContainer.querySelector(`input[name="premium_direction"][value="${details.direction}"]`);
+
+    
+
+                                                            if (radio) {
+
+    
+
+                                                                radio.checked = true;
+
+    
+
+                                                                // Manually trigger change to show the correct form
+
+    
+
+                                                                radio.dispatchEvent(new Event('change'));
+
+    
+
+                                                            }
+
+    
+
+                                                        }
+
+    
+
+                                                        // Fill all other fields
+
+    
+
+                                                        for (const key in details) {
+
+    
+
+                                                            const input = premiumDetailsContainer.querySelector(`[name="${key}"]`);
+
+    
+
+                                                            if (input && input.type !== 'radio') {
+
+    
+
+                                                                input.value = details[key];
+
+    
+
+                                                            }
+
+    
+
+                                                        }
+
+    
+
+                                                    }
+
+    
+
+                                    
+
+    
+
+                                                    // Auto-calculate pickup and restitution times
+
+    
+
+                                                    const pickupTimeArrivalInput = document.querySelector('[name="pickup_time_arrival"]');
+
+    
+
+                                                    const timeDepartureInput = document.querySelector('[name="time_departure"]');
+
+    
+
+                                                    const restitutionTimeDepartureInput = document.querySelector('[name="restitution_time_departure"]');
 
     
 
