@@ -208,7 +208,10 @@
                             <!-- Premium specific fields will be injected here -->
                         </div>
                         <p class="text-xs text-gray-500 mt-4">la récupération des bagages se fait en moyenne 45 mns après l'heure d'arrivée du vol,la restitution des bagages au plus tard 2:00 avant le départ du vol</p>
-                        <button id="add-premium-from-modal" data-option-key="premium" class="mt-6 w-full bg-transparent border border-gray-400 text-gray-700 font-bold py-3 px-4 rounded-lg btn-hover hover:bg-gray-100">Ajouter au panier</button>
+                        <div class="flex items-center gap-2">
+                            <button id="add-premium-from-modal" data-option-key="premium" class="mt-6 w-full bg-transparent border border-gray-400 text-gray-700 font-bold py-3 px-4 rounded-lg btn-hover hover:bg-gray-100">Ajouter au panier</button>
+                            <button id="remove-premium-from-modal" data-option-key="premium" class="hidden mt-6 w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg btn-hover">Supprimer</button>
+                        </div>
                     </div>
                 </div>
                 <div id="premium-unavailable-message" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-90 rounded-lg hidden">
@@ -1171,77 +1174,95 @@
     }
 
     function updateAdvertModalButtons() {
-        ['priority', 'premium'].forEach(optionKey => {
-            const addButton = document.getElementById(`add-${optionKey}-from-modal`);
-            if (!addButton) return;
-
-            const isInCart = cartItems.some(item => item.key === optionKey);
-            addButton.disabled = false; // Always enable the button for toggling
-
-            if (isInCart) {
-                addButton.textContent = 'Enlever du panier';
-                addButton.classList.remove('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
-                addButton.classList.add('bg-red-600', 'text-white');
+        // Priority button logic remains a simple toggle
+        const priorityAddButton = document.getElementById('add-priority-from-modal');
+        if (priorityAddButton) {
+            const isPriorityInCart = cartItems.some(item => item.key === 'priority');
+            priorityAddButton.disabled = false;
+            if (isPriorityInCart) {
+                priorityAddButton.textContent = 'Enlever du panier';
+                priorityAddButton.classList.remove('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
+                priorityAddButton.classList.add('bg-red-600', 'text-white');
             } else {
-                addButton.textContent = 'Ajouter au panier';
-                addButton.classList.remove('bg-red-600', 'text-white');
-                addButton.classList.add('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
+                priorityAddButton.textContent = 'Ajouter au panier';
+                priorityAddButton.classList.remove('bg-red-600', 'text-white');
+                priorityAddButton.classList.add('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
             }
-        });
+        }
+        
+        // Premium buttons logic (Add/Modify + Remove)
+        const premiumAddButton = document.getElementById('add-premium-from-modal');
+        const premiumRemoveButton = document.getElementById('remove-premium-from-modal');
+        if (premiumAddButton && premiumRemoveButton) {
+            const isPremiumInCart = cartItems.some(item => item.key === 'premium');
+
+            if (isPremiumInCart) {
+                premiumAddButton.textContent = 'Modifier la sélection';
+                premiumRemoveButton.classList.remove('hidden');
+                premiumAddButton.classList.remove('bg-red-600', 'text-white'); // In case it had red color
+                premiumAddButton.classList.add('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
+            } else {
+                premiumAddButton.textContent = 'Ajouter au panier';
+                premiumRemoveButton.classList.add('hidden');
+            }
+        }
     }
 
     function toggleOptionFromModal(optionKey) {
         const itemIndex = cartItems.findIndex(item => item.key === optionKey);
+        
+        // --- This function now handles ADD or MODIFY ---
 
-        if (itemIndex > -1) {
-            // Item exists, so remove it
-            cartItems.splice(itemIndex, 1);
-        } else {
-            // Item does not exist, so add it
-            const option = staticOptions[optionKey];
-            let premiumDetails = {};
+        const option = staticOptions[optionKey];
+        let premiumDetails = {};
 
-            if (optionKey === 'premium') {
-                const direction = document.querySelector('input[name="premium_direction"]:checked')?.value;
-                if (!direction) {
-                    showCustomAlert('Sélection requise', 'Veuillez choisir un sens pour la prise en charge premium.');
-                    return; // Stop if no direction is selected
-                }
+        if (optionKey === 'premium') {
+            const direction = document.querySelector('input[name="premium_direction"]:checked')?.value;
+            if (!direction) {
+                showCustomAlert('Sélection requise', 'Veuillez choisir un sens pour la prise en charge premium.');
+                return;
+            }
+            
+            premiumDetails.direction = direction;
+            const formId = `premium_fields_${direction}`;
+            const formContainer = document.getElementById(formId);
+
+            if (formContainer) {
+                let isFormValid = true;
+                const inputs = formContainer.querySelectorAll('input, textarea, select');
                 
-                premiumDetails.direction = direction;
-                const formId = `premium_fields_${direction}`;
-                const formContainer = document.getElementById(formId);
+                // First, clear all previous errors
+                inputs.forEach(input => {
+                    input.classList.remove('input-error');
+                });
 
-                if (formContainer) {
-                    let isFormValid = true;
-                    const inputs = formContainer.querySelectorAll('input, textarea, select');
-                    
-                    // First, clear all previous errors
-                    inputs.forEach(input => {
-                        input.classList.remove('input-error');
-                    });
-
-                    inputs.forEach(input => {
-                        // The complementary info field is not required
-                        if (input.name.startsWith('informations_complementaires')) {
-                            premiumDetails[input.name] = input.value;
-                            return; // continue to next input
-                        }
-
-                        if (!input.value.trim()) {
-                            isFormValid = false;
-                            input.classList.add('input-error');
-                        }
+                inputs.forEach(input => {
+                    // The complementary info field is not required
+                    if (input.name.startsWith('informations_complementaires')) {
                         premiumDetails[input.name] = input.value;
-                    });
-                    
-                    if(!isFormValid) {
-                        showCustomAlert('Champs requis', 'Veuillez remplir tous les champs en surbrillance.');
-                        return; // Stop if form is not valid
+                        return; // continue to next input
                     }
+
+                    if (!input.value.trim()) {
+                        isFormValid = false;
+                        input.classList.add('input-error');
+                    }
+                    premiumDetails[input.name] = input.value;
+                });
+                
+                if(!isFormValid) {
+                    showCustomAlert('Champs requis', 'Veuillez remplir tous les champs en surbrillance.');
+                    return; // Stop if form is not valid
                 }
             }
+        }
 
+        if (itemIndex > -1) {
+            // Item exists, so MODIFY it
+            cartItems[itemIndex].details = premiumDetails;
+            showCustomAlert('Modification réussie', 'Les informations du service premium ont été mises à jour.');
+        } else {
+            // Item does not exist, so ADD it
             cartItems.push({
                 itemCategory: 'option',
                 id: optionKey,
@@ -1274,17 +1295,37 @@
 
                 const addPriorityBtn = document.getElementById('add-priority-from-modal');
 
-                const addPremiumBtn = document.getElementById('add-premium-from-modal');
+                            const addPremiumBtn = document.getElementById('add-premium-from-modal');
 
-                const continueBtn = document.getElementById('continue-from-options-modal');
+                            const removePremiumBtn = document.getElementById('remove-premium-from-modal');
 
-    
+                            const continueBtn = document.getElementById('continue-from-options-modal');
 
-                // Reset visibility
+                
 
-                prioritySection.classList.add('hidden');
+                            function removePremiumFromModal() {
 
-                premiumSection.classList.add('hidden');
+                                const itemIndex = cartItems.findIndex(item => item.key === 'premium');
+
+                                if (itemIndex > -1) {
+
+                                    cartItems.splice(itemIndex, 1);
+
+                                }
+
+                                updateCartDisplay();
+
+                                updateAdvertModalButtons();
+
+                            }
+
+                
+
+                            // Reset visibility
+
+                            prioritySection.classList.add('hidden');
+
+                            premiumSection.classList.add('hidden');
 
                 
 
@@ -1442,49 +1483,175 @@
 
     
 
-                    // Add listeners for radio buttons
-
-                    const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
-
-                    const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
-
-                    const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
-
-                    
-
-                    directionRadios.forEach(radio => {
-
-                        radio.addEventListener('change', (e) => {
-
-                            if (e.target.value === 'terminal_to_agence') {
-
-                                formTerminalToAgence.classList.remove('hidden');
-
-                                formAgenceToTerminal.classList.add('hidden');
-
-                            } else {
-
-                                formTerminalToAgence.classList.add('hidden');
-
-                                formAgenceToTerminal.classList.remove('hidden');
-
-                            }
-
-                        });
-
-                    });
+                                    // Add listeners for radio buttons
 
     
 
-                    // Auto-calculate pickup and restitution times
+                                    const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
 
-                    const timeArrivalInput = document.querySelector('[name="time_arrival"]');
+    
 
-                    const pickupTimeArrivalInput = document.querySelector('[name="pickup_time_arrival"]');
+                                    const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
 
-                    const timeDepartureInput = document.querySelector('[name="time_departure"]');
+    
 
-                    const restitutionTimeDepartureInput = document.querySelector('[name="restitution_time_departure"]');
+                                    const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
+
+    
+
+                                    
+
+    
+
+                                    directionRadios.forEach(radio => {
+
+    
+
+                                        radio.addEventListener('change', (e) => {
+
+    
+
+                                            if (e.target.value === 'terminal_to_agence') {
+
+    
+
+                                                formTerminalToAgence.classList.remove('hidden');
+
+    
+
+                                                formAgenceToTerminal.classList.add('hidden');
+
+    
+
+                                            } else {
+
+    
+
+                                                formTerminalToAgence.classList.add('hidden');
+
+    
+
+                                                formAgenceToTerminal.classList.remove('hidden');
+
+    
+
+                                            }
+
+    
+
+                                        });
+
+    
+
+                                    });
+
+    
+
+                    
+
+    
+
+                                    // Pre-fill form if premium is already in cart
+
+    
+
+                                    const premiumItemInCart = cartItems.find(item => item.key === 'premium');
+
+    
+
+                                    if (premiumItemInCart && premiumItemInCart.details) {
+
+    
+
+                                        const details = premiumItemInCart.details;
+
+    
+
+                                        if (details.direction) {
+
+    
+
+                                            const radio = premiumDetailsContainer.querySelector(`input[name="premium_direction"][value="${details.direction}"]`);
+
+    
+
+                                            if (radio) {
+
+    
+
+                                                radio.checked = true;
+
+    
+
+                                                // Manually trigger change to show the correct form
+
+    
+
+                                                radio.dispatchEvent(new Event('change'));
+
+    
+
+                                            }
+
+    
+
+                                        }
+
+    
+
+                                        // Fill all other fields
+
+    
+
+                                        for (const key in details) {
+
+    
+
+                                            const input = premiumDetailsContainer.querySelector(`[name="${key}"]`);
+
+    
+
+                                            if (input && input.type !== 'radio') {
+
+    
+
+                                                input.value = details[key];
+
+    
+
+                                            }
+
+    
+
+                                        }
+
+    
+
+                                    }
+
+    
+
+                    
+
+    
+
+                                    // Auto-calculate pickup and restitution times
+
+    
+
+                                    const timeArrivalInput = document.querySelector('[name="time_arrival"]');
+
+    
+
+                                    const pickupTimeArrivalInput = document.querySelector('[name="pickup_time_arrival"]');
+
+    
+
+                                    const timeDepartureInput = document.querySelector('[name="time_departure"]');
+
+    
+
+                                    const restitutionTimeDepartureInput = document.querySelector('[name="restitution_time_departure"]');
 
     
 
@@ -1758,11 +1925,19 @@
 
     
 
-                addPriorityBtn.onclick = () => toggleOptionFromModal('priority');
+                                addPriorityBtn.onclick = () => toggleOptionFromModal('priority');
 
-                addPremiumBtn.onclick = () => toggleOptionFromModal('premium');
+    
 
-                closeBtn.onclick = () => closeModalAndResolve('cancelled');
+                                addPremiumBtn.onclick = () => toggleOptionFromModal('premium');
+
+    
+
+                                removePremiumBtn.onclick = () => removePremiumFromModal();
+
+    
+
+                                closeBtn.onclick = () => closeModalAndResolve('cancelled');
 
                 modal.onclick = (e) => {
 
