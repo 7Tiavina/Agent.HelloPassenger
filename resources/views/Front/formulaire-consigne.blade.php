@@ -1386,13 +1386,18 @@
         }
 
         // --- heure-depot constraints ---
-        heureDepotInput.min = '08:00';
+        heureDepotInput.min = '07:01';
         heureDepotInput.max = '21:00';
 
         const depotDateVal = dateDepotInput.value;
         if (depotDateVal === todayFormatted) {
             const nextHour = new Date().getHours() + 1;
-            heureDepotInput.min = `${pad(Math.max(8, nextHour))}:00`;
+            heureDepotInput.min = `${pad(Math.max(7, nextHour))}:00`;
+            // If the next hour is 7, we need to set minutes to 1. But for input type="time", it's 'HH:MM'.
+            // So we'll leave it as 'HH:00' here and let the input itself clamp to '07:01'.
+            if (parseInt(heureDepotInput.min.substring(0, 2), 10) === 7) {
+                heureDepotInput.min = '07:01';
+            }
         }
 
         // --- date-recuperation constraints ---
@@ -1410,14 +1415,33 @@
         }
 
         // --- heure-recuperation constraints ---
-        heureRecuperationInput.min = '08:00';
+        heureRecuperationInput.min = '07:01';
         heureRecuperationInput.max = '21:00';
 
         // 3-hour gap for same-day bookings
         if (dateDepotInput.value === dateRecuperationInput.value && heureDepotInput.value) {
             const depotHour = parseInt(heureDepotInput.value.substring(0, 2), 10);
-            const minRecuperationHour = Math.max(8, depotHour + 3);
-            heureRecuperationInput.min = `${pad(minRecuperationHour)}:00`;
+            const depotMinute = parseInt(heureDepotInput.value.substring(3, 5), 10);
+            
+            let minRecuperationHour = depotHour + 3;
+            let minRecuperationMinute = depotMinute;
+
+            if (minRecuperationHour < 7) { // Ensure minimum is 7:01 if calculation falls below
+                minRecuperationHour = 7;
+                minRecuperationMinute = 1;
+            }
+            if (minRecuperationHour === 7 && minRecuperationMinute === 0) { // If calculated to exactly 7:00
+                minRecuperationMinute = 1;
+            }
+
+            // Adjust minutes for 3-hour gap: if current minutes are high, next hour might be needed
+            if (minRecuperationMinute > 59) {
+                minRecuperationHour += Math.floor(minRecuperationMinute / 60);
+                minRecuperationMinute %= 60;
+            }
+            
+            // Cap at 21:00 for max, but minRecuperationHour can exceed 21 here
+            heureRecuperationInput.min = `${pad(minRecuperationHour)}:${pad(minRecuperationMinute)}`;
         }
         
         // Adjust hour values if they become invalid after min/max changes
@@ -1683,7 +1707,7 @@
 
         const selectedHour = date.getHours(); // Get the hour of the current temporary date
 
-        for (let i = 8; i <= 21; i++) { // Loop from 8 to 21
+        for (let i = 7; i <= 21; i++) { // Loop from 7 to 21
             const hour = i.toString().padStart(2, '0') + ':00';
             const button = document.createElement('button');
             button.textContent = hour;
@@ -1811,31 +1835,84 @@
                     const dateToUpdate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
                     dateToUpdate.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
 
-                    let defaultHour = 8;
+                    let defaultHour = 7;
+                    let defaultMinute = 1;
+
                     if (day === 'today') {
-                        const nextHour = new Date().getHours() + 1;
-                        if (nextHour > defaultHour) defaultHour = nextHour;
+                        const now = new Date();
+                        // Get time 1 minute from now
+                        const nextTime = new Date(now.getTime() + 60 * 1000); 
+                        
+                        // Only use nextTime if it's past 07:01, otherwise stick to 07:01
+                        if (nextTime.getHours() > defaultHour || (nextTime.getHours() === defaultHour && nextTime.getMinutes() > defaultMinute)) {
+                            defaultHour = nextTime.getHours();
+                            defaultMinute = nextTime.getMinutes();
+                        }
                     }
                     
+                    // Enforce 3-hour gap if modifying pickup date on same day as drop-off
                     if (qdm_editing_mode === 'retrait' && dateToUpdate.toDateString() === qdm_temp_depot_date.toDateString()) {
-                        const minRetraitHour = qdm_temp_depot_date.getHours() + 3;
-                         if (minRetraitHour > defaultHour) defaultHour = minRetraitHour;
+                        let minRetraitHour = qdm_temp_depot_date.getHours() + 3;
+                        let minRetraitMinute = qdm_temp_depot_date.getMinutes();
+
+                        if (minRetraitHour > defaultHour || (minRetraitHour === defaultHour && minRetraitMinute > defaultMinute)) {
+                            defaultHour = minRetraitHour;
+                            defaultMinute = minRetraitMinute;
+                        }
                     }
                     
-                    if (defaultHour < 8) defaultHour = 8;
-                    if (defaultHour > 21) defaultHour = 21;
+                    // Clamp to opening hours (07:01 - 21:00)
+                    if (defaultHour < 7 || (defaultHour === 7 && defaultMinute < 1)) {
+                        defaultHour = 7;
+                        defaultMinute = 1;
+                    }
+                    if (defaultHour > 21) { 
+                        defaultHour = 21;
+                        defaultMinute = 0;
+                    }
                     
-                    dateToUpdate.setHours(defaultHour, 0, 0, 0);
+                    dateToUpdate.setHours(defaultHour, defaultMinute, 0, 0);
                 }
 
+                // If depot date changed, make sure retrait is still valid and update if needed
                 if (qdm_editing_mode === 'depot' && qdm_temp_depot_date >= qdm_temp_retrait_date) {
                     qdm_temp_retrait_date = new Date(qdm_temp_depot_date);
                     let newHour = qdm_temp_retrait_date.getHours() + 3;
-                    if (newHour > 21) {
+                    let newMinute = qdm_temp_retrait_date.getMinutes();
+
+                    // Clamp to opening hours (07:01 - 21:00)
+                    if (newHour < 7 || (newHour === 7 && newMinute < 1)) {
+                        newHour = 7;
+                        newMinute = 1;
+                    }
+                    if (newHour > 21 || (newHour === 21 && newMinute > 0)) { // If exceeds 21:00, move to next day 07:01
                         qdm_temp_retrait_date.setDate(qdm_temp_retrait_date.getDate() + 1);
                         newHour = 7;
+                        newMinute = 1;
                     }
-                    qdm_temp_retrait_date.setHours(newHour, 0, 0, 0);
+                    qdm_temp_retrait_date.setHours(newHour, newMinute, 0, 0);
+                } else if (qdm_editing_mode === 'retrait' && qdm_temp_depot_date.toDateString() === qdm_temp_retrait_date.toDateString()) {
+                     // Ensure 3-hour gap for same-day bookings if retrait was edited
+                     const depotTimeInMinutes = qdm_temp_depot_date.getHours() * 60 + qdm_temp_depot_date.getMinutes();
+                     const retraitTimeInMinutes = qdm_temp_retrait_date.getHours() * 60 + qdm_temp_retrait_date.getMinutes();
+                     
+                     if (retraitTimeInMinutes < depotTimeInMinutes + 3 * 60) {
+                         const requiredRetraitTime = new Date(qdm_temp_depot_date.getTime() + 3 * 60 * 60 * 1000);
+                         let newRetraitHour = requiredRetraitTime.getHours();
+                         let newRetraitMinute = requiredRetraitTime.getMinutes();
+
+                         // Clamp to opening hours (07:01 - 21:00)
+                        if (newRetraitHour < 7 || (newRetraitHour === 7 && newRetraitMinute < 1)) {
+                            newRetraitHour = 7;
+                            newRetraitMinute = 1;
+                        }
+                        if (newRetraitHour > 21 || (newRetraitHour === 21 && newRetraitMinute > 0)) { // If exceeds 21:00, move to next day 07:01
+                            qdm_temp_retrait_date.setDate(qdm_temp_retrait_date.getDate() + 1);
+                            newRetraitHour = 7;
+                            newRetraitMinute = 1;
+                        }
+                        qdm_temp_retrait_date.setHours(newRetraitHour, newRetraitMinute, 0, 0);
+                     }
                 }
                 
                 updateQdmDisplay();
