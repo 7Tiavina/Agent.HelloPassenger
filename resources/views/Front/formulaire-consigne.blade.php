@@ -1424,17 +1424,32 @@
                 const product = globalProductsData.find(p => p.id === item.productId);
                 const itemPrice = product ? product.prixUnitaire : 0;
                 
-                let pricePerDayPerUnit = itemPrice;
-                if (diffDays > 0) {
-                    pricePerDayPerUnit = itemPrice / diffDays;
-                }
+                let pricePerUnit = 0;
+                let unitLabel = '';
+                const start = new Date(`${dateDepot}T${heureDepot}`);
+                const end = new Date(`${dateRecuperation}T${heureRecuperation}`);
+                const duration_in_minutes = Math.round((end - start) / (1000 * 60));
 
+                if (duration_in_minutes > 0) {
+                    if (duration_in_minutes < 1440) { // Less than a day, show per hour
+                        const total_hours = Math.max(1, duration_in_minutes / 60);
+                        pricePerUnit = itemPrice / total_hours;
+                        unitLabel = '/ heure';
+                    } else { // A day or more, show per day
+                        const total_days = duration_in_minutes / 1440;
+                        pricePerUnit = itemPrice / total_days;
+                        unitLabel = '/ jour';
+                    }
+                } else {
+                    pricePerUnit = itemPrice; // Fallback
+                }
+                
                 itemTotal = itemPrice * item.quantity;
                 cartItemsContainer.innerHTML += `
                     <div class="py-2 flex justify-between items-center">
                         <div>
                             <span class="font-medium">${item.quantity} x ${item.libelle}</span>
-                            <span class="block text-xs text-gray-500">${pricePerDayPerUnit.toFixed(2)} € / jour </span>
+                            <span class="block text-xs text-gray-500">${pricePerUnit.toFixed(2)} € ${unitLabel}</span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="font-semibold">${itemTotal.toFixed(2)} €</span>
