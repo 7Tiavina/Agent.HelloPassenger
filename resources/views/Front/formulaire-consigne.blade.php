@@ -1611,10 +1611,14 @@
         qdm_temp_retrait_date = new Date(`${retraitDate}T${retraitHeure}`);
         qdm_editing_mode = 'depot'; // Always start editing depot date
 
-        // Set initial min for custom date input (for depot date)
+        // Set initial min and max for custom date input (for depot date)
         const today = new Date();
-        const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const pad = (num) => num.toString().padStart(2, '0');
+        const todayFormatted = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
         document.getElementById('qdm-custom-date-input').min = todayFormatted;
+        
+        const retraitDateFormatted = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
+        document.getElementById('qdm-custom-date-input').max = retraitDateFormatted;
 
         // Determine initial day selections based on current dates
         const tomorrow = new Date();
@@ -1650,8 +1654,13 @@
         document.getElementById('quick-depot-block').addEventListener('click', () => {
             qdm_editing_mode = 'depot';
             const today = new Date();
-            const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const pad = (num) => num.toString().padStart(2, '0');
+            const todayFormatted = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
             document.getElementById('qdm-custom-date-input').min = todayFormatted;
+
+            const retraitDateFormatted = `${qdm_temp_retrait_date.getFullYear()}-${pad(qdm_temp_retrait_date.getMonth() + 1)}-${pad(qdm_temp_retrait_date.getDate())}`;
+            document.getElementById('qdm-custom-date-input').max = retraitDateFormatted;
+
             document.getElementById('qdm-custom-time-input').min = ''; // No min time for depot
             updateQdmDisplay();
             generateHourButtons(qdm_temp_depot_date);
@@ -1661,6 +1670,11 @@
             const pad = (num) => num.toString().padStart(2, '0');
             const depotDateFormatted = `${qdm_temp_depot_date.getFullYear()}-${pad(qdm_temp_depot_date.getMonth() + 1)}-${pad(qdm_temp_depot_date.getDate())}`;
             document.getElementById('qdm-custom-date-input').min = depotDateFormatted;
+
+            const maxRetraitDate = new Date(qdm_temp_depot_date);
+            maxRetraitDate.setDate(maxRetraitDate.getDate() + 30);
+            const maxRetraitDateFormatted = `${maxRetraitDate.getFullYear()}-${pad(maxRetraitDate.getMonth() + 1)}-${pad(maxRetraitDate.getDate())}`;
+            document.getElementById('qdm-custom-date-input').max = maxRetraitDateFormatted;
             
             // Set min time for custom retrait time input
             if (qdm_temp_retrait_date.toDateString() === qdm_temp_depot_date.toDateString()) {
