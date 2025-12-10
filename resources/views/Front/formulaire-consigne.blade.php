@@ -1356,35 +1356,68 @@
                 function updatePickupTime() {
                     if (!timeArrivalInput.value) return;
                     const [hours, minutes] = timeArrivalInput.value.split(':').map(Number);
-                    const arrivalDate = new Date();
-                    arrivalDate.setHours(hours, minutes, 0, 0);
-                    arrivalDate.setMinutes(arrivalDate.getMinutes() + 45);
-                    const newHours = String(arrivalDate.getHours()).padStart(2, '0');
-                    const newMinutes = String(arrivalDate.getMinutes()).padStart(2, '0');
-                    pickupTimeArrivalInput.value = `${newHours}:${newMinutes}`;
+                    const arrivalDateTime = new Date();
+                    arrivalDateTime.setHours(hours, minutes, 0, 0);
+                    arrivalDateTime.setMinutes(arrivalDateTime.getMinutes() + 45);
+
+                    const newHours = String(arrivalDateTime.getHours()).padStart(2, '0');
+                    const newMinutes = String(arrivalDateTime.getMinutes()).padStart(2, '0');
+                    
+                    // Set the min attribute
+                    pickupTimeArrivalInput.min = `${newHours}:${newMinutes}`;
+                    // Also clamp the current value if it's less than the new min
+                    if (pickupTimeArrivalInput.value < pickupTimeArrivalInput.min) {
+                        pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
+                    } else if (!pickupTimeArrivalInput.value) { // If not set, set the value
+                        pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
+                    }
                 }
 
                 function updateRestitutionTime() {
                     if (!timeDepartureInput.value) return;
                     const [hours, minutes] = timeDepartureInput.value.split(':').map(Number);
-                    const departureDate = new Date();
-                    departureDate.setHours(hours, minutes, 0, 0);
-                    departureDate.setHours(departureDate.getHours() - 2);
-                    const newHours = String(departureDate.getHours()).padStart(2, '0');
-                    const newMinutes = String(departureDate.getMinutes()).padStart(2, '0');
-                    restitutionTimeDepartureInput.value = `${newHours}:${newMinutes}`;
+                    const departureDateTime = new Date();
+                    departureDateTime.setHours(hours, minutes, 0, 0);
+                    departureDateTime.setHours(departureDateTime.getHours() - 2);
+
+                    const newHours = String(departureDateTime.getHours()).padStart(2, '0');
+                    const newMinutes = String(departureDateTime.getMinutes()).padStart(2, '0');
+
+                    // Set the max attribute
+                    restitutionTimeDepartureInput.max = `${newHours}:${newMinutes}`;
+                    // Also clamp the current value if it's greater than the new max
+                    if (restitutionTimeDepartureInput.value > restitutionTimeDepartureInput.max) {
+                        restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
+                    } else if (!restitutionTimeDepartureInput.value) { // If not set, set the value
+                        restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
+                    }
                 }
 
                 if (timeArrivalInput) {
                     timeArrivalInput.addEventListener('input', updatePickupTime);
                     updatePickupTime(); // Initial calculation
                 }
-                if (timeDepartureInput) {
-                    timeDepartureInput.addEventListener('input', updateRestitutionTime);
-                    updateRestitutionTime(); // Initial calculation
-                }
-
-            } else {
+                                if (timeDepartureInput) {
+                                    timeDepartureInput.addEventListener('input', updateRestitutionTime);
+                                    updateRestitutionTime(); // Initial calculation
+                                }
+                                // Add direct clamping listeners to the dependent time inputs
+                                if (pickupTimeArrivalInput) {
+                                    pickupTimeArrivalInput.addEventListener('input', () => {
+                                        if (pickupTimeArrivalInput.min && pickupTimeArrivalInput.value < pickupTimeArrivalInput.min) {
+                                            pickupTimeArrivalInput.value = pickupTimeArrivalInput.min;
+                                        }
+                                    });
+                                }
+                
+                                if (restitutionTimeDepartureInput) {
+                                    restitutionTimeDepartureInput.addEventListener('input', () => {
+                                        if (restitutionTimeDepartureInput.max && restitutionTimeDepartureInput.value > restitutionTimeDepartureInput.max) {
+                                            restitutionTimeDepartureInput.value = restitutionTimeDepartureInput.max;
+                                        }
+                                    });
+                                }
+                            } else {
                 premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
                 premiumAvailableContent.classList.add('hidden');
                 premiumUnavailableMessage.classList.remove('hidden');
