@@ -131,7 +131,7 @@
 <body class="min-h-screen bg-white">
 
 <!-- Loader Overlay -->
-<div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center">
+<div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center">
     <div class="custom-spinner !w-12 !h-12 !border-4"></div>
 </div>
 
