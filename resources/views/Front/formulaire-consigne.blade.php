@@ -96,6 +96,11 @@
         background-color: #fef9e7 !important; /* Fond légèrement jaune, comme les bagages sélectionnés */
     }
 
+    .input-error {
+        border-color: #ef4444 !important; /* red-500 */
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+    }
+
     .delete-item-btn {
         background: none;
         border: none;
@@ -1209,15 +1214,29 @@
 
                 if (formContainer) {
                     let isFormValid = true;
-                    formContainer.querySelectorAll('input, textarea, select').forEach(input => {
+                    const inputs = formContainer.querySelectorAll('input, textarea, select');
+                    
+                    // First, clear all previous errors
+                    inputs.forEach(input => {
+                        input.classList.remove('input-error');
+                    });
+
+                    inputs.forEach(input => {
+                        // The complementary info field is not required
+                        if (input.name.startsWith('informations_complementaires')) {
+                            premiumDetails[input.name] = input.value;
+                            return; // continue to next input
+                        }
+
                         if (!input.value.trim()) {
                             isFormValid = false;
+                            input.classList.add('input-error');
                         }
                         premiumDetails[input.name] = input.value;
                     });
                     
                     if(!isFormValid) {
-                        showCustomAlert('Champs requis', 'Veuillez remplir tous les champs pour le service premium.');
+                        showCustomAlert('Champs requis', 'Veuillez remplir tous les champs en surbrillance.');
                         return; // Stop if form is not valid
                     }
                 }
