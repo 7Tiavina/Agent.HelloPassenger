@@ -1569,6 +1569,25 @@
             selectedBtn.classList.remove('bg-gray-200');
             selectedBtn.classList.add('bg-yellow-custom', 'text-gray-dark');
         }
+
+        const customDateContainer = document.getElementById('qdm-custom-date-container');
+        const customHourContainer = document.getElementById('qdm-custom-hour-container');
+        const hourGrid = document.getElementById('qdm-hour-grid');
+
+        if (currentSelection === 'custom') {
+            customDateContainer.classList.remove('hidden');
+            hourGrid.classList.add('hidden');
+            customHourContainer.classList.remove('hidden');
+            const currentTempDate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
+            const pad = (num) => num.toString().padStart(2, '0');
+            document.getElementById('qdm-custom-date-input').value = `${currentTempDate.getFullYear()}-${pad(currentTempDate.getMonth() + 1)}-${pad(currentTempDate.getDate())}`;
+            document.getElementById('qdm-custom-time-input').value = `${pad(currentTempDate.getHours())}:${pad(currentTempDate.getMinutes())}`;
+        } else { // today or tomorrow
+            customDateContainer.classList.add('hidden');
+            hourGrid.classList.remove('hidden');
+            customHourContainer.classList.add('hidden');
+            generateHourButtons((qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date);
+        }
     }
 
     function generateHourButtons(date) {
@@ -1691,9 +1710,6 @@
         document.querySelectorAll('.qdm-day-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const day = e.target.dataset.day;
-                const customDateContainer = document.getElementById('qdm-custom-date-container');
-                const customHourContainer = document.getElementById('qdm-custom-hour-container');
-                const hourGrid = document.getElementById('qdm-hour-grid');
                 
                 let targetDate = new Date();
                 if (day === 'tomorrow') {
@@ -1710,22 +1726,6 @@
                     if (day === 'today' || day === 'tomorrow') {
                         qdm_temp_retrait_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
                     }
-                }
-
-                if (day === 'today' || day === 'tomorrow') {
-                    customDateContainer.classList.add('hidden');
-                    hourGrid.classList.remove('hidden');
-                    customHourContainer.classList.add('hidden');
-                    generateHourButtons((qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date);
-                } else { // custom
-                    customDateContainer.classList.remove('hidden');
-                    hourGrid.classList.add('hidden');
-                    customHourContainer.classList.remove('hidden');
-                    // Set custom date input to current temp date
-                    const currentTempDate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
-                    const pad = (num) => num.toString().padStart(2, '0');
-                    document.getElementById('qdm-custom-date-input').value = `${currentTempDate.getFullYear()}-${pad(currentTempDate.getMonth() + 1)}-${pad(currentTempDate.getDate())}`;
-                    document.getElementById('qdm-custom-time-input').value = `${pad(currentTempDate.getHours())}:${pad(currentTempDate.getMinutes())}`;
                 }
                 updateQdmDisplay();
             });
