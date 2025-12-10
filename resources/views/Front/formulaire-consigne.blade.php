@@ -136,7 +136,7 @@
 </div>
 
 <!-- Custom Modal -->
-<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center px-4">
+<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10004] flex items-center justify-center px-4">
     <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-3 border-b border-gray-200">
@@ -165,7 +165,7 @@
 </div>
 
 <!-- Options Advertisement Modal -->
-<div id="options-advert-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10000] flex items-center justify-center p-4">
+<div id="options-advert-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10004] flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all max-h-[90vh] overflow-y-auto relative">
         <!-- Close Button -->
         <button id="close-options-advert-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
@@ -1604,16 +1604,24 @@
             startHour = new Date().getHours() + 1;
         }
 
-        for (let i = 0; i < 24; i++) {
+        const selectedHour = date.getHours(); // Get the hour of the current temporary date
+
+        for (let i = 7; i <= 21; i++) { // Loop from 7 to 21
             const hour = i.toString().padStart(2, '0') + ':00';
             const button = document.createElement('button');
             button.textContent = hour;
             button.classList.add('qdm-hour-btn', 'py-2', 'px-2', 'bg-white', 'rounded-md', 'border', 'border-gray-300', 'hover:bg-gray-100');
             button.dataset.hour = hour;
 
+            let isDisabled = false;
             if (i < startHour) {
+                isDisabled = true;
                 button.disabled = true;
                 button.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+            }
+            
+            if (i === selectedHour && !isDisabled) {
+                button.classList.add('bg-yellow-custom', 'text-gray-dark', 'font-bold');
             }
 
             hourGrid.appendChild(button);
@@ -1710,23 +1718,49 @@
         document.querySelectorAll('.qdm-day-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const day = e.target.dataset.day;
-                
-                let targetDate = new Date();
-                if (day === 'tomorrow') {
-                    targetDate.setDate(targetDate.getDate() + 1);
-                }
 
                 if (qdm_editing_mode === 'depot') {
                     qdm_depot_day_selection = day;
-                    if (day === 'today' || day === 'tomorrow') {
-                        qdm_temp_depot_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-                    }
-                } else { // editing retrait
+                } else {
                     qdm_retrait_day_selection = day;
-                    if (day === 'today' || day === 'tomorrow') {
-                        qdm_temp_retrait_date.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-                    }
                 }
+
+                if (day === 'today' || day === 'tomorrow') {
+                    let targetDate = new Date();
+                    if (day === 'tomorrow') {
+                        targetDate.setDate(targetDate.getDate() + 1);
+                    }
+
+                    const dateToUpdate = (qdm_editing_mode === 'depot') ? qdm_temp_depot_date : qdm_temp_retrait_date;
+                    dateToUpdate.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+                    let defaultHour = 7;
+                    if (day === 'today') {
+                        const nextHour = new Date().getHours() + 1;
+                        if (nextHour > defaultHour) defaultHour = nextHour;
+                    }
+                    
+                    if (qdm_editing_mode === 'retrait' && dateToUpdate.toDateString() === qdm_temp_depot_date.toDateString()) {
+                        const minRetraitHour = qdm_temp_depot_date.getHours() + 3;
+                         if (minRetraitHour > defaultHour) defaultHour = minRetraitHour;
+                    }
+                    
+                    if (defaultHour < 7) defaultHour = 7;
+                    if (defaultHour > 21) defaultHour = 21;
+                    
+                    dateToUpdate.setHours(defaultHour, 0, 0, 0);
+                }
+
+                if (qdm_editing_mode === 'depot' && qdm_temp_depot_date >= qdm_temp_retrait_date) {
+                    qdm_temp_retrait_date = new Date(qdm_temp_depot_date);
+                    let newHour = qdm_temp_retrait_date.getHours() + 3;
+                    if (newHour > 21) {
+                        qdm_temp_retrait_date.setDate(qdm_temp_retrait_date.getDate() + 1);
+                        newHour = 7;
+                    }
+                    qdm_temp_retrait_date.setHours(newHour, 0, 0, 0);
+                }
+                
                 updateQdmDisplay();
             });
         });
