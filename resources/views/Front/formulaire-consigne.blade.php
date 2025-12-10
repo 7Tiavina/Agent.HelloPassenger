@@ -526,7 +526,7 @@
         const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
 
         modalTitle.textContent = title;
-        modalMessage.textContent = message;
+        modalMessage.innerHTML = message;
 
         promptContainer.classList.add('hidden');
         modalCancelBtn.classList.add('hidden');
@@ -1078,7 +1078,7 @@
             if (result.statut === 1 && result.content === true) {
                 return true;
             } else {
-                await showCustomAlert('Indisponible', result.message || 'La plateforme est fermée à la date de dépôt sélectionnée.');
+                await showCustomAlert('Agence fermée', "Notre agence est ouverte de 07h00 à 21h00 7/7. Pour toutes demandes hors horaire merci de nous contacter au +33 <strong>1 34 38 58 98</strong>.");
                 return false;
             }
         } catch (error) {
