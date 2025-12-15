@@ -11,11 +11,19 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str; // Add this import
 use Illuminate\Http\Client\Response;
-
+use App\Services\BdmApiService; // Add this import
 
 class FrontController extends Controller
 {
+    protected $bdmApiService;
+
+    public function __construct(BdmApiService $bdmApiService)
+    {
+        $this->bdmApiService = $bdmApiService;
+    }
+
     public function acceuil()
     {
         return view('Front.acceuil');
@@ -24,13 +32,27 @@ class FrontController extends Controller
     public function redirectForm()
     {
         try {
-            $plateformes = $this->getPlateformes();
+            $responsePlateformes = $this->bdmApiService->getPlateformes();
             
+            $plateformes = [];
+            if (($responsePlateformes['statut'] ?? 0) === 1 && is_array($responsePlateformes['content'] ?? null)) {
+                $plateformes = $responsePlateformes['content'];
+            } else {
+                Log::error("La réponse de l'API BDM pour les plateformes via BdmApiService est invalide.", ['response' => $responsePlateformes]);
+                throw new \Exception("Réponse invalide de l'API pour les plateformes.");
+            }
+
             // Utilise le premier aéroport pour obtenir une liste de produits par défaut
             $firstPlateformeId = $plateformes[0]['id'] ?? null;
             $products = [];
             if ($firstPlateformeId) {
-                $products = $this->getProducts($firstPlateformeId);
+                $responseProducts = $this->bdmApiService->getProducts($firstPlateformeId);
+                if (($responseProducts['statut'] ?? 0) === 1 && is_array($responseProducts['content'] ?? null)) {
+                    $products = $responseProducts['content'];
+                } else {
+                    Log::error("La réponse de l'API BDM pour les produits via BdmApiService est invalide.", ['response' => $responseProducts]);
+                    throw new \Exception("Réponse invalide de l'API pour les produits.");
+                }
             }
 
         } catch (\Exception $e) {
@@ -48,69 +70,9 @@ class FrontController extends Controller
         ]);
     }
 
-    /**
-     * Récupère toutes les plateformes (aéroports) depuis l'API BDM pour le service de consigne.
-     * @return array
-     * @throws \Exception
-     */
-    public function getPlateformes(): array
-    {
-        $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'; // ID du service de consigne
-        Log::info("Récupération de la liste des plateformes pour le service {$serviceId}.");
-        try {
-            $token = $this->getBdmToken();
-            $response = Http::withToken($token)
-                ->withHeaders(['Accept' => 'application/json'])
-                ->get(config('services.bdm.base_url') . "/api/service/{$serviceId}/plateformes");
-
-            $response->throw();
-
-            if ($response->json('statut') === 1 && is_array($response->json('content'))) {
-                Log::info("Plateformes récupérées avec succès.");
-                return $response->json('content');
-            } else {
-                Log::error("La réponse de l'API BDM pour les plateformes est invalide.", ['response' => $response->json()]);
-                throw new \Exception("Réponse invalide de l'API pour les plateformes.");
-            }
-        } catch (\Exception $e) {
-            Log::error("Erreur lors de la récupération des plateformes BDM.", ['error' => $e->getMessage()]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Récupère les produits (types de bagages) pour une plateforme donnée avec une durée par défaut.
-     * @param string $idPlateforme
-     * @return array
-     * @throws \Exception
-     */
-    public function getProducts(string $idPlateforme): array
-    {
-        $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'; // ID du service de consigne
-        $defaultDuration = 1; // Durée par défaut en minutes pour obtenir la liste
-        Log::info("Récupération des produits pour la plateforme {$idPlateforme} et le service {$serviceId}.");
-        try {
-            $token = $this->getBdmToken();
-            $response = Http::withToken($token)
-                ->withHeaders(['Accept' => 'application/json'])
-                ->get(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/service/{$serviceId}/{$defaultDuration}/produits");
-
-            $response->throw();
-
-            if ($response->json('statut') === 1 && is_array($response->json('content'))) {
-                Log::info("Produits récupérés avec succès pour la plateforme {$idPlateforme}.");
-                return $response->json('content');
-            } else {
-                Log::error("La réponse de l'API BDM pour les produits est invalide.", ['response' => $response->json()]);
-                throw new \Exception("Réponse invalide de l'API pour les produits.");
-            }
-        } catch (\Exception $e) {
-            Log::error("Erreur lors de la récupération des produits BDM.", ['error' => $e->getMessage()]);
-            throw $e;
-        }
-    }
-
-
+    // Note: The getPlateformes and getProducts methods are now handled by BdmApiService
+    // and should no longer be present in FrontController directly.
+    // The checkAvailability, getQuote, and getOptionsQuote methods below are correct.
 
     public function showClientLogin()
     {
@@ -184,49 +146,6 @@ class FrontController extends Controller
         return redirect()->route('form-consigne');
     }
 
-
-
-//-------------------------------API-----BDM-----------------------------
-
-    /**
-     * Récupère un token d'authentification pour l'API BDM, en le mettant en cache.
-     * @return string
-     * @throws \Illuminate\Http\Client\RequestException
-     */
-    private function getBdmToken(): string
-    {
-        // Tente de récupérer le token depuis le cache
-        return Cache::remember('bdm_api_token', 3300, function () {
-            Log::info('Cache BDM token expiré. Demande d\'un nouveau token.');
-
-            $response = Http::post(config('services.bdm.base_url') . '/User/Login', [
-                'userName' => config('services.bdm.username'),
-                'email' => config('services.bdm.email'),
-                'password' => config('services.bdm.password'),
-            ]);
-
-            // Lance une exception si la requête HTTP elle-même échoue
-            $response->throw();
-
-            // Vérifie si le login a réussi selon la réponse de l'API
-            if (!$response->json('isSucceed')) {
-                Log::error('L\'API BDM a refusé la connexion.', ['response' => $response->json()]);
-                throw new \Exception('Authentification API BDM échouée: L\'API a refusé la connexion.');
-            }
-
-            $token = $response->json('data.accessToken');
-
-            if (!$token) {
-                Log::error('Impossible de récupérer l\'accessToken depuis la réponse de l\'API BDM.', ['response' => $response->json()]);
-                throw new \Exception('Authentification API BDM échouée: token manquant dans la réponse.');
-            }
-            
-            Log::info('✅ AUTHENTIFICATION API BDM RÉUSSIE. Token obtenu.');
-            Log::info('Nouveau token BDM obtenu et mis en cache.');
-            return $token;
-        });
-    }
-
     //Vérifie la disponibilité d'une plateforme à une date donnée.
     public function checkAvailability(Request $request)
     {
@@ -235,20 +154,18 @@ class FrontController extends Controller
             'dateToCheck' => 'required|string',
         ]);
         
-        Log::info('Appel à l\'API BDM pour la disponibilité', ['data' => $validated]);
+        Log::info('Appel à l\'API BDM pour la disponibilité via BdmApiService', ['data' => $validated]);
 
         try {
-            $token = $this->getBdmToken();
-            $response = Http::withToken($token)
-                ->withHeaders(['Accept' => 'application/json'])
-                ->get(config('services.bdm.base_url') . "/api/plateforme/{$validated['idPlateforme']}/date/{$validated['dateToCheck']}");
+            $response = $this->bdmApiService->checkAvailability(
+                $validated['idPlateforme'],
+                $validated['dateToCheck']
+            );
             
-            Log::info('Réponse de l\'API BDM (disponibilité)', ['status' => $response->status(), 'body' => $response->json()]);
-
-            return response()->json($response->json(), $response->status());
+            return response()->json($response, 200);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la vérification de la disponibilité', ['error' => $e->getMessage()]);
+            Log::error('Erreur lors de la vérification de la disponibilité via BdmApiService', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la vérification de la disponibilité: ' . $e->getMessage()
@@ -269,62 +186,143 @@ class FrontController extends Controller
             'duree' => 'required|integer|min:1',
         ]);
 
-        Log::info('Appel à l\'API BDM pour les tarifs et lieux', ['data' => $validated]);
+        Log::info('Appel à l\'API BDM pour les tarifs et lieux via BdmApiService', ['data' => $validated]);
 
         try {
-            $token = $this->getBdmToken();
-            $baseUrl = config('services.bdm.base_url');
-            $idPlateforme = $validated['idPlateforme'];
-            $idService = $validated['idService'];
-            $duree = $validated['duree'];
-
-            Log::info("Tentative de récupération des lieux pour le service Premium sur la plateforme {$idPlateforme}.");
-            $responses = Http::pool(fn ($pool) => [
-                $pool->withToken($token)->withHeaders(['Accept' => 'application/json'])->get("{$baseUrl}/api/plateforme/{$idPlateforme}/service/{$idService}/{$duree}/produits"),
-                $pool->withToken($token)->withHeaders(['Accept' => 'application/json'])->get("{$baseUrl}/api/plateforme/{$idPlateforme}/lieux"),
-            ]);
-
-            $productsResponse = $responses[0];
-            $lieuxResponse = $responses[1];
-
-            // Vérifier si l'un ou l'autre des appels a échoué au niveau HTTP
-            if ($productsResponse->failed() || $lieuxResponse->failed()) {
-                Log::error("Échec d'au moins un appel API BDM dans le pool getQuote.", [
-                    'products_status' => $productsResponse->status(),
-                    'products_body' => $productsResponse->body(),
-                    'lieux_status' => $lieuxResponse->status(),
-                    'lieux_body' => $lieuxResponse->body(),
-                ]);
-                return response()->json(['statut' => 0, 'message' => 'Erreur lors de la communication avec le service de réservation.'], 500);
-            }
-
-            $productsResult = $productsResponse->json();
-            $lieuxResult = $lieuxResponse->json();
-
-            // Vérifier si le statut interne de l'API BDM indique un échec
-            if (($productsResult['statut'] ?? 0) !== 1 || ($lieuxResult['statut'] ?? 0) !== 1) {
-                Log::error("Réponse API BDM avec un statut d'échec dans le pool getQuote.", [
-                    'products_response' => $productsResult,
-                    'lieux_response' => $lieuxResult,
-                ]);
-                return response()->json(['statut' => 0, 'message' => "Les données de réservation n'ont pas pu être chargées entièrement."], 422);
-            }
-
-            // Si tout réussit, on construit la réponse
-            return response()->json([
-                'statut' => 1,
-                'message' => 'Données récupérées',
-                'content' => [
-                    'products' => $productsResult['content'] ?? [],
-                    'lieux' => $lieuxResult['content'] ?? [],
-                ]
-            ]);
+            $response = $this->bdmApiService->getQuote(
+                $validated['idPlateforme'],
+                $validated['idService'],
+                $validated['duree']
+            );
+            
+            return response()->json($response, 200);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la récupération des tarifs/lieux', ['error' => $e->getMessage()]);
+            Log::error('Erreur lors de la récupération des tarifs/lieux via BdmApiService', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur technique lors de la récupération des données : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère les prix dynamiques pour les options Priority et Premium depuis l\'API BDM.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOptionsQuote(Request $request)
+    {
+        $validated = $request->validate([
+            'idPlateforme' => 'required|string',
+            'cartItems' => 'required|array',
+            'guestEmail' => 'nullable|email',
+            'dateDepot' => 'required|string',
+            'heureDepot' => 'required|string',
+            'dateRecuperation' => 'required|string',
+            'heureRecuperation' => 'required|string',
+            'globalProductsData' => 'required|array', // Utilise pour mapper productId à serviceId
+        ]);
+
+        $idPlateforme = $validated['idPlateforme'];
+        $cartItemsFromFrontend = $validated['cartItems'];
+        $guestEmail = $validated['guestEmail'] ?? null;
+        $dateDepot = $validated['dateDepot'];
+        $heureDepot = $validated['heureDepot'];
+        $dateRecuperation = $validated['dateRecuperation'];
+        $heureRecuperation = $validated['heureRecuperation'];
+        $globalProductsData = $validated['globalProductsData'];
+
+        Log::info('FrontController::getOptionsQuote - Données de requête reçues', [
+            'idPlateforme' => $idPlateforme,
+            'cartItemsFromFrontend' => $cartItemsFromFrontend,
+            'guestEmail' => $guestEmail,
+            'dates' => "{$dateDepot} {$heureDepot} - {$dateRecuperation} {$heureRecuperation}",
+        ]);
+
+        // Transforme les cartItems du frontend en baggages pour le BdmApiService
+        $baggages = [];
+        $consigneServiceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'; // Constant Service ID for consigne
+        foreach ($cartItemsFromFrontend as $item) {
+            // Trouver le produit correspondant dans globalProductsData pour obtenir d'autres détails si nécessaire
+            $productInGlobal = collect($globalProductsData)->firstWhere('id', $item['productId']);
+            
+            if ($productInGlobal) {
+                $baggages[] = [
+                    'productId' => $productInGlobal['id'],
+                    'serviceId' => $consigneServiceId, // Use the constant service ID
+                    'dateDebut' => "{$dateDepot}T{$heureDepot}:00Z", 
+                    'dateFin' => "{$dateRecuperation}T{$heureRecuperation}:00Z",
+                    'quantity' => $item['quantity'],
+                ];
+            }
+        }
+        
+        // IDs réels de l\'API BDM pour les options (ces IDs sont des placeholders, à remplacer par les vrais IDs BDM)
+        // Il est crucial d\'avoir les vrais idProduit pour Priority et Premium
+        $priorityBdmProductId = '8d90e0c0-1a7c-4e8b-8e1e-2c9e0d8c7a6f'; // EXEMPLE: Remplacez par le vrai ID BDM
+        $premiumBdmProductId  = 'f2a5d9b1-0e3c-4a7f-8b2d-1e0c9b8a7d6e'; // EXEMPLE: Remplacez par le vrai ID BDM
+
+        // Options que nous voulons évaluer (Priority, Premium)
+        $optionsToEvaluate = [
+            ['productId' => $priorityBdmProductId, 'serviceId' => 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'], // ServiceId de consigne
+            ['productId' => $premiumBdmProductId, 'serviceId' => 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'], // ServiceId de consigne
+        ];
+        Log::info('FrontController::getOptionsQuote - Baggages construits et options à évaluer', [
+            'baggages' => $baggages,
+            'optionsToEvaluate' => $optionsToEvaluate
+        ]);
+
+        try {
+            $response = $this->bdmApiService->getCommandeOptionsQuote(
+                $idPlateforme,
+                $baggages,
+                $optionsToEvaluate,
+                $guestEmail
+            );
+            Log::info('FrontController::getOptionsQuote - Réponse de BdmApiService::getCommandeOptionsQuote', ['response' => $response]);
+    
+            if ($response && ($response['statut'] ?? 0) === 1 && isset($response['content'])) {
+                $priorityPrice = 0;
+                $premiumPrice = 0;
+    
+                foreach ($response['content'] ?? [] as $optionItem) { // Iterate directly over content as the BDM API returns products and options in the same list
+                    // Normaliser les libellés pour une comparaison plus robuste
+                    $normalizedLibelle = Str::upper($optionItem['libelle'] ?? '');
+
+                    if (str_contains($normalizedLibelle, 'PRIORITY') && !str_contains($normalizedLibelle, 'CHECK-OUT')) {
+                        $priorityPrice = $optionItem['prixUnitaire'] ?? 0;
+                    } elseif (str_contains($normalizedLibelle, 'PREMIUM')) {
+                        $premiumPrice = $optionItem['prixUnitaire'] ?? 0;
+                    }
+                }
+                Log::info('FrontController::getOptionsQuote - Prix des options extraits', [
+                    'priorityPrice' => $priorityPrice,
+                    'premiumPrice' => $premiumPrice
+                ]);
+    
+                return response()->json([
+                    'statut' => 1,
+                    'message' => 'Prix des options récupérés avec succès',
+                    'content' => [
+                        'priority' => ['price' => $priorityPrice],
+                        'premium' => ['price' => $premiumPrice],
+                    ]
+                ]);
+            } else {
+                Log::error('FrontController::getOptionsQuote - Échec de la récupération des prix des options via BDM API', ['response' => $response]);
+                return response()->json([
+                    'statut' => 0,
+                    'message' => $response['message'] ?? 'Impossible de récupérer les prix des options pour le moment.'
+                ], 500);
+            }
+    
+        } catch (\Exception $e) {
+            Log::error('FrontController::getOptionsQuote - Erreur lors de la récupération des prix des options : ' . $e->getMessage());
+            return response()->json([
+                'statut' => 0,
+                'message' => 'Erreur technique lors de la récupération des prix des options.'
             ], 500);
         }
     }

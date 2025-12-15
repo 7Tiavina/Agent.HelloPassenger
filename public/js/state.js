@@ -10,9 +10,12 @@ let globalProductsData = [];
 let globalLieuxData = [];
 let guestEmail = null;
 
-// Les données qui sont statiques ou injectées depuis Blade.
-// `initialProducts` est défini dans une balise <script> dans la vue Blade.
-// `productMapJs` est défini dans booking.js car il est étroitement lié à la logique d'affichage.
+// Données statiques ou initiales, rendues globales
+let staticOptions = {
+    priority: { libelle: 'Service Priority', prixUnitaire: 0 }, // Initialisé à 0, sera mis à jour par l'API
+    premium: { libelle: 'Service Premium', prixUnitaire: 0 }    // Initialisé à 0, sera mis à jour par l'API
+};
+
 
 /**
  * Sauvegarde l'état actuel du formulaire dans la session du navigateur.

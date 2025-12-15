@@ -1,67 +1,182 @@
-🎯 **EUREKA ! J'ai trouvé le problème !**
+La route API a appeler en plus avec ses explications dans swagger, ce routa va nous aider apreparer le json a envoyer pour la commande , par contre il faut respecter les jsons a lui envoyer comme dans ce docs et utiliser la sortie pour afficher les prix exact de la modale priority et premium :
+POST
+/api/plateforme/{idPlateforme}/commande/options
 
-En regardant la documentation Swagger, je vois **exactement** ce qui ne va pas :
+Parameters
+Cancel
+Reset
+Name	Description
+idPlateforme *
+string($uuid)
+(path)
+64f00ace-31b6-45b0-bcb2-b562b1ac08d9
+lg
+string
+(query)
+fr
+Request body
 
-## ❌ **Erreurs identifiées :**
-
-### **1. Pas de wrapper `commandeApiDto`**
-L'API Swagger attend les champs **directement à la racine**, pas dans un objet `commandeApiDto` !
-
-### **2. Mauvaise casse des clés**  
-Swagger utilise **camelCase**, pas **PascalCase** :
-- `commandeLignes` (pas `CommandeLignes`)
-- `client` (pas `Client`)
-- `commandeInfos` (pas `CommandeInfos`)
-- `commandeOptions` (pas `CommandeOptions`)
-
-### **3. L'idPlateforme va dans l'URL**
-Dans Swagger : `POST /api/plateforme/{idPlateforme}/commande`
-L'idPlateforme doit être dans l'URL, pas dans le body !
-
-## ✅ **Structure correcte selon Swagger :**
-
-```php
-// URL : POST /api/plateforme/88bb89e0-b966-4420-9ed3-7a6745e4d947/commande
-
-// Body JSON (sans wrapper) :
+application/json
 {
-    "commandeLignes": [
-        {
-            "idProduit": "cf2192d7-8358-41e7-82e1-4341658bbeb0",
-            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7", 
-            "dateDebut": "2025-12-05T09:49:00.000Z",
-            "dateFin": "2025-12-07T09:49:00.000Z",
-            "prixTTC": 15,
-            "quantite": 1
-        }
-    ],
-    "commandeOptions": [],
-    "commandeInfos": {
-        "modeTransport": "string",
-        "lieu": "string", 
-        "commentaires": "string"
-    },
-    "client": {
-        "email": "er@gmail.com",
-        "telephone": "1231245353",
-        "nom": "Mulot",
-        "prenom": "Francis",
-        "civilite": "M.",
-        "nomSociete": "CamilleSA",
-        "adresse": "Paris, France",
-        "complementAdresse": "I123445",
-        "ville": "paris",
-        "codePostal": "23512",
-        "pays": "Mauritius"
+  "commandeLignes": [
+    {
+      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "dateDebut": "2025-12-15T05:28:18.429Z",
+      "dateFin": "2025-12-15T05:28:18.429Z",
+      "prixTTC": 0,
+      "prixTTCAvantRemise": 0,
+      "tauxRemise": 0,
+      "quantite": 0
     }
+  ],
+  "commandeOptions": [
+    {
+      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "dateDebut": "2025-12-15T05:28:18.429Z",
+      "dateFin": "2025-12-15T05:28:18.429Z",
+      "prixTTC": 0,
+      "prixTTCAvantRemise": 0,
+      "tauxRemise": 0,
+      "quantite": 0
+    }
+  ],
+  "commandeInfos": {
+    "modeTransport": "string",
+    "lieu": "string",
+    "commentaires": "string"
+  },
+  "client": {
+    "email": "YZ4ZX96oSH6f8NZ_1brHC-c9TA1Bq._6Jr5NCyVI6z89sj68.hD9qLvwkikw5DQazBow@0OPx8ZyajJNK9A0vq2nWR7RRy1X9b0U",
+    "telephone": "string",
+    "nom": "tbbPvbARo HRWMLM'CocCxWV-PpYpmnumPtpbHhdCjTJfn-bng",
+    "prenom": "p' FL'-WEEiKO-DQGgXhJfhMfJezYKnzDJ-GZqnaStRPMOy'oh",
+    "civilite": "string",
+    "nomSociete": "n6PlhKyXGO3VbwFV",
+    "adresse": "ypndJal8YRbgHd1BJj-6kMkPT2UWC6j94hZj'BHmKvQ'LfjG8E",
+    "complementAdresse": "Hsq-IaFMZ496YxB-bywv8L,vcDToy'",
+    "ville": "rNpJhNnAluokyMtUCqqzbjQKmlUiqpRLRnbKf,LRMpz GQzGPV",
+    "codePostal": "65776",
+    "pays": "ZEG"
+  }
 }
-```
+Execute
+Clear
+Responses
+Curl
 
-## 🔧 **Corrections à apporter :**
+curl -X 'POST' \
+  'https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/commande/options?lg=fr' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6ImUyMzhlZDU5LTQwZjMtNDZmZi1hMzhhLTQ1MGRlMzA3Nzg1NyIsIlVzZXJOYW1lIjoiYWRwQGJkbS5jb20iLCJwYXJ0ZW5haXJlIjoiMDk1YjQ2MDEtNGJkMC00ZTIyLThmMTMtZWFmOThjMDA3YjYzIiwiZXhwIjoxNzY1NzgwMDU1LCJpc3MiOiJodHRwczovL2JkbS5tZXJseXRlY2guY29tOjQ0MyIsImF1ZCI6Imh0dHA6Ly9iZG0ubWVybHl0ZWNoLmNvbTo4MCJ9.p5vOHjfstJLeqk4AUH33Tmunu_DHgS2ryOWubrmqTP4' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "commandeLignes": [
+    {
+      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "dateDebut": "2025-12-15T05:28:18.429Z",
+      "dateFin": "2025-12-15T05:28:18.429Z",
+      "prixTTC": 0,
+      "prixTTCAvantRemise": 0,
+      "tauxRemise": 0,
+      "quantite": 0
+    }
+  ],
+  "commandeOptions": [
+    {
+      "idProduit": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "idService": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "dateDebut": "2025-12-15T05:28:18.429Z",
+      "dateFin": "2025-12-15T05:28:18.429Z",
+      "prixTTC": 0,
+      "prixTTCAvantRemise": 0,
+      "tauxRemise": 0,
+      "quantite": 0
+    }
+  ],
+  "commandeInfos": {
+    "modeTransport": "string",
+    "lieu": "string",
+    "commentaires": "string"
+  },
+  "client": {
+    "email": "YZ4ZX96oSH6f8NZ_1brHC-c9TA1Bq._6Jr5NCyVI6z89sj68.hD9qLvwkikw5DQazBow@0OPx8ZyajJNK9A0vq2nWR7RRy1X9b0U",
+    "telephone": "string",
+    "nom": "tbbPvbARo HRWMLM'\''CocCxWV-PpYpmnumPtpbHhdCjTJfn-bng",
+    "prenom": "p'\'' FL'\''-WEEiKO-DQGgXhJfhMfJezYKnzDJ-GZqnaStRPMOy'\''oh",
+    "civilite": "string",
+    "nomSociete": "n6PlhKyXGO3VbwFV",
+    "adresse": "ypndJal8YRbgHd1BJj-6kMkPT2UWC6j94hZj'\''BHmKvQ'\''LfjG8E",
+    "complementAdresse": "Hsq-IaFMZ496YxB-bywv8L,vcDToy'\''",
+    "ville": "rNpJhNnAluokyMtUCqqzbjQKmlUiqpRLRnbKf,LRMpz GQzGPV",
+    "codePostal": "65776",
+    "pays": "ZEG"
+  }
+}'
+Request URL
+https://bdm.merlytech.com/api/plateforme/64f00ace-31b6-45b0-bcb2-b562b1ac08d9/commande/options?lg=fr
+Server response
+Code	Details
+400	
+Error: response status is 400
 
-1. **Supprimer** le wrapper `commandeApiDto`
-2. **Remettre** toutes les clés en **camelCase** 
-3. **Ajouter** `idPlateforme` dans l'URL
-4. **Ajouter** un objet `commandeInfos` même vide
+Response body
+Download
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "Client.Email": [
+      "Veuillez entrer une adresse mail valide"
+    ]
+  },
+  "traceId": "00-a5d13117d2ec0e4c6d53cf4848cb317f-c6ef503b882a5b9e-00"
+}
+Response headers
+ content-type: application/json; charset=utf-8 
+ date: Mon,15 Dec 2025 05:28:35 GMT 
+ server: Microsoft-IIS/10.0 
+ x-powered-by: ASP.NET 
+Responses
+Code	Description	Links
+200	
+Success
 
-C'est ça le problème ! 🚀
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "content": "string",
+  "statut": 0,
+  "message": "string"
+}
+No links
+400	
+Bad Request
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+No links
+500	
+Server Error
+
+

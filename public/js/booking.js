@@ -12,11 +12,6 @@ const productMapJs = {
 let isPriorityAvailable = false;
 let isPremiumAvailable = false;
 
-const staticOptions = {
-    priority: { libelle: 'Service Priority', prixUnitaire: 15 },
-    premium: { libelle: 'Service Premium', prixUnitaire: 25 }
-};
-
 
 /**
  * Affiche les dates sélectionnées dans la section de résumé.
@@ -152,14 +147,66 @@ async function handleTotalClick() {
             return;
         }
         
-        // La logique `showOptionsAdvertisementModal` est dans `modal.js` désormais
-        if (typeof showOptionsAdvertisementModal !== 'undefined' && (isPriorityAvailable || isPremiumAvailable)) {
+        // --- NOUVEAU : Appel API pour obtenir les prix dynamiques des options ---
+        if (isPriorityAvailable || isPremiumAvailable) {
+            const dateDepot = document.getElementById('date-depot').value;
+            const heureDepot = document.getElementById('heure-depot').value;
+            const dateRecuperation = document.getElementById('date-recuperation').value;
+            const heureRecuperation = document.getElementById('heure-recuperation').value;
+
+            // Assurez-vous que les baggages ont toutes les infos nécessaires pour l'API BDM
+            const baggagesForOptionsQuote = cartItems.filter(i => i.itemCategory === 'baggage').map(item => {
+                const product = globalProductsData.find(p => p.id === item.productId);
+                return {
+                    productId: item.productId,
+                    serviceId: product ? product.idService : serviceId, // Utilise le serviceId du produit si dispo
+                    dateDebut: `${dateDepot}T${heureDepot}:00Z`,
+                    dateFin: `${dateRecuperation}T${heureRecuperation}:00Z`,
+                    quantity: item.quantity
+                };
+            });
+
+            try {
+                const optionsQuoteResponse = await fetch('/api/commande/options-quote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                    body: JSON.stringify({
+                        idPlateforme: airportId,
+                        cartItems: baggagesForOptionsQuote,
+                        guestEmail: guestEmail,
+                        dateDepot: dateDepot,
+                        heureDepot: heureDepot,
+                        dateRecuperation: dateRecuperation,
+                        heureRecuperation: heureRecuperation,
+                        globalProductsData: globalProductsData // Pour que le backend puisse mapper les produits
+                    })
+                });
+
+                const optionsQuoteResult = await optionsQuoteResponse.json();
+
+                if (optionsQuoteResult.statut === 1 && optionsQuoteResult.content) {
+                    staticOptions.priority.prixUnitaire = optionsQuoteResult.content.priority.price;
+                    staticOptions.premium.prixUnitaire = optionsQuoteResult.content.premium.price;
+                } else {
+                    await showCustomAlert('Erreur de tarification options', optionsQuoteResult.message || 'Impossible de récupérer les prix des options.');
+                    if (loader) loader.classList.add('hidden');
+                    return;
+                }
+            } catch (error) {
+                console.error('Erreur lors de la récupération des prix des options:', error);
+                await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la récupération des prix des options.');
+                if (loader) loader.classList.add('hidden');
+                return;
+            }
+
+            // Afficher la modale des options seulement après avoir récupéré les prix dynamiques
             const result = await showOptionsAdvertisementModal();
             if (result === 'cancelled') {
                 if (loader) loader.classList.add('hidden');
                 return;
             }
         }
+        // --- FIN NOUVEAU ---
 
         const authResponse = await fetch('/check-auth-status');
         const authData = await authResponse.json();
