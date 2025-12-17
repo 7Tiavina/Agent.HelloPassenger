@@ -1,47 +1,50 @@
-(index):64  cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
-(anonymous) @ (index):64
-(anonymous) @ (index):64
-link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at saveStateToSession (link-form:826:64)
-    at HTMLSelectElement.<anonymous> (link-form:662:13)
-saveStateToSession @ link-form:826
-(anonymous) @ link-form:662
-link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at HTMLInputElement.saveStateToSession (link-form:826:64)
-saveStateToSession @ link-form:826
-change
-(anonymous) @ unknown
-setTimeout
-setSelectionAndCommit @ unknown
-selectRangeContainingDay @ unknown
-onClick @ unknown
-link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at saveStateToSession (link-form:826:64)
-    at HTMLInputElement.<anonymous> (link-form:714:21)
-saveStateToSession @ link-form:826
-(anonymous) @ link-form:714
-change
-(anonymous) @ unknown
-setTimeout
-setSelectionAndCommit @ unknown
-selectRangeContainingDay @ unknown
-onClick @ unknown
-link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at HTMLInputElement.saveStateToSession (link-form:826:64)
-saveStateToSession @ link-form:826
-link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at HTMLInputElement.saveStateToSession (link-form:826:64)
-saveStateToSession @ link-form:826
-change
-(anonymous) @ unknown
-setTimeout
-setSelectionAndCommit @ unknown
-selectRangeContainingDay @ unknown
-onClick @ unknown
-link-form:826  Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at HTMLInputElement.saveStateToSession (link-form:826:64)
-saveStateToSession @ link-form:826
-link-form:998  Erreur lors de la récupération des tarifs et lieux: 
-getQuoteAndDisplay @ link-form:998
-await in getQuoteAndDisplay
-checkAvailability @ link-form:911
+{
+    "idPlateforme": "64f00ace-31b6-45b0-bcb2-b562b1ac08d9",
+    "airportName": "Orly",
+    "commandeLignes": [
+        {
+            "idProduit": "868800b2-5635-4da6-a30f-5dbdbc995766",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+            "dateDebut": "2025-12-22T10:26:00.000Z",
+            "dateFin": "2025-12-26T13:26:00.000Z",
+            "prixTTC": 102,
+            "quantite": 1,
+            "libelleProduit": "Bagage sp\u00e9cial"
+        },
+        {
+            "idProduit": "f1037c43-639e-4251-bec5-db43d6822d96",
+            "idService": "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
+            "dateDebut": "2025-12-22T10:26:00.000Z",
+            "dateFin": "2025-12-26T13:26:00.000Z",
+            "prixTTC": 45,
+            "quantite": 1,
+            "libelleProduit": "PREMIUM",
+            "details": {
+                "direction": "terminal_to_agence",
+                "flight_number_arrival": "12134ERF",
+                "date_arrival": "2025-12-22",
+                "time_arrival": "10:26",
+                "pickup_location_arrival": "b9c8db94-ff1c-40a4-0914-08de01815f2e",
+                "pickup_time_arrival": "11:11",
+                "instructions_arrival": "test"
+            },
+            "is_option": true
+        }
+    ],
+    "commandeInfos": {},
+    "client": {
+        "email": "setanirinatiavina@gmail.com",
+        "telephone": "1231245353",
+        "nom": "Tiavina",
+        "prenom": "Francis",
+        "civilite": "M.",
+        "nomSociete": "CamilleSA",
+        "adresse": "Paris, France",
+        "complementAdresse": "I123445",
+        "ville": "paris",
+        "codePostal": "23512",
+        "pays": "Mauritius",
+        "is_guest": true
+    },
+    "total_prix_ttc": 147
+}

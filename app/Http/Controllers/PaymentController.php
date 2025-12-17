@@ -10,16 +10,15 @@ use App\Models\PaymentClient; // Ajout du nouveau modèle
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache; // Added
+use Illuminate\Support\Facades\Validator; // Added for guest validation
 
 class PaymentController extends Controller
 {
-    
-
     /**
      * Prépare les données de la commande et les stocke en session avant la redirection vers la page de paiement.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function preparePayment(Request $request)
     {
@@ -36,40 +35,33 @@ class PaymentController extends Controller
                 'baggages' => 'required|array',
                 'products' => 'required|array',
                 'options' => 'nullable|array',
-                'options.*.id' => 'required|string', // The real BDM ID
+                'options.*.id' => 'required|string',
                 'options.*.libelle' => 'required|string',
                 'options.*.prix' => 'required|numeric',
                 'options.*.details' => 'nullable|array',
             ]);
 
-            // --- Server-side definitions for security ---
             $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
             $baggageTypeToLibelleMap = [
-                'accessory' => 'Accessoires',
-                'cabin' => 'Bagage cabine',
-                'hold' => 'Bagage soute',
-                'special' => 'Bagage spécial',
-                'cloakroom' => 'Vestiaire',
+                'accessory' => 'Accessoires', 'cabin' => 'Bagage cabine', 'hold' => 'Bagage soute',
+                'special' => 'Bagage spécial', 'cloakroom' => 'Vestiaire',
             ];
-            // ------------------------------------------
 
             $commandeLignes = [];
+            $premiumDetails = null; // Will store premium option's details
 
             // 1. Process Baggages
             foreach ($validatedData['baggages'] as $baggage) {
                 $expectedLibelle = $baggageTypeToLibelleMap[$baggage['type']] ?? null;
                 if (!$expectedLibelle) throw new \Exception('Unknown baggage type: ' . $baggage['type']);
-
                 $productDetails = collect($validatedData['products'])->firstWhere('libelle', $expectedLibelle);
                 if (!$productDetails) throw new \Exception('Product details not found for: ' . $expectedLibelle);
 
                 $commandeLignes[] = [
-                    "idProduit" => $productDetails['id'],
-                    "idService" => $serviceId,
+                    "idProduit" => $productDetails['id'], "idService" => $serviceId,
                     "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
                     "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
-                    "prixTTC" => ($productDetails['prixUnitaire'] * $baggage['quantity']),
-                    "quantite" => $baggage['quantity'],
+                    "prixTTC" => ($productDetails['prixUnitaire'] * $baggage['quantity']), "quantite" => $baggage['quantity'],
                     "libelleProduit" => $productDetails['libelle']
                 ];
             }
@@ -77,86 +69,63 @@ class PaymentController extends Controller
             // 2. Process Options
             if (!empty($validatedData['options'])) {
                 foreach ($validatedData['options'] as $selectedOption) {
-                    $details = $selectedOption['details'] ?? null;
+                    // If this is the premium option, store its details separately
+                    if (str_contains($selectedOption['libelle'], 'Premium')) {
+                        $premiumDetails = $selectedOption['details'] ?? null;
+                    }
 
+                    // Add the option line WITHOUT the details object to commandeLignes
                     $commandeLignes[] = [
-                        "idProduit" => $selectedOption['id'], // Use the real ID from the option
-                        "idService" => $serviceId,
+                        "idProduit" => $selectedOption['id'], "idService" => $serviceId,
                         "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
                         "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
-                        "prixTTC" => $selectedOption['prix'], // Use the real price
-                        "quantite" => 1,
-                        "libelleProduit" => $selectedOption['libelle'], // Use the real libelle
-                        "details" => $details,
-                        "is_option" => true // Add a flag to identify this line later
+                        "prixTTC" => $selectedOption['prix'], "quantite" => 1,
+                        "libelleProduit" => $selectedOption['libelle'],
+                        "is_option" => true
                     ];
                 }
             }
 
-            // 3. Prepare final command data
-            $user = Auth::guard('client')->user();
+            // 3. Create commandeInfos from extracted premium details
+            $commandeInfos = new \stdClass();
+            if ($premiumDetails && !empty($premiumDetails)) {
+                $details = $premiumDetails;
+                $commentairesArray = [];
+                $directionText = ($details['direction'] ?? '') === 'terminal_to_agence' ? 'Récupération bagages' : 'Restitution bagages';
+                $commentairesArray[] = "Type de service: " . $directionText;
 
-            if ($user) {
-                // Authenticated user flow
-                $clientRecord = \App\Models\Client::find($user->id);
-                if (!$clientRecord) {
-                    return response()->json(['message' => 'Client authentifié introuvable.'], 404);
-                }
-                $clientData = [
-                    "email" => $clientRecord->email, "telephone" => $clientRecord->telephone, "nom" => $clientRecord->nom,
-                    "prenom" => $clientRecord->prenom, "civilite" => $clientRecord->civilite ?? null, "nomSociete" => null,
-                    "adresse" => $clientRecord->adresse ?? null, "complementAdresse" => null, "ville" => $clientRecord->ville ?? null,
-                    "codePostal" => $clientRecord->codePostal ?? null, "pays" => $clientRecord->pays ?? null,
-                    "is_guest" => false
-                ];
-            } else {
-                // Guest user flow
-                $guestEmail = $request->input('guest_email');
-                if (!$guestEmail) {
-                    return response()->json(['message' => 'Unauthenticated'], 401);
-                }
+                $commandeInfos->modeTransport = $details['modeTransport'] ?? $directionText; // Prioritize dedicated field if ever added
                 
-                \Illuminate\Support\Facades\Validator::make(['guest_email' => $guestEmail], [
-                    'guest_email' => 'required|email|max:255'
-                ])->validate();
+                $isArrivalFlow = isset($details['flight_number_arrival']);
+                $locationKey = $isArrivalFlow ? 'pickup_location_arrival' : 'restitution_location_departure';
+                $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
+                $timeKey = $isArrivalFlow ? 'pickup_time_arrival' : 'restitution_time_departure';
+                $instructionsKey = $isArrivalFlow ? 'instructions_arrival' : 'instructions_departure';
 
-                // Check if we have persistent guest details in the session
-                $persistentGuestDetails = Session::get('guest_customer_details', []);
+                $commandeInfos->lieu = $details[$locationKey] ?? 'Non spécifié';
 
-                if (!empty($persistentGuestDetails)) {
-                    // Use the stored details
-                    $clientData = [
-                        "email" => $guestEmail, // Keep the email from the current form
-                        "telephone" => $persistentGuestDetails['telephone'] ?? null,
-                        "nom" => $persistentGuestDetails['nom'] ?? 'Invité',
-                        "prenom" => $persistentGuestDetails['prenom'] ?? 'Client',
-                        "civilite" => $persistentGuestDetails['civilite'] ?? null,
-                        "nomSociete" => $persistentGuestDetails['nomSociete'] ?? null,
-                        "adresse" => $persistentGuestDetails['adresse'] ?? null,
-                        "complementAdresse" => $persistentGuestDetails['complementAdresse'] ?? null,
-                        "ville" => $persistentGuestDetails['ville'] ?? null,
-                        "codePostal" => $persistentGuestDetails['codePostal'] ?? null,
-                        "pays" => $persistentGuestDetails['pays'] ?? null,
-                        "is_guest" => true
-                    ];
-                } else {
-                    // Fallback to default guest data
-                    $clientData = [
-                        "email" => $guestEmail, "telephone" => null, "nom" => 'Invité',
-                        "prenom" => 'Client', "civilite" => null, "nomSociete" => null,
-                        "adresse" => null, "complementAdresse" => null, "ville" => null,
-                        "codePostal" => null, "pays" => null,
-                        "is_guest" => true
-                    ];
+                if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
+                if (!empty($details[$timeKey])) {
+                    $timeLabel = $isArrivalFlow ? 'Heure de prise en charge' : 'Heure de restitution';
+                    $commentairesArray[] = "$timeLabel: " . $details[$timeKey];
                 }
+                if (!empty($details[$instructionsKey])) $commentairesArray[] = "Informations complémentaires: " . $details[$instructionsKey];
+                
+                $commandeInfos->commentaires = implode('; ', $commentairesArray);
             }
+
+            // 4. Prepare Client and Final Command Data
+            $user = Auth::guard('client')->user();
+            $clientData = $this->getClientData($user, $request->input('guest_email'));
+            if (!$clientData) return response()->json(['message' => 'Client non identifié.'], 401);
 
             $commandeData = [
                 'idPlateforme' => $validatedData['airportId'],
                 'airportName' => $validatedData['airportName'],
                 'commandeLignes' => $commandeLignes,
+                'commandeInfos' => $commandeInfos, // Add commandeInfos to the session
                 'client' => $clientData,
-                'total_prix_ttc' => array_reduce($commandeLignes, fn($sum, $item) => $sum + $item['prixTTC'], 0),
+                'total_prix_ttc' => array_reduce($commandeLignes, fn($sum, $item) => $sum + ($item['prixTTC'] ?? 0), 0),
             ];
 
             Session::put('commande_en_cours', $commandeData);
@@ -188,60 +157,36 @@ class PaymentController extends Controller
             'pays' => 'required|string',
         ]);
 
-        $commandeData = Session::get('commande_en_cours');
-
-        if (!$commandeData || !isset($commandeData['client']['is_guest']) || !$commandeData['client']['is_guest']) {
-            return response()->json(['success' => false, 'message' => 'Not a guest session.'], 403);
-        }
-
-        // Persist guest details in a separate session key to remember them across orders
         Session::put('guest_customer_details', $validated);
 
-        // Update the client data within the current order's session
-        $commandeData['client']['telephone'] = $validated['telephone'];
-        $commandeData['client']['nom'] = $validated['nom'];
-        $commandeData['client']['prenom'] = $validated['prenom'];
-        $commandeData['client']['civilite'] = $validated['civilite'];
-        $commandeData['client']['nomSociete'] = $validated['nomSociete'];
-        $commandeData['client']['adresse'] = $validated['adresse'];
-        $commandeData['client']['complementAdresse'] = $validated['complementAdresse'];
-        $commandeData['client']['ville'] = $validated['ville'];
-        $commandeData['client']['codePostal'] = $validated['codePostal'];
-        $commandeData['client']['pays'] = $validated['pays'];
-
-        Session::put('commande_en_cours', $commandeData);
+        $commandeData = Session::get('commande_en_cours');
+        if ($commandeData && isset($commandeData['client']['is_guest']) && $commandeData['client']['is_guest']) {
+            $commandeData['client'] = array_merge($commandeData['client'], $validated);
+            Session::put('commande_en_cours', $commandeData);
+        }
 
         return response()->json(['success' => true, 'message' => 'Guest information updated in session.']);
     }
 
     private function getBdmToken(): string
     {
-        // Tente de rcuprer le token depuis le cache
         return Cache::remember('bdm_api_token', 3300, function () {
             Log::info('Cache BDM token expir%c3%a9. Demande d%c3%a0 un nouveau token.');
-
             $response = Http::post(config('services.bdm.base_url') . '/User/Login', [
                 'userName' => config('services.bdm.username'),
                 'email' => config('services.bdm.email'),
                 'password' => config('services.bdm.password'),
             ]);
-
-            // Lance une exception si la requ%c3%aate HTTP elle-m%c3%aame %c3%a9choue
             $response->throw();
-
-            // V%c3%a9rifie si le login a r%c3%a9ussi selon la r%c3%a9ponse de l'API
             if (!$response->json('isSucceed')) {
                 Log::error('L%c3%a0API BDM a refus%c3%a9 la connexion.', ['response' => $response->json()]);
                 throw new \Exception('Authentification API BDM %c3%a9chou%c3%a9e: L%c3%a0API a refus%c3%a9 la connexion.');
             }
-
             $token = $response->json('data.accessToken');
-
             if (!$token) {
                 Log::error('Impossible de r%c3%a9cup%c3%a9rer l%c3%a0accessToken depuis la r%c3%a9ponse de l%c3%a0API BDM.', ['response' => $response->json()]);
                 throw new \Exception('Authentification API BDM %c3%a9chou%c3%a9e: token manquant dans la r%c3%a9ponse.');
             }
-            
             Log::info('✅ AUTHENTIFICATION API BDM R%c3%a9USSIE. Token obtenu.');
             Log::info('Nouveau token BDM obtenu et mis en cache.');
             return $token;
@@ -252,61 +197,42 @@ class PaymentController extends Controller
     {
         Log::info('Entering redirectToMonetico method with Basic Auth as per documentation.');
         $commandeData = session('commande_en_cours');
-
         if (!$commandeData) {
             Log::error('Monetico redirection failed: Commande data not found in session.');
             return null;
         }
-
         $orderId = 'CMD-' . uniqid();
         Session::put('monetico_order_id', $orderId);
 
-        // 1. Préparer les données de la requête
         $customerEmail = $commandeData['client']['email'] ?? null;
         $customerFirstName = $commandeData['client']['prenom'] ?? null;
         $customerLastName = $commandeData['client']['nom'] ?? null;
 
-        // Fallback to authenticated user if session data is incomplete
         if ((!$customerEmail || !$customerFirstName || !$customerLastName) && Auth::guard('client')->check()) {
             $authenticatedUser = Auth::guard('client')->user();
             $customerEmail = $customerEmail ?? $authenticatedUser->email;
             $customerFirstName = $customerFirstName ?? $authenticatedUser->prenom;
             $customerLastName = $customerLastName ?? $authenticatedUser->nom;
         }
-
         if (!$customerEmail || !$customerFirstName || !$customerLastName) {
             Log::error('Monetico redirection failed: Missing customer email, first name or last name.', ['commandeData' => $commandeData]);
             return null;
         }
 
         $payload = [
-            'shopId' => config('monetico.login'),
-            'amount' => (int)($commandeData['total_prix_ttc'] * 100),
-            'currency' => 'EUR',
+            'shopId' => config('monetico.login'), 'amount' => (int)($commandeData['total_prix_ttc'] * 100), 'currency' => 'EUR',
             'orderId' => $orderId,
-            'customer' => [
-                'email' => $customerEmail,
-                'firstName' => $customerFirstName,
-                'lastName' => $customerLastName,
-            ],
+            'customer' => ['email' => $customerEmail, 'firstName' => $customerFirstName, 'lastName' => $customerLastName],
             'paymentMethod' => ['type' => 'Card'],
             'urls' => [
-                'success' => route('payment.success'),
-                'error' => route('payment.error'),
-                'cancel' => route('payment.cancel'),
-                'return' => route('payment.return'),
+                'success' => route('payment.success'), 'error' => route('payment.error'),
+                'cancel' => route('payment.cancel'), 'return' => route('payment.return'),
             ],
         ];
 
-        // 2. Créer la chaîne d'authentification Basic avec `login` et `secret_key`
-        $authString = base64_encode(config('monetico.login') . ':' . config('monetico.secret_key'));
-
-        // 3. Appeler l'API avec l'en-tête Authorization: Basic
         Log::info('Calling Monetico CreatePayment API with correct Basic Auth.');
-        $response = Http::withHeaders([
-            'Authorization' => 'Basic ' . $authString,
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
+        $response = Http::withHeaders(['Authorization' => 'Basic ' . base64_encode(config('monetico.login') . ':' . config('monetico.secret_key')), 
+            'Content-Type' => 'application/json', 'Accept' => 'application/json',
         ])->post(config('monetico.base_url') . '/Charge/CreatePayment', $payload);
 
         Log::info('Monetico API response (Basic Auth flow): ' . $response->body());
@@ -338,13 +264,10 @@ class PaymentController extends Controller
         $user = null;
 
         if ($isGuest) {
-            // For guests, use the data directly from the session.
-            // Cast to object so the view can access properties like $user->email
             $user = (object) $clientDataFromSession;
             Log::debug('[showPaymentPage] Guest user data from session: ', ['clientDataFromSession' => $clientDataFromSession, 'userObject' => $user]);
             Log::info('[showPaymentPage] Handling guest user from session.', ['data' => $user]);
         } else {
-            // For authenticated users, fetch the full model from the DB.
             $user = Auth::guard('client')->user();
             if (!$user) {
                 Log::error('[showPaymentPage] Authenticated client not found via Auth::guard. Redirecting to form-consigne.');
@@ -366,7 +289,7 @@ class PaymentController extends Controller
 
         if ($isProfileComplete) {
             Log::info('[showPaymentPage] Client profile is complete (or sufficient for guest). Proceeding to get formToken.');
-            $commandeData['client'] = (array) $user; // Recast object to array for session consistency
+            $commandeData['client'] = (array) $user;
             Session::put('commande_en_cours', $commandeData);
             Log::info('[showPaymentPage] Session data updated with latest client info.');
 
@@ -395,21 +318,10 @@ class PaymentController extends Controller
         $commandeLignes = $commandeData['commandeLignes'];
         $clientData = $commandeData['client'];
 
-        // Ensure clientData has an email, falling back to authenticated user if necessary
         if (!isset($clientData['email']) && Auth::guard('client')->check()) {
             $authenticatedUser = Auth::guard('client')->user();
             $clientData['email'] = $authenticatedUser->email;
-            // Also update other client data if they are missing and available from authenticated user
-            $clientData['nom'] = $clientData['nom'] ?? $authenticatedUser->nom;
-            $clientData['prenom'] = $clientData['prenom'] ?? $authenticatedUser->prenom;
-            $clientData['telephone'] = $clientData['telephone'] ?? $authenticatedUser->telephone;
-            $clientData['civilite'] = $clientData['civilite'] ?? $authenticatedUser->civilite;
-            $clientData['nomSociete'] = $clientData['nomSociete'] ?? $authenticatedUser->nomSociete;
-            $clientData['adresse'] = $clientData['adresse'] ?? $authenticatedUser->adresse;
-            $clientData['complementAdresse'] = $clientData['complementAdresse'] ?? $authenticatedUser->complementAdresse;
-            $clientData['ville'] = $clientData['ville'] ?? $authenticatedUser->ville;
-            $clientData['codePostal'] = $clientData['codePostal'] ?? $authenticatedUser->codePostal;
-            $clientData['pays'] = $clientData['pays'] ?? $authenticatedUser->pays;
+            $clientData = array_merge($clientData, (array) $authenticatedUser);
         }
 
         if (!isset($clientData['email'])) {
@@ -417,6 +329,7 @@ class PaymentController extends Controller
             return redirect()->route('form-consigne')->with('error', 'Erreur: Email client non disponible pour finaliser la commande.');
         }
 
+        $commandeInfos = $commandeData['commandeInfos'] ?? new \stdClass();
         $totalPrixTTC = $commandeData['total_prix_ttc'];
 
         try {
@@ -425,31 +338,14 @@ class PaymentController extends Controller
             $lignesProduits = [];
             $lignesOptions = [];
             foreach ($commandeLignes as $ligne) {
-                // Use the 'is_option' flag set in preparePayment
                 if (isset($ligne['is_option']) && $ligne['is_option']) {
-                    // Remove the temporary flag before sending to BDM
                     unset($ligne['is_option']);
                     $lignesOptions[] = $ligne;
                 } else {
                     $lignesProduits[] = $ligne;
                 }
             }
-
-            // Extraire les informations spécifiques pour 'commandeInfos' à partir des options
-            $premiumOption = collect($lignesOptions)->firstWhere('libelleProduit', 'Service Premium');
-            $commandeInfos = new \stdClass(); // Initialize as an empty object to ensure it becomes {} in JSON
-
-            if ($premiumOption && isset($premiumOption['details'])) {
-                // Flatten the details from the premium option for the BDM API
-                $details = $premiumOption['details'];
-                foreach($details as $key => $value) {
-                    // Convert snake_case from form to camelCase for the API
-                    $camelKey = lcfirst(str_replace('_', '', ucwords($key, '_')));
-                    $commandeInfos->$camelKey = $value;
-                }
-            }
             
-            // Préparation du payload pour l'API BDM (NO WRAPPER, camelCase)
             $payload = [
                 'commandeLignes' => $lignesProduits,
                 'commandeOptions' => $lignesOptions,
@@ -460,8 +356,7 @@ class PaymentController extends Controller
             Log::info('Données envoyées à l\'API Commande BDM:', ['payload' => $payload]);
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
+                'Authorization' => 'Bearer ' . $token, 'Accept' => 'application/json',
             ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", $payload);
 
             Log::info('API Commande response: ' . $response->body());
@@ -470,31 +365,16 @@ class PaymentController extends Controller
 
             if ($response->successful() && isset($apiResult['statut']) && $apiResult['statut'] === 1) {
                 
-                $client = Auth::guard('client')->user();
                 $clientId = null;
-
-                // Gérer le cas de l'utilisateur invité
-                if (!$client && isset($clientData['is_guest']) && $clientData['is_guest']) {
-                    // Chercher ou mettre à jour le client invité pour s'assurer que les infos sont complètes
+                if (isset($clientData['is_guest']) && $clientData['is_guest']) {
                     $client = \App\Models\Client::updateOrCreate(
                         ['email' => $clientData['email']],
-                        [
-                            'nom' => $clientData['nom'],
-                            'prenom' => $clientData['prenom'],
-                            'telephone' => $clientData['telephone'],
-                            'civilite' => $clientData['civilite'] ?? null,
-                            'nomSociete' => $clientData['nomSociete'] ?? null,
-                            'adresse' => $clientData['adresse'],
-                            'complementAdresse' => $clientData['complementAdresse'] ?? null,
-                            'ville' => $clientData['ville'],
-                            'codePostal' => $clientData['codePostal'],
-                            'pays' => $clientData['pays'],
-                            'password_hash' => \App\Models\Client::where('email', $clientData['email'])->value('password_hash') ?? bcrypt(''), // Ne pas écraser un mdp existant
-                        ]
+                        array_merge($clientData, ['password_hash' => \App\Models\Client::where('email', $clientData['email'])->value('password_hash') ?? bcrypt('')])
                     );
                     $clientId = $client->id;
-                } elseif ($client) {
-                    $clientId = $client->id;
+                } else {
+                    $client = Auth::guard('client')->user();
+                    $clientId = $client ? $client->id : null;
                 }
 
                 if (!$clientId) {
@@ -503,40 +383,26 @@ class PaymentController extends Controller
                 }
 
                 $commande = Commande::create([
-                    'client_id' => $clientId,
-                    'client_email' => $clientData['email'],
-                    'client_nom' => $clientData['nom'],
-                    'client_prenom' => $clientData['prenom'],
-                    'client_telephone' => $clientData['telephone'],
-                    'client_civilite' => $clientData['civilite'] ?? null,
-                    'client_nom_societe' => $clientData['nomSociete'] ?? null,
-                    'client_adresse' => $clientData['adresse'] ?? null,
-                    'client_complement_adresse' => $clientData['complementAdresse'] ?? null,
-                    'client_ville' => $clientData['ville'] ?? null,
-                    'client_code_postal' => $clientData['codePostal'] ?? null,
-                    'client_pays' => $clientData['pays'] ?? null,
-                    'id_api_commande' => $apiResult['message'] ?? null,
-                    'id_plateforme' => $idPlateforme,
-                    'total_prix_ttc' => $totalPrixTTC,
-                    'statut' => 'completed',
+                    'client_id' => $clientId, 'client_email' => $clientData['email'], 'client_nom' => $clientData['nom'],
+                    'client_prenom' => $clientData['prenom'], 'client_telephone' => $clientData['telephone'],
+                    'client_civilite' => $clientData['civilite'] ?? null, 'client_nom_societe' => $clientData['nomSociete'] ?? null,
+                    'client_adresse' => $clientData['adresse'] ?? null, 'client_complement_adresse' => $clientData['complementAdresse'] ?? null,
+                    'client_ville' => $clientData['ville'] ?? null, 'client_code_postal' => $clientData['codePostal'] ?? null,
+                    'client_pays' => $clientData['pays'] ?? null, 'id_api_commande' => $apiResult['message'] ?? null,
+                    'id_plateforme' => $idPlateforme, 'total_prix_ttc' => $totalPrixTTC, 'statut' => 'completed',
                     'details_commande_lignes' => json_encode($commandeLignes),
                     'invoice_content' => isset($apiResult['content']) ? json_encode($apiResult['content']) : null,
                 ]);
 
                 PaymentClient::create([
-                    'client_id' => $clientId,
-                    'commande_id' => $commande->id,
+                    'client_id' => $clientId, 'commande_id' => $commande->id,
                     'monetico_order_id' => $request->input('orderId', Session::get('monetico_order_id')),
                     'monetico_transaction_id' => $request->input('transactionId'),
-                    'amount' => $commande->total_prix_ttc * 100,
-                    'currency' => 'EUR',
-                    'status' => 'paid',
-                    'payment_method' => $request->input('brand'),
-                    'raw_response' => json_encode($request->all()),
+                    'amount' => $commande->total_prix_ttc * 100, 'currency' => 'EUR', 'status' => 'paid',
+                    'payment_method' => $request->input('brand'), 'raw_response' => json_encode($request->all()),
                 ]);
 
-                Session::forget('commande_en_cours');
-                Session::forget('monetico_order_id');
+                Session::forget(['commande_en_cours', 'monetico_order_id']);
                 Session::put('api_payment_result', $apiResult);
                 Session::put('last_commande_id', $commande->id);
 
@@ -567,7 +433,7 @@ class PaymentController extends Controller
 
                 } catch (\Exception $mailException) {
                     Log::error('Erreur lors de l\'envoi de l\'e-mail de confirmation: ' . $mailException->getMessage(), ['exception' => $mailException]);
-                    // Continuer le processus même si l'e-mail échoue
+                    // Continuer le processus même si l\'e-mail échoue
                 }
                 // --- FIN ENVOI EMAIL ---
                 */
@@ -645,7 +511,7 @@ class PaymentController extends Controller
     {
         Session::forget('commande_en_cours');
         Session::forget('guest_customer_details');
-        Session::forget('monetico_order_id'); // Ajout pour vider l'ID de commande Monetico
+        Session::forget('monetico_order_id'); // Ajout pour vider l\'ID de commande Monetico
         Log::info('Guest session data cleared successfully.');
         return response()->json(['success' => true, 'message' => 'Guest session data cleared.']);
     }
@@ -662,5 +528,32 @@ class PaymentController extends Controller
             return false;
         }
         return true;
+    }
+
+    // Helper method to consolidate client data retrieval
+    private function getClientData($user, $guestEmail) {
+        if ($user) {
+            return [
+                "email" => $user->email, "telephone" => $user->telephone, "nom" => $user->nom,
+                "prenom" => $user->prenom, "civilite" => $user->civilite ?? null, "nomSociete" => null,
+                "adresse" => $user->adresse ?? null, "complementAdresse" => null, "ville" => $user->ville ?? null,
+                "codePostal" => $user->codePostal ?? null, "pays" => $user->pays ?? null,
+                "is_guest" => false
+            ];
+        }
+
+        if ($guestEmail) {
+            \Illuminate\Support\Facades\Validator::make(['guest_email' => $guestEmail], ['guest_email' => 'required|email|max:255'])->validate();
+            $persistentGuestDetails = Session::get('guest_customer_details', []);
+            return array_merge([
+                "email" => $guestEmail, "telephone" => null, "nom" => 'Invité',
+                "prenom" => 'Client', "civilite" => null, "nomSociete" => null,
+                "adresse" => null, "complementAdresse" => null, "ville" => null,
+                "codePostal" => null, "pays" => null,
+                "is_guest" => true
+            ], $persistentGuestDetails);
+        }
+        
+        return null;
     }
 }
