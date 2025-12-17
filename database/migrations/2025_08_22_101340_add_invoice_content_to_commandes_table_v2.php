@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('commandes', function (Blueprint $table) {
-            // $table->longText('invoice_content')->nullable()->after('details_commande_lignes');
+            $table->longText('invoice_content')->nullable()->after('details_commande_lignes');
         });
     }
 
@@ -22,7 +22,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('commandes', function (Blueprint $table) {
-            $table->dropColumn('invoice_content');
+            if (Schema::hasColumn('commandes', 'invoice_content')) {
+                $table->dropColumn('invoice_content');
+            }
         });
     }
 };

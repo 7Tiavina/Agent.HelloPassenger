@@ -474,7 +474,7 @@ class PaymentController extends Controller
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Accept' => 'application/json',
-            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande/options", $payload);
+            ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", $payload);
 
             Log::info('API Commande response: ' . $response->body());
 
