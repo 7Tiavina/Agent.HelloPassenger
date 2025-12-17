@@ -166,7 +166,7 @@
 
 <!-- Options Advertisement Modal -->
 <div id="options-advert-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[10004] flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all max-h-[90vh] overflow-y-auto relative">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl transform transition-all max-h-[90vh] overflow-y-auto relative">
         <!-- Close Button -->
         <button id="close-options-advert-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

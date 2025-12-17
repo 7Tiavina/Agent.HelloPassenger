@@ -221,8 +221,8 @@ function showOptionsAdvertisementModal() {
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
                     <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true"></div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full bg-gray-100" value="${document.getElementById('date-depot').value}" readonly disabled></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full bg-gray-100" value="${document.getElementById('heure-depot').value}" readonly disabled></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="premium-disabled-date input-style w-full bg-gray-200 cursor-not-allowed" value="${document.getElementById('date-depot').value}" readonly disabled></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="premium-disabled-date input-style w-full bg-gray-200 cursor-not-allowed" value="${document.getElementById('heure-depot').value}" readonly disabled></div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                          <div>
@@ -232,7 +232,7 @@ function showOptionsAdvertisementModal() {
                                 ${lieuxOptionsHTML}
                              </select>
                          </div>
-                        <div><label class="block text-sm font-medium text-gray-700">H de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}"></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
                     <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
@@ -245,8 +245,8 @@ function showOptionsAdvertisementModal() {
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
                     <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_departure" class="input-style w-full" data-required="true"></div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full bg-gray-100" value="${document.getElementById('date-recuperation').value}" readonly disabled></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full bg-gray-100" value="${document.getElementById('heure-recuperation').value}" readonly disabled></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="premium-disabled-date input-style w-full bg-gray-200 cursor-not-allowed" value="${document.getElementById('date-recuperation').value}" readonly disabled></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="premium-disabled-date input-style w-full bg-gray-200 cursor-not-allowed" value="${document.getElementById('heure-recuperation').value}" readonly disabled></div>
                     </div>
                      <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -303,6 +303,25 @@ function showOptionsAdvertisementModal() {
                     }
                 });
             }
+
+            // Add tooltip listeners for disabled date/time fields
+            const tooltip = document.getElementById('baggage-tooltip');
+            const disabledInputs = premiumDetailsContainer.querySelectorAll('.premium-disabled-date');
+
+            disabledInputs.forEach(input => {
+                input.addEventListener('mouseover', (e) => {
+                    if (!tooltip) return;
+                    tooltip.textContent = 'Ces dates sont à modifier à l’étape précédente.';
+                    tooltip.classList.remove('hidden');
+                    const rect = e.target.getBoundingClientRect();
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX}px`;
+                    tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 5}px`;
+                });
+                input.addEventListener('mouseout', () => {
+                    if (tooltip) tooltip.classList.add('hidden');
+                });
+            });
 
         } else {
             premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
