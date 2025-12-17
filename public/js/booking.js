@@ -33,7 +33,41 @@ function displaySelectedDates() {
 
 
 /**
- * Vérifie la disponibilité de l'agence à la date de dépôt.
+ * Helper function to check availability for a single date and time.
+ * @param {string} date - The date in YYYY-MM-DD format.
+ * @param {string} time - The time in HH:mm format.
+ * @returns {Promise<boolean>} - True if available, false otherwise.
+ */
+async function checkSingleDateAvailability(date, time) {
+    if (!airportId || !date || !time) {
+        // This case should be handled by the calling function, but as a safeguard:
+        await showCustomAlert('Données manquantes', 'Impossible de vérifier la disponibilité sans aéroport, date et heure.');
+        return false;
+    }
+
+    try {
+        const dateTime = new Date(`${date}T${time}`);
+        const pad = (num) => num.toString().padStart(2, '0');
+        const dateToVerify = `${dateTime.getFullYear()}${pad(dateTime.getMonth() + 1)}${pad(dateTime.getDate())}T${pad(dateTime.getHours())}${pad(dateTime.getMinutes())}`;
+
+        const response = await fetch('/api/check-availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+            body: JSON.stringify({ idPlateforme: airportId, dateToCheck: dateToVerify })
+        });
+
+        const result = await response.json();
+        return result.statut === 1 && result.content === true;
+    } catch (error) {
+        console.error(`Erreur lors de la vérification de disponibilité pour ${date} ${time}:`, error);
+        await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la vérification de la disponibilité.');
+        return false;
+    }
+}
+
+
+/**
+ * Vérifie la disponibilité de l'agence pour les dates de dépôt ET de retrait.
  * @returns {Promise<boolean>}
  */
 async function checkAvailability() {
@@ -44,34 +78,43 @@ async function checkAvailability() {
 
     const dateDepot = document.getElementById('date-depot').value;
     const heureDepot = document.getElementById('heure-depot').value;
+    const dateRetrait = document.getElementById('date-recuperation').value;
+    const heureRetrait = document.getElementById('heure-recuperation').value;
 
-    if (!airportId || !dateDepot || !heureDepot) {
-        await showCustomAlert('Champs incomplets', 'Veuillez remplir tous les champs : aéroport, date et heure de dépôt.');
+    if (!airportId || !dateDepot || !heureDepot || !dateRetrait || !heureRetrait) {
+        await showCustomAlert('Champs incomplets', 'Veuillez remplir tous les champs : aéroport, dates et heures de dépôt et de retrait.');
         spinner.style.display = 'none';
         btn.disabled = false;
         return false;
     }
 
     try {
-        const depotDateTime = new Date(`${dateDepot}T${heureDepot}`);
-        const pad = (num) => num.toString().padStart(2, '0');
-        const dateToVerify = `${depotDateTime.getFullYear()}${pad(depotDateTime.getMonth() + 1)}${pad(depotDateTime.getDate())}T${pad(depotDateTime.getHours())}${pad(depotDateTime.getMinutes())}`;
+        // Check both dates in parallel
+        const [depotAvailable, retraitAvailable] = await Promise.all([
+            checkSingleDateAvailability(dateDepot, heureDepot),
+            checkSingleDateAvailability(dateRetrait, heureRetrait)
+        ]);
 
-        const response = await fetch('/api/check-availability', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-            body: JSON.stringify({ idPlateforme: airportId, dateToCheck: dateToVerify })
-        });
-
-        const result = await response.json();
-        if (result.statut === 1 && result.content === true) {
+        if (depotAvailable && retraitAvailable) {
             return true;
         } else {
-            await showCustomAlert('Agence fermée', "Notre agence est ouverte de 07h00 à 21h00 7/7. Pour toutes demandes hors horaire merci de nous contacter au +33 <strong>1 34 38 58 98</strong>.");
+            // Provide a more specific error message
+            let errorMessage = "Notre agence est ouverte de 07h00 à 21h00 7/7. ";
+            if (!depotAvailable && !retraitAvailable) {
+                errorMessage += "Les horaires de dépôt et de retrait sont en dehors des heures d'ouverture.";
+            } else if (!depotAvailable) {
+                errorMessage += "L'horaire de dépôt est en dehors des heures d'ouverture.";
+            } else {
+                errorMessage += "L'horaire de retrait est en dehors des heures d'ouverture.";
+            }
+            errorMessage += "<br><br>Pour toutes demandes hors horaire merci de nous contacter au +33 <strong>1 34 38 58 98</strong>.";
+            
+            await showCustomAlert('Agence fermée', errorMessage);
             return false;
         }
     } catch (error) {
-        console.error('Erreur lors de la vérification de disponibilité:', error);
+        // This catch is for errors in Promise.all or the main logic, not the individual fetches
+        console.error('Erreur lors de la vérification de disponibilité (Promise.all):', error);
         await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la vérification de la disponibilité.');
         return false;
     } finally {
