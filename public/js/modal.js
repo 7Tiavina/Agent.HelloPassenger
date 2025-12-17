@@ -118,20 +118,32 @@ function toggleOptionFromModal(optionKey) {
             premiumDetails.direction = direction;
             const formId = `premium_fields_${direction}`;
             const formContainer = document.getElementById(formId);
+            let isFormValid = true;
 
             if (formContainer) {
-                let isFormValid = true;
-                formContainer.querySelectorAll('input, textarea, select').forEach(input => {
-                    if (!input.value.trim()) {
-                        isFormValid = false;
-                    }
-                    premiumDetails[input.name] = input.value;
+                // Reset borders first
+                formContainer.querySelectorAll('[data-required="true"]').forEach(input => {
+                    input.classList.remove('border-red-500');
                 });
                 
+                // Check required fields
+                formContainer.querySelectorAll('[data-required="true"]').forEach(input => {
+                    if (!input.value.trim()) {
+                        isFormValid = false;
+                        input.classList.add('border-red-500');
+                    }
+                });
+
+                // If form is not valid, show alert and stop
                 if(!isFormValid) {
-                    showCustomAlert('Champs requis', 'Veuillez remplir tous les champs pour le service premium.');
-                    return; // Stop if form is not valid
+                    showCustomAlert('Champs requis', 'Veuillez remplir tous les champs obligatoires (en rouge).');
+                    return; 
                 }
+
+                // Gather all data from the active form (including disabled fields)
+                formContainer.querySelectorAll('input, textarea, select').forEach(input => {
+                    premiumDetails[input.name] = input.value;
+                });
             }
         }
 
@@ -195,59 +207,61 @@ function showOptionsAdvertisementModal() {
                     <div class="flex flex-col sm:flex-row gap-4">
                         <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
                             <input type="radio" name="premium_direction" value="terminal_to_agence" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                            <span class="ml-3 text-gray-700 font-medium">Terminal → Agence BDM</span>
+                            <span class="ml-3 text-gray-700 font-medium">Récupération de vos bagages</span>
                         </label>
                         <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
                             <input type="radio" name="premium_direction" value="agence_to_terminal" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                            <span class="ml-3 text-gray-700 font-medium">Agence BDM → Terminal</span>
+                            <span class="ml-3 text-gray-700 font-medium">Restitution de vos bagages</span>
                         </label>
                     </div>
                 </div>
 
                 <!-- Formulaire pour Terminal -> Agence -->
                 <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
-                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Terminal → Agence BDM</h4>
-                    <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_arrival" class="input-style w-full"></div>
+                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
+                    <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true"></div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full bg-gray-100" value="${document.getElementById('date-depot').value}" readonly disabled></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full bg-gray-100" value="${document.getElementById('heure-depot').value}" readonly disabled></div>
                     </div>
-                    <div><label class="block text-sm font-medium text-gray-700">Terminal d’arrivée</label><input type="text" name="terminal_arrival" class="input-style w-full"></div>
-                    <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" name="baggage_count_arrival" class="input-style w-full" min="1"></div>
                     <div class="grid grid-cols-2 gap-3">
                          <div>
-                             <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge</label>
-                             <select name="pickup_location_arrival" class="input-style custom-select w-full">
+                             <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge *</label>
+                             <select name="pickup_location_arrival" class="input-style custom-select w-full" data-required="true">
                                 <option value="" selected disabled>Select</option>
                                 ${lieuxOptionsHTML}
                              </select>
                          </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge</label><input type="time" name="pickup_time_arrival" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">H de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}"></div>
                     </div>
-                    <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
+                    <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                        <p><strong>Info :</strong> La récupération de vos bagages se fait en moyenne <strong>45 minutes</strong> après l’heure d’arrivée de votre vol.</p>
+                    </div>
                 </div>
 
                 <!-- Formulaire pour Agence -> Terminal -->
                 <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
-                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Détails pour : Agence BDM → Terminal</h4>
-                    <div><label class="block text-sm font-medium text-gray-700">Numéro de vol</label><input type="text" name="flight_number_departure" class="input-style w-full"></div>
+                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
+                    <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_departure" class="input-style w-full" data-required="true"></div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full bg-gray-100" value="${document.getElementById('date-recuperation').value}" readonly disabled></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full bg-gray-100" value="${document.getElementById('heure-recuperation').value}" readonly disabled></div>
                     </div>
-                    <div><label class="block text-sm font-medium text-gray-700">Terminal de départ</label><input type="text" name="terminal_departure" class="input-style w-full"></div>
-                    <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" name="baggage_count_departure" class="input-style w-full" min="1"></div>
                      <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Lieu de restitution</label>
-                            <select name="restitution_location_departure" class="input-style custom-select w-full">
-                                <option value="" selected disabled>Sélectionnez un lieu</option>
+                            <label class="block text-sm font-medium text-gray-700">Lieu de restitution *</label>
+                            <select name="restitution_location_departure" class="input-style custom-select w-full" data-required="true">
+                                <option value="" selected disabled>Select</option>
                                 ${lieuxOptionsHTML}
                             </select>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution</label><input type="time" name="restitution_time_departure" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" name="restitution_time_departure" class="input-style w-full" data-required="true" max="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}"></div>
                     </div>
-                    <div><label class="block text-sm font-medium text-gray-700">Instructions</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
+                    <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                        <p><strong>Info :</strong> La restitution de vos bagages se fait au plus tard <strong>2 heures</strong> avant le départ de votre vol.</p>
+                    </div>
                 </div>
             `;
 
@@ -267,6 +281,28 @@ function showOptionsAdvertisementModal() {
                     }
                 });
             });
+
+            // Add event listeners for time constraint enforcement
+            const pickupTimeInput = document.querySelector('[name="pickup_time_arrival"]');
+            if (pickupTimeInput) {
+                pickupTimeInput.addEventListener('change', (e) => {
+                    const minTime = e.target.min;
+                    if (e.target.value < minTime) {
+                        e.target.value = minTime;
+                    }
+                });
+            }
+
+            const restitutionTimeInput = document.querySelector('[name="restitution_time_departure"]');
+            if (restitutionTimeInput) {
+                restitutionTimeInput.addEventListener('change', (e) => {
+                    const maxTime = e.target.max;
+                    // Only check maxTime if it's set, as it might be empty for future dates
+                    if (maxTime && e.target.value > maxTime) {
+                        e.target.value = maxTime;
+                    }
+                });
+            }
 
         } else {
             premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible

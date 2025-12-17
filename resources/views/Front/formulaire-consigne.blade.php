@@ -136,7 +136,7 @@
 </div>
 
 <!-- Custom Modal -->
-<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10004] flex items-center justify-center px-4">
+<div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10005] flex items-center justify-center px-4">
     <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-3 border-b border-gray-200">
