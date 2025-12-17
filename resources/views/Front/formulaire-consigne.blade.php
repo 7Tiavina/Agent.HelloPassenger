@@ -186,7 +186,7 @@
                     <span class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">PRIORITAIRE</span>
                     <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Priority</h3>
                     <p class="mt-2 text-gray-500">Bénéficiez d’un traitement prioritaire pour vos bagages à la dépose et à la récupération.</p>
-                    <p class="mt-4 text-3xl font-extrabold text-gray-900">+15 €</p>
+                    <p id="advert-priority-price" class="mt-4 text-3xl font-extrabold text-gray-900">+15 €</p>
                     <button id="add-priority-from-modal" data-option-key="priority" class="mt-6 w-full bg-transparent border border-gray-400 text-gray-700 font-bold py-3 px-4 rounded-lg btn-hover hover:bg-gray-100">Ajouter au panier</button>
                 </div>
             </div>
@@ -198,7 +198,7 @@
                         <span class="inline-block bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">PREMIUM</span>
                         <h3 class="mt-4 text-2xl font-bold text-gray-900">Service Premium</h3>
                         <p class="mt-2 text-gray-500">Permet de remettre ou récupérer ses bagages directement à l’endroit exact choisi à l’aéroport, avec l’aide d’un porteur dédié. Le client indique le lieu, son mode de transport et un commentaire, et l’équipe s’occupe de tout.</p>
-                        <p class="mt-4 text-3xl font-extrabold text-gray-900">+25 €</p>
+                        <p id="advert-premium-price" class="mt-4 text-3xl font-extrabold text-gray-900">+25 €</p>
                         <div id="premium-details-modal" class="mt-4 text-left space-y-3">
                             <!-- Premium specific fields will be injected here -->
                         </div>

@@ -160,6 +160,18 @@ function showOptionsAdvertisementModal() {
         const addPremiumBtn = document.getElementById('add-premium-from-modal');
         const continueBtn = document.getElementById('continue-from-options-modal');
 
+        const priorityPriceEl = document.getElementById('advert-priority-price');
+        const premiumPriceEl = document.getElementById('advert-premium-price');
+
+        if (priorityPriceEl && staticOptions.priority.prixUnitaire > 0) {
+            priorityPriceEl.textContent = `+${staticOptions.priority.prixUnitaire.toFixed(2)} €`;
+        }
+
+        if (premiumPriceEl && staticOptions.premium.prixUnitaire > 0) {
+            premiumPriceEl.textContent = `+${staticOptions.premium.prixUnitaire.toFixed(2)} €`;
+        }
+        
+
         // Reset visibility
         prioritySection.classList.add('hidden');
         premiumSection.classList.add('hidden');
@@ -223,8 +235,7 @@ function showOptionsAdvertisementModal() {
                         <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full"></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Terminal de départ</label><input type="text" name="terminal_departure" class="input-style w-full"></div>
-                    <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" name="baggage_count_departure" class="input-style w-full" min="1">
-</div>
+                    <div><label class="block text-sm font-medium text-gray-700">Nombre de bagages</label><input type="number" name="baggage_count_departure" class="input-style w-full" min="1"></div>
                      <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Lieu de restitution</label>
@@ -313,8 +324,8 @@ function closeModal() {
                 document.getElementById('custom-modal-error').classList.remove('hidden');
                 return;
             }
-            closeModal(); if (modalResolve) modalResolve(value); 
-        } else { closeModal(); if (modalResolve) modalResolve(true); } 
+            closeModal(); if (modalResolve) modalResolve(value);
+        } else { closeModal(); if (modalResolve) modalResolve(true); }
     };
     if (wasQuickDateModalOpen) {
         document.getElementById('quick-date-modal').classList.remove('hidden');
