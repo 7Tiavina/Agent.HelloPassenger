@@ -284,30 +284,31 @@ class FrontController extends Controller
             Log::info('FrontController::getOptionsQuote - Réponse de BdmApiService::getCommandeOptionsQuote', ['response' => $response]);
     
             if ($response && ($response['statut'] ?? 0) === 1 && isset($response['content'])) {
-                $priorityPrice = 0;
-                $premiumPrice = 0;
+                $priorityOption = null;
+                $premiumOption = null;
     
-                foreach ($response['content'] ?? [] as $optionItem) { // Iterate directly over content as the BDM API returns products and options in the same list
-                    // Normaliser les libellés pour une comparaison plus robuste
+                foreach ($response['content'] ?? [] as $optionItem) {
                     $normalizedLibelle = Str::upper($optionItem['libelle'] ?? '');
 
+                    // Find the main "PRIORITY" option, ignore "PRIORITY CHECK-OUT"
                     if (str_contains($normalizedLibelle, 'PRIORITY') && !str_contains($normalizedLibelle, 'CHECK-OUT')) {
-                        $priorityPrice = $optionItem['prixUnitaire'] ?? 0;
+                        $priorityOption = $optionItem;
                     } elseif (str_contains($normalizedLibelle, 'PREMIUM')) {
-                        $premiumPrice = $optionItem['prixUnitaire'] ?? 0;
+                        $premiumOption = $optionItem;
                     }
                 }
-                Log::info('FrontController::getOptionsQuote - Prix des options extraits', [
-                    'priorityPrice' => $priorityPrice,
-                    'premiumPrice' => $premiumPrice
+
+                Log::info('FrontController::getOptionsQuote - Options extraites', [
+                    'priority' => $priorityOption,
+                    'premium' => $premiumOption
                 ]);
     
                 return response()->json([
                     'statut' => 1,
                     'message' => 'Prix des options récupérés avec succès',
                     'content' => [
-                        'priority' => ['price' => $priorityPrice],
-                        'premium' => ['price' => $premiumPrice],
+                        'priority' => $priorityOption,
+                        'premium' => $premiumOption,
                     ]
                 ]);
             } else {

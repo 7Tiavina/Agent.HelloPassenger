@@ -105,7 +105,8 @@ function toggleOptionFromModal(optionKey) {
     } else {
         // Item does not exist, so add it
         const option = staticOptions[optionKey];
-        let premiumDetails = {};
+            console.log('DEBUG (modal.js): Option object from staticOptions:', option); // NEW DEBUG LOG
+            let premiumDetails = {};
 
         if (optionKey === 'premium') {
             const direction = document.querySelector('input[name="premium_direction"]:checked')?.value;
@@ -136,7 +137,7 @@ function toggleOptionFromModal(optionKey) {
 
         cartItems.push({
             itemCategory: 'option',
-            id: optionKey,
+            id: option.id,
             key: optionKey,
             libelle: option.libelle,
             prix: option.prixUnitaire,

@@ -13,14 +13,7 @@ use Illuminate\Support\Facades\Cache; // Added
 
 class PaymentController extends Controller
 {
-    private function getStaticOptions(): array
-    {
-        // TODO: REMPLACER CES GUIDS PAR LES VRAIS GUIDs DE L'API BDM
-        return [
-            'priority' => ['id' => '00000000-0000-0000-0000-000000000001', 'prixUnitaire' => 15, 'libelle' => 'Service Priority'],
-            'premium'  => ['id' => '00000000-0000-0000-0000-000000000002', 'prixUnitaire' => 25, 'libelle' => 'Service Premium'],
-        ];
-    }
+    
 
     /**
      * Prépare les données de la commande et les stocke en session avant la redirection vers la page de paiement.
@@ -43,13 +36,14 @@ class PaymentController extends Controller
                 'baggages' => 'required|array',
                 'products' => 'required|array',
                 'options' => 'nullable|array',
-                'options.*.id' => 'required|string',
+                'options.*.id' => 'required|string', // The real BDM ID
+                'options.*.libelle' => 'required|string',
+                'options.*.prix' => 'required|numeric',
                 'options.*.details' => 'nullable|array',
             ]);
 
             // --- Server-side definitions for security ---
             $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
-            $staticOptions = $this->getStaticOptions();
             $baggageTypeToLibelleMap = [
                 'accessory' => 'Accessoires',
                 'cabin' => 'Bagage cabine',
@@ -83,24 +77,18 @@ class PaymentController extends Controller
             // 2. Process Options
             if (!empty($validatedData['options'])) {
                 foreach ($validatedData['options'] as $selectedOption) {
-                    $optionKey = $selectedOption['id']; // This will be 'priority' or 'premium' from the JS
-                    if (!isset($staticOptions[$optionKey])) {
-                        throw new \Exception('Invalid option key provided: ' . $optionKey);
-                    }
-                    
-                    $optionDetails = $staticOptions[$optionKey];
-
                     $details = $selectedOption['details'] ?? null;
 
                     $commandeLignes[] = [
-                        "idProduit" => $optionDetails['id'], // Use the real GUID
+                        "idProduit" => $selectedOption['id'], // Use the real ID from the option
                         "idService" => $serviceId,
                         "dateDebut" => $validatedData['dateDepot'] . 'T' . $validatedData['heureDepot'] . ':00.000Z',
                         "dateFin" => $validatedData['dateRecuperation'] . 'T' . $validatedData['heureRecuperation'] . ':00.000Z',
-                        "prixTTC" => $optionDetails['prixUnitaire'],
+                        "prixTTC" => $selectedOption['prix'], // Use the real price
                         "quantite" => 1,
-                        "libelleProduit" => $optionDetails['libelle'],
-                        "details" => $details // Store the whole details object
+                        "libelleProduit" => $selectedOption['libelle'], // Use the real libelle
+                        "details" => $details,
+                        "is_option" => true // Add a flag to identify this line later
                     ];
                 }
             }
@@ -434,13 +422,13 @@ class PaymentController extends Controller
         try {
             $token = $this->getBdmToken();
 
-            $staticOptions = $this->getStaticOptions();
-            $optionGuids = array_column($staticOptions, 'id');
-
             $lignesProduits = [];
             $lignesOptions = [];
             foreach ($commandeLignes as $ligne) {
-                if (in_array($ligne['idProduit'], $optionGuids)) {
+                // Use the 'is_option' flag set in preparePayment
+                if (isset($ligne['is_option']) && $ligne['is_option']) {
+                    // Remove the temporary flag before sending to BDM
+                    unset($ligne['is_option']);
                     $lignesOptions[] = $ligne;
                 } else {
                     $lignesProduits[] = $ligne;

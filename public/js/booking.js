@@ -185,8 +185,14 @@ async function handleTotalClick() {
                 const optionsQuoteResult = await optionsQuoteResponse.json();
 
                 if (optionsQuoteResult.statut === 1 && optionsQuoteResult.content) {
-                    staticOptions.priority.prixUnitaire = optionsQuoteResult.content.priority.price;
-                    staticOptions.premium.prixUnitaire = optionsQuoteResult.content.premium.price;
+                    console.log('Options from API:', optionsQuoteResult.content); // DEBUG
+                    if (optionsQuoteResult.content.priority) {
+                        staticOptions.priority = optionsQuoteResult.content.priority;
+                    }
+                    if (optionsQuoteResult.content.premium) {
+                        staticOptions.premium = optionsQuoteResult.content.premium;
+                    }
+                    console.log('Updated staticOptions:', staticOptions); // DEBUG
                 } else {
                     await showCustomAlert('Erreur de tarification options', optionsQuoteResult.message || 'Impossible de récupérer les prix des options.');
                     if (loader) loader.classList.add('hidden');
@@ -247,7 +253,7 @@ async function handleTotalClick() {
         }
 
         const baggages = cartItems.filter(i => i.itemCategory === 'baggage').map(item => ({ type: item.type, quantity: item.quantity }));
-        const options = cartItems.filter(i => i.itemCategory === 'option').map(item => ({ id: item.id, details: item.details || null }));
+        const options = cartItems.filter(i => i.itemCategory === 'option');
 
         const airportSelect = document.getElementById('airport-select');
         const airportName = airportSelect.options[airportSelect.selectedIndex].text;
