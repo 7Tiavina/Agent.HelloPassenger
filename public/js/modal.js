@@ -1,6 +1,18 @@
+// =================================================================================
+// == Fichier: public/js/modal.js
+// == Description: Gère la logique pour toutes les modales du site.
+// =================================================================================
+
 let modalResolve;
 let wasQuickDateModalOpen = false;
 
+// =================================================================================
+// == Fonctions génériques pour les modales (Alert, Confirm, Prompt)
+// =================================================================================
+
+/**
+ * Cache la modale de date rapide si elle est ouverte, pour éviter les superpositions.
+ */
 function hideQuickDateModalIfOpen() {
     const quickDateModal = document.getElementById('quick-date-modal');
     if (quickDateModal && !quickDateModal.classList.contains('hidden')) {
@@ -11,51 +23,195 @@ function hideQuickDateModalIfOpen() {
     }
 }
 
+/**
+ * Affiche une modale d'alerte simple avec un titre, un message et un bouton "OK".
+ * @param {string} title - Le titre de la modale.
+ * @param {string} message - Le message (peut contenir du HTML).
+ * @returns {Promise<boolean>} - Une promesse qui se résout quand la modale est fermée.
+ */
 function showCustomAlert(title, message) {
     hideQuickDateModalIfOpen();
     const modalOverlay = document.getElementById('custom-modal-overlay');
+    if (!modalOverlay) return Promise.resolve(false);
+
     document.getElementById('custom-modal-title').textContent = title;
     document.getElementById('custom-modal-message').innerHTML = message;
     document.getElementById('custom-modal-prompt-container').classList.add('hidden');
-    document.getElementById('custom-modal-cancel-btn').classList.add('hidden');
-    document.getElementById('custom-modal-confirm-btn').textContent = 'OK';
+    
+    const footer = document.getElementById('custom-modal-footer');
+    footer.innerHTML = `<button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">OK</button>`;
+
     modalOverlay.classList.remove('hidden');
-    return new Promise(resolve => { modalResolve = resolve; });
+
+    return new Promise(resolve => {
+        modalResolve = resolve;
+        document.getElementById('custom-modal-confirm-btn').onclick = () => { 
+            closeModal(); 
+            modalResolve(true);
+        };
+    });
 }
 
+/**
+ * Affiche une modale de confirmation avec un titre, un message et des boutons "Confirmer" et "Annuler".
+ * @param {string} title - Le titre de la modale.
+ * @param {string} message - Le message de confirmation.
+ * @returns {Promise<boolean>} - Une promesse qui se résout à `true` si confirmé, `false` sinon.
+ */
+function showCustomConfirm(title, message) {
+    hideQuickDateModalIfOpen();
+    const modalOverlay = document.getElementById('custom-modal-overlay');
+    if (!modalOverlay) return Promise.resolve(false);
+
+    document.getElementById('custom-modal-title').textContent = title;
+    document.getElementById('custom-modal-message').textContent = message;
+    document.getElementById('custom-modal-prompt-container').classList.add('hidden');
+
+    const footer = document.getElementById('custom-modal-footer');
+    footer.innerHTML = `
+        <button id="modal-btn-cancel-confirm" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+        <button id="modal-btn-confirm-confirm" class="bg-red-600 text-white font-bold py-2 px-4 rounded-full btn-hover">Confirmer</button>
+    `;
+    
+    modalOverlay.classList.remove('hidden');
+
+    return new Promise(resolve => {
+        modalResolve = resolve;
+        document.getElementById('modal-btn-confirm-confirm').onclick = () => { closeModal(); modalResolve(true); };
+        document.getElementById('modal-btn-cancel-confirm').onclick = () => { closeModal(); modalResolve(false); };
+    });
+}
+
+/**
+ * Affiche une modale avec un champ de saisie.
+ * @param {string} title - Le titre de la modale.
+ * @param {string} message - Le message d'instruction.
+ * @param {string} label - Le label pour le champ de saisie.
+ * @returns {Promise<string|null>} - Une promesse qui se résout avec la valeur saisie, ou null si annulé.
+ */
 function showCustomPrompt(title, message, label) {
     hideQuickDateModalIfOpen();
     const modalOverlay = document.getElementById('custom-modal-overlay');
+    if (!modalOverlay) return Promise.resolve(null);
+    
     document.getElementById('custom-modal-title').textContent = title;
     document.getElementById('custom-modal-message').textContent = message;
+    
+    const promptContainer = document.getElementById('custom-modal-prompt-container');
+    promptContainer.classList.remove('hidden');
     document.getElementById('custom-modal-prompt-label').textContent = label;
     document.getElementById('custom-modal-input').value = '';
     document.getElementById('custom-modal-error').classList.add('hidden');
-    document.getElementById('custom-modal-prompt-container').classList.remove('hidden');
-    document.getElementById('custom-modal-cancel-btn').classList.remove('hidden');
-    document.getElementById('custom-modal-confirm-btn').textContent = 'Confirmer';
+
+    const footer = document.getElementById('custom-modal-footer');
+    footer.innerHTML = `
+        <button id="custom-modal-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
+        <button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Confirmer</button>
+    `;
+
     modalOverlay.classList.remove('hidden');
-    return new Promise(resolve => { modalResolve = resolve; });
+
+    return new Promise(resolve => {
+        modalResolve = resolve;
+        const confirmBtn = document.getElementById('custom-modal-confirm-btn');
+        const cancelBtn = document.getElementById('custom-modal-cancel-btn');
+        const input = document.getElementById('custom-modal-input');
+
+        confirmBtn.onclick = () => {
+            const value = input.value;
+            if (label.toLowerCase().includes('email') && (value.trim() === '' || !/^\S+@\S+\.\S+$/.test(value))) {
+                document.getElementById('custom-modal-error').textContent = 'Veuillez entrer une adresse e-mail valide.';
+                document.getElementById('custom-modal-error').classList.remove('hidden');
+                return;
+            }
+            closeModal(); 
+            modalResolve(value);
+        };
+        cancelBtn.onclick = () => { closeModal(); modalResolve(null); };
+    });
 }
 
+
+/**
+ * Affiche une modale pour choisir entre la connexion et continuer en tant qu'invité.
+ * @returns {Promise<'login'|'guest'|null>}
+ */
 function showLoginOrGuestPrompt() {
     hideQuickDateModalIfOpen();
     const modalOverlay = document.getElementById('custom-modal-overlay');
+    if (!modalOverlay) return Promise.resolve(null);
+
     document.getElementById('custom-modal-title').textContent = 'Comment souhaitez-vous procéder ?';
     document.getElementById('custom-modal-message').textContent = 'Connectez-vous pour utiliser vos informations enregistrées ou continuez en tant qu\'invité.';
     document.getElementById('custom-modal-prompt-container').classList.add('hidden');
+    
     const footer = document.getElementById('custom-modal-footer');
     footer.innerHTML = `
         <button id="btn-continue-guest" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Continuer en invité</button>
         <button id="btn-login-modal" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">Se connecter</button>
     `;
     modalOverlay.classList.remove('hidden');
+
     return new Promise(resolve => {
         modalResolve = resolve;
         document.getElementById('btn-login-modal').onclick = () => { closeModal(); resolve('login'); };
         document.getElementById('btn-continue-guest').onclick = () => { closeModal(); resolve('guest'); };
     });
 }
+
+/**
+ * Ferme la modale principale et nettoie l'état.
+ */
+function closeModal() {
+    const modalOverlay = document.getElementById('custom-modal-overlay');
+    if(modalOverlay) {
+        modalOverlay.classList.add('hidden');
+    }
+    
+    // Réinitialise le footer à son état par défaut pour les simples alertes
+    const footer = document.getElementById('custom-modal-footer');
+    if (footer) {
+        footer.innerHTML = `<button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">OK</button>`;
+    }
+
+    if (wasQuickDateModalOpen) {
+        const quickDateModal = document.getElementById('quick-date-modal');
+        if(quickDateModal) {
+            quickDateModal.classList.remove('hidden');
+        }
+        wasQuickDateModalOpen = false;
+    }
+}
+
+/**
+ * Initialise les écouteurs d'événements globaux pour la modale principale.
+ */
+function setupGlobalModalListeners() {
+    const modalOverlay = document.getElementById('custom-modal-overlay');
+    const modalCloseBtn = document.getElementById('custom-modal-close');
+
+    if (modalOverlay) {
+        // Clic sur le fond pour fermer
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+                if (modalResolve) modalResolve(null); // Annulation
+            }
+        });
+    }
+
+    if (modalCloseBtn) {
+        // Clic sur le bouton de fermeture (croix)
+        modalCloseBtn.addEventListener('click', () => {
+            closeModal();
+            if (modalResolve) modalResolve(null); // Annulation
+        });
+    }
+}
+
+// =================================================================================
+// == Fonctions spécifiques à la modale de publicité des options (Priority/Premium)
+// =================================================================================
 
 function displayOptions(dureeEnMinutes) {
     // Condition pour Priority (ne change pas)
@@ -105,8 +261,7 @@ function toggleOptionFromModal(optionKey) {
     } else {
         // Item does not exist, so add it
         const option = staticOptions[optionKey];
-            console.log('DEBUG (modal.js): Option object from staticOptions:', option); // NEW DEBUG LOG
-            let premiumDetails = {};
+        let premiumDetails = {};
 
         if (optionKey === 'premium') {
             const direction = document.querySelector('input[name="premium_direction"]:checked')?.value;
@@ -134,16 +289,14 @@ function toggleOptionFromModal(optionKey) {
                     }
                 });
 
-                // If form is not valid, show alert and stop
                 if(!isFormValid) {
                     showCustomAlert('Champs requis', 'Veuillez remplir tous les champs obligatoires (en rouge).');
                     return; 
                 }
 
-                // Gather all data from the active form (including disabled fields)
+                // Gather all data from the active form
                 formContainer.querySelectorAll('input, textarea, select').forEach(input => {
                     premiumDetails[input.name] = input.value;
-                    // If this is a location select, also grab the text libelle
                     if (input.tagName === 'SELECT' && (input.name === 'pickup_location_arrival' || input.name === 'restitution_location_departure')) {
                         const selectedOption = input.options[input.selectedIndex];
                         if (selectedOption) {
@@ -239,7 +392,8 @@ function showOptionsAdvertisementModal() {
                                 ${lieuxOptionsHTML}
                              </select>
                          </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}">
+</div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
                     <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
@@ -263,7 +417,8 @@ function showOptionsAdvertisementModal() {
                                 ${lieuxOptionsHTML}
                             </select>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" name="restitution_time_departure" class="input-style w-full" data-required="true" max="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" name="restitution_time_departure" class="input-style w-full" data-required="true" max="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}">
+</div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
                     <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
@@ -319,7 +474,7 @@ function showOptionsAdvertisementModal() {
                 input.addEventListener('mouseover', (e) => {
                     if (!tooltip) return;
                     tooltip.textContent = 'Ces dates sont à modifier à l’étape précédente.';
-                    tooltip.classList.remove('hidden');
+                    tooltip.classList.add('hidden');
                     const rect = e.target.getBoundingClientRect();
                     const tooltipRect = tooltip.getBoundingClientRect();
                     tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX}px`;
@@ -364,37 +519,6 @@ modal.classList.remove('hidden');
     });
 }
 
-function closeModal() {
-    document.getElementById('custom-modal-overlay').classList.add('hidden');
-    const passwordField = document.getElementById('custom-modal-password');
-    if (passwordField) {
-        passwordField.previousElementSibling?.remove();
-        passwordField.remove();
-    }
-    const footer = document.getElementById('custom-modal-footer');
-    footer.innerHTML = `
-        <button id="custom-modal-cancel-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full btn-hover">Annuler</button>
-        <button id="custom-modal-confirm-btn" class="bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover">OK</button>
-    `;
-    document.getElementById('custom-modal-cancel-btn').onclick = () => { closeModal(); if (modalResolve) modalResolve(null); };
-    document.getElementById('custom-modal-confirm-btn').onclick = () => {
-        const promptContainer = document.getElementById('custom-modal-prompt-container');
-        const isPrompt = !promptContainer.classList.contains('hidden');
-        if (isPrompt) {
-            const value = document.getElementById('custom-modal-input').value;
-            if (value.trim() === '' || !/^\S+@\S+\.\S+$/.test(value)) {
-                document.getElementById('custom-modal-error').textContent = 'Veuillez entrer une adresse e-mail valide.';
-                document.getElementById('custom-modal-error').classList.remove('hidden');
-                return;
-            }
-            closeModal(); if (modalResolve) modalResolve(value);
-        } else { closeModal(); if (modalResolve) modalResolve(true); }
-    };
-    if (wasQuickDateModalOpen) {
-        document.getElementById('quick-date-modal').classList.remove('hidden');
-        wasQuickDateModalOpen = false;
-    }
-}
 
-document.getElementById('custom-modal-close').onclick = () => { closeModal(); if (modalResolve) modalResolve(null); };
-document.getElementById('custom-modal-overlay').onclick = (e) => { if (e.target === e.currentTarget) { closeModal(); if (modalResolve) modalResolve(null); } };
+// Initialise les écouteurs dès que le DOM est prêt.
+document.addEventListener('DOMContentLoaded', setupGlobalModalListeners);
