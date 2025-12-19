@@ -103,11 +103,12 @@ class PaymentController extends Controller
                 
                 $isArrivalFlow = ($details['direction'] ?? '') === 'terminal_to_agence';
                 $locationKey = $isArrivalFlow ? 'pickup_location_arrival' : 'restitution_location_departure';
+                $locationLabelKey = $locationKey . '_libelle';
                 $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
                 $timeKey = $isArrivalFlow ? 'pickup_time_arrival' : 'restitution_time_departure';
                 $instructionsKey = $isArrivalFlow ? 'instructions_arrival' : 'instructions_departure';
 
-                $commandeInfos['lieu'] = $details[$locationKey] ?? 'Non spécifié';
+                $commandeInfos['lieu'] = $details[$locationLabelKey] ?? $details[$locationKey] ?? 'Non spécifié';
 
                 if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
                 if (!empty($details[$timeKey])) {

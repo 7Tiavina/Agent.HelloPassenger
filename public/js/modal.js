@@ -143,6 +143,13 @@ function toggleOptionFromModal(optionKey) {
                 // Gather all data from the active form (including disabled fields)
                 formContainer.querySelectorAll('input, textarea, select').forEach(input => {
                     premiumDetails[input.name] = input.value;
+                    // If this is a location select, also grab the text libelle
+                    if (input.tagName === 'SELECT' && (input.name === 'pickup_location_arrival' || input.name === 'restitution_location_departure')) {
+                        const selectedOption = input.options[input.selectedIndex];
+                        if (selectedOption) {
+                            premiumDetails[input.name + '_libelle'] = selectedOption.text;
+                        }
+                    }
                 });
             }
         }
