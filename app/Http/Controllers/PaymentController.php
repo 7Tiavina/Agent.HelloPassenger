@@ -70,7 +70,7 @@ class PaymentController extends Controller
             if (!empty($validatedData['options'])) {
                 foreach ($validatedData['options'] as $selectedOption) {
                     // If this is the premium option, store its details separately
-                    if (str_contains($selectedOption['libelle'], 'Premium')) {
+                    if (stripos($selectedOption['libelle'], 'Premium') !== false) {
                         $premiumDetails = $selectedOption['details'] ?? null;
                     }
 
@@ -87,28 +87,27 @@ class PaymentController extends Controller
             }
 
             // 3. Create commandeInfos from extracted premium details
-            // Initialize with default empty values to ensure the object structure is always correct
-            $commandeInfos = (object) [
+            $commandeInfos = [
                 'modeTransport' => '',
                 'lieu' => '',
                 'commentaires' => '',
             ];
 
-            if ($premiumDetails && !empty($premiumDetails)) {
+            if ($premiumDetails && isset($premiumDetails['direction'])) {
                 $details = $premiumDetails;
                 $commentairesArray = [];
                 $directionText = ($details['direction'] ?? '') === 'terminal_to_agence' ? 'Récupération bagages' : 'Restitution bagages';
                 $commentairesArray[] = "Type de service: " . $directionText;
 
-                $commandeInfos->modeTransport = $details['modeTransport'] ?? $directionText; // Prioritize dedicated field if ever added
+                $commandeInfos['modeTransport'] = $details['modeTransport'] ?? $directionText; // Prioritize dedicated field if ever added
                 
-                $isArrivalFlow = isset($details['flight_number_arrival']);
+                $isArrivalFlow = ($details['direction'] ?? '') === 'terminal_to_agence';
                 $locationKey = $isArrivalFlow ? 'pickup_location_arrival' : 'restitution_location_departure';
                 $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
                 $timeKey = $isArrivalFlow ? 'pickup_time_arrival' : 'restitution_time_departure';
                 $instructionsKey = $isArrivalFlow ? 'instructions_arrival' : 'instructions_departure';
 
-                $commandeInfos->lieu = $details[$locationKey] ?? 'Non spécifié';
+                $commandeInfos['lieu'] = $details[$locationKey] ?? 'Non spécifié';
 
                 if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
                 if (!empty($details[$timeKey])) {
@@ -117,7 +116,7 @@ class PaymentController extends Controller
                 }
                 if (!empty($details[$instructionsKey])) $commentairesArray[] = "Informations complémentaires: " . $details[$instructionsKey];
                 
-                $commandeInfos->commentaires = implode('; ', $commentairesArray);
+                $commandeInfos['commentaires'] = implode('; ', $commentairesArray);
             }
 
             // 4. Prepare Client and Final Command Data
