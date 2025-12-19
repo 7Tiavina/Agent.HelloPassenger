@@ -87,7 +87,13 @@ class PaymentController extends Controller
             }
 
             // 3. Create commandeInfos from extracted premium details
-            $commandeInfos = new \stdClass();
+            // Initialize with default empty values to ensure the object structure is always correct
+            $commandeInfos = (object) [
+                'modeTransport' => '',
+                'lieu' => '',
+                'commentaires' => '',
+            ];
+
             if ($premiumDetails && !empty($premiumDetails)) {
                 $details = $premiumDetails;
                 $commentairesArray = [];
