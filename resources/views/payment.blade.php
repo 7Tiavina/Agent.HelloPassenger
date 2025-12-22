@@ -464,22 +464,46 @@
 
         const paymentResetBtn = document.getElementById('payment-reset-btn');
         if (paymentResetBtn) {
-            paymentResetBtn.addEventListener('click', async function() {
-                const confirmed = await showCustomConfirm(
-                    'Réinitialiser la commande', 
-                    'Voulez-vous vraiment continuer ? Toutes les données saisies et votre panier seront perdus.'
-                );
-                if (confirmed) {
-                    // Afficher le loader
-                    const loader = document.getElementById('loader');
-                    if (loader) {
-                        loader.classList.remove('hidden');
-                    }
+            // Créer et injecter la modale de confirmation dans le corps du document
+            const modalHTML = `
+                <div id="payment-reset-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 z-50 flex items-center justify-center px-4">
+                    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                        <h3 class="text-xl font-bold text-gray-800">Réinitialiser la commande</h3>
+                        <p class="mt-4 text-gray-600">Voulez-vous vraiment continuer ? Toutes les données saisies pour votre commande actuelle seront définitivement perdues.</p>
+                        <div class="mt-6 flex justify-end space-x-4">
+                            <button id="payment-reset-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300">Annuler</button>
+                            <button id="payment-reset-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-                    // Vider le stockage local
-                    sessionStorage.removeItem('formState');
-                    
-                    // Appeler le serveur pour vider la session
+            const resetModal = document.getElementById('payment-reset-confirm-modal');
+            const cancelBtn = document.getElementById('payment-reset-cancel-btn');
+            const confirmBtn = document.getElementById('payment-reset-confirm-btn');
+
+            const showResetConfirm = () => {
+                return new Promise(resolve => {
+                    resetModal.classList.remove('hidden');
+                    cancelBtn.onclick = () => {
+                        resetModal.classList.add('hidden');
+                        resolve(false);
+                    };
+                    confirmBtn.onclick = () => {
+                        resetModal.classList.add('hidden');
+                        resolve(true);
+                    };
+                });
+            };
+
+            paymentResetBtn.addEventListener('click', async function() {
+                const confirmed = await showResetConfirm();
+
+                if (confirmed) {
+                    const loader = document.getElementById('loader');
+                    if (loader) loader.classList.remove('hidden');
+
                     try {
                         await fetch('{{ route("session.reset") }}', {
                             method: 'POST',
@@ -490,11 +514,8 @@
                         });
                     } catch (error) {
                         console.error('Failed to reset server session:', error);
-                        // Cacher le loader en cas d'erreur avant de rediriger
-                        if(loader) loader.classList.add('hidden');
                     }
 
-                    // Rediriger vers la page du formulaire après un court délai
                     setTimeout(() => {
                         window.location.href = '{{ route("form-consigne") }}';
                     }, 500);

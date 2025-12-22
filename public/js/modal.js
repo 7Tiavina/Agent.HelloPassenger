@@ -522,3 +522,11 @@ modal.classList.remove('hidden');
 
 // Initialise les écouteurs dès que le DOM est prêt.
 document.addEventListener('DOMContentLoaded', setupGlobalModalListeners);
+
+// Exposer les fonctions au scope global pour qu'elles soient accessibles
+// par les scripts inline dans les fichiers Blade.
+window.showCustomAlert = showCustomAlert;
+window.showCustomConfirm = showCustomConfirm;
+window.showCustomPrompt = showCustomPrompt;
+window.showLoginOrGuestPrompt = showLoginOrGuestPrompt;
+window.closeModal = closeModal;
