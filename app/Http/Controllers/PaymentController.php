@@ -515,11 +515,13 @@ class PaymentController extends Controller
 
     public function clearGuestSession(Request $request)
     {
-        Session::forget('commande_en_cours');
-        Session::forget('guest_customer_details');
-        Session::forget('monetico_order_id'); // Ajout pour vider l\'ID de commande Monetico
-        Log::info('Guest session data cleared successfully.');
-        return response()->json(['success' => true, 'message' => 'Guest session data cleared.']);
+        // Use flush() to completely clear the session. This is a more robust way to "reset"
+        // as it removes all data, including 'commande_en_cours', 'guest_customer_details', etc.
+        // This will also log out an authenticated user, which is the expected behavior for a full reset.
+        $request->session()->flush();
+        
+        Log::info('Full session flushed for reset.');
+        return response()->json(['success' => true, 'message' => 'Session reset successfully.']);
     }
 
     /**

@@ -504,6 +504,9 @@
                     const loader = document.getElementById('loader');
                     if (loader) loader.classList.remove('hidden');
 
+                    // Vider le stockage de session du navigateur ET la session serveur
+                    sessionStorage.removeItem('formState');
+                    
                     try {
                         await fetch('{{ route("session.reset") }}', {
                             method: 'POST',
