@@ -1,0 +1,107 @@
+// Fichier: public/js/state.js
+
+// --- STATE MANAGEMENT ---
+
+// Les données qui sont chargées depuis la session ou initialisées à zéro.
+window.airportId = null;
+window.serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
+window.cartItems = [];
+window.globalProductsData = [];
+window.globalLieuxData = [];
+window.guestEmail = null;
+
+// Données statiques ou initiales, rendues globales
+window.staticOptions = {
+    priority: { id: null, libelle: 'Service Priority', prixUnitaire: 0 }, // Initialisé à 0, sera mis à jour par l'API
+    premium: { id: null, libelle: 'Service Premium', prixUnitaire: 0 }    // Initialisé à 0, sera mis à jour par l'API
+};
+
+window.setAirportId = function(id) {
+    airportId = id;
+}
+
+window.setCartItems = function(items) {
+    cartItems = items;
+}
+
+window.setGlobalProductsData = function(data) {
+    globalProductsData = data;
+}
+
+window.setGlobalLieuxData = function(data) {
+    globalLieuxData = data;
+}
+
+window.setGuestEmail = function(email) {
+    guestEmail = email;
+}
+
+window.setStaticOptions = function(options) {
+    staticOptions = options;
+}
+
+/**
+ * Sauvegarde l'état actuel du formulaire dans la session du navigateur.
+ */
+window.saveStateToSession = function() {
+    const state = {
+        airportId: document.getElementById('airport-select').value,
+        dateDepot: document.getElementById('date-depot').value,
+        heureDepot: document.getElementById('heure-depot').value,
+        dateRecuperation: document.getElementById('date-recuperation').value,
+        heureRecuperation: document.getElementById('heure-recuperation').value,
+        isBaggageStepVisible: document.getElementById('baggage-selection-step').style.display === 'block',
+        cartItems: cartItems,
+        globalProductsData: globalProductsData,
+        globalLieuxData: globalLieuxData,
+        guestEmail: guestEmail
+    };
+    sessionStorage.setItem('formState', JSON.stringify(state));
+}
+
+/**
+ * Charge l'état du formulaire depuis la session du navigateur.
+ */
+window.loadStateFromSession = function() {
+    const state = JSON.parse(sessionStorage.getItem('formState'));
+    if (!state) return;
+
+    document.getElementById('airport-select').value = state.airportId;
+    airportId = state.airportId;
+    document.getElementById('date-depot').value = state.dateDepot;
+    document.getElementById('heure-depot').value = state.heureDepot;
+    document.getElementById('date-recuperation').value = state.dateRecuperation;
+    document.getElementById('heure-recuperation').value = state.heureRecuperation;
+
+    globalProductsData = state.globalProductsData || [];
+    globalLieuxData = state.globalLieuxData || [];
+    cartItems = state.cartItems || [];
+    guestEmail = state.guestEmail || null;
+
+    if (state.isBaggageStepVisible) {
+        document.getElementById('step-1').style.display = 'none';
+        document.getElementById('baggage-selection-step').style.display = 'block';
+        document.getElementById('back-to-step-1-btn').classList.remove('hidden');
+        displaySelectedDates(); // Assurez-vous que cette fonction est disponible globalement
+
+        const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
+        const dateRecuperation = document.getElementById('date-recuperation').value;
+        const heureRecuperation = document.getElementById('heure-recuperation').value;
+        const debut = new Date(`${dateDepot}T${heureDepot}:00`);
+        const fin = new Date(`${dateRecuperation}T${heureRecuperation}:00`);
+        const dureeEnMinutes = Math.ceil(Math.abs(fin - debut) / (1000 * 60));
+
+        if (dureeEnMinutes > 0) {
+            // Assurez-vous que cette fonction est disponible
+            if(typeof displayOptions !== 'undefined') {
+                displayOptions(dureeEnMinutes);
+            }
+        }
+    }
+
+    // Assurez-vous que cette fonction est disponible
+    if(typeof updateCartDisplay !== 'undefined') {
+        updateCartDisplay();
+    }
+}

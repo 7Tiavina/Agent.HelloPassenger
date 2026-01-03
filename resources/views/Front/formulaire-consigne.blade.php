@@ -505,15 +505,23 @@
     // Injection des données Blade dans JS global
     var initialProducts = @json($products);
 </script>
-<!-- Scripts JS externalisés -->
+<!-- Scripts JS en ligne 
+<script src="{{ asset('public/js/state.js') }}"></script>
+<script src="{{ asset('public/js/utils.js') }}"></script>
+<script src="{{ asset('public/js/modal.js') }}"></script>
+<script src="{{ asset('public/js/quick-date-modal.js') }}"></script>
+<script src="{{ asset('public/js/cart.js') }}"></script>
+<script src="{{ asset('public/js/booking.js') }}"></script>
+-->
+
 <script src="{{ asset('js/state.js') }}"></script>
 <script src="{{ asset('js/utils.js') }}"></script>
 <script src="{{ asset('js/modal.js') }}"></script>
 <script src="{{ asset('js/quick-date-modal.js') }}"></script>
 <script src="{{ asset('js/cart.js') }}"></script>
 <script src="{{ asset('js/booking.js') }}"></script>
-
 <script>
+
     // Ce script reste en ligne car il contient une route Blade resolue par PHP
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('reset-form-btn').addEventListener('click', async function () {
