@@ -208,46 +208,30 @@ class BdmApiService
      * @param string $guestEmail L'email de l'invité, si disponible.
      * @return array|null Les prix des options ou null en cas d'erreur.
      */
-    public function getCommandeOptionsQuote(string $idPlateforme, array $baggages, array $options, ?string $guestEmail = null): ?array
+    public function getCommandeOptionsQuote(string $idPlateforme, array $baggages, ?string $guestEmail = null): ?array
     {
         $url = "{$this->baseUrl}/api/plateforme/{$idPlateforme}/commande/options?lg=fr";
 
         // Construire commandeLignes à partir des baggages
         $commandeLignes = array_map(function($baggage) {
             return [
-                "idProduit" => $baggage['productId'], // Assurez-vous que l'ID produit est le bon pour l'API BDM
-                "idService" => $baggage['serviceId'] ?? "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7", // ID Service consigne
+                "idProduit" => $baggage['productId'],
+                "idService" => $baggage['serviceId'] ?? "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7",
                 "dateDebut" => $baggage['dateDebut'],
                 "dateFin" => $baggage['dateFin'],
-                "prixTTC" => 0, // Sera calculé par BDM
+                "prixTTC" => 0,
                 "prixTTCAvantRemise" => 0,
                 "tauxRemise" => 0,
                 "quantite" => $baggage['quantity']
             ];
         }, $baggages);
 
-        // Construire commandeOptions à partir des options demandées (Priority, Premium)
-        $commandeOptions = array_map(function($option) use ($baggages) {
-            // Pour obtenir le prix des options, nous devons envoyer au moins les dates des bagages
-            // Utilisons la première date de bagage disponible comme référence si aucune option spécifique n'est passée
-            $dateDebut = $baggages[0]['dateDebut'] ?? now()->toIso8601String();
-            $dateFin = $baggages[0]['dateFin'] ?? now()->addDay()->toIso8601String();
-
-            return [
-                "idProduit" => $option['productId'], // ID Produit pour Priority/Premium
-                "idService" => $option['serviceId'] ?? "dfb8ac1b-8bb1-4957-afb4-1faedaf641b7", // ID Service consigne
-                "dateDebut" => $dateDebut,
-                "dateFin" => $dateFin,
-                "prixTTC" => 0, // Sera calculé par BDM
-                "prixTTCAvantRemise" => 0,
-                "tauxRemise" => 0,
-                "quantite" => 1 // Les options sont généralement à l'unité
-            ];
-        }, $options);
+        // Envoyer un tableau vide pour `commandeOptions` pour découvrir les options disponibles
+        $commandeOptions = [];
 
         // Données client minimales pour la requête de devis d'options
         $clientData = [
-            "email" => $guestEmail ?? "temp@hellopassenger.com", // Utiliser un email invité ou par défaut
+            "email" => $guestEmail ?? "temp@hellopassenger.com",
             "telephone" => "0000000000",
             "nom" => "Passager",
             "prenom" => "Temp",
@@ -260,7 +244,6 @@ class BdmApiService
             "pays" => "FRA"
         ];
         
-        // Assurez-vous que l'email est valide, car l'API BDM renvoie 400 sinon
         if (!filter_var($clientData['email'], FILTER_VALIDATE_EMAIL)) {
             $clientData['email'] = "temp@hellopassenger.com";
         }
@@ -268,7 +251,7 @@ class BdmApiService
 
         $payload = [
             "commandeLignes" => $commandeLignes,
-            "commandeOptions" => $commandeOptions,
+            "commandeOptions" => $commandeOptions, // Envoyer un tableau vide
             "commandeInfos" => [
                 "modeTransport" => "Inconnu",
                 "lieu" => "Inconnu",
@@ -277,36 +260,33 @@ class BdmApiService
             "client" => $clientData
         ];
 
-        Log::info('BdmApiService::getCommandeOptionsQuote - Payload envoyé à l\'API BDM', ['payload' => $payload]);
+        Log::info('BdmApiService::getCommandeOptionsQuote - Payload envoyé pour découvrir les options', ['payload' => $payload]);
 
         try {
-            $token = $this->getAuthToken(); // Get token dynamically
+            $token = $this->getAuthToken();
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
             ])->post($url, $payload);
 
-            Log::info('BdmApiService::getCommandeOptionsQuote - Réponse brute de l\'API BDM', [
+            Log::info('BdmApiService::getCommandeOptionsQuote - Réponse brute de l\'API BDM pour la découverte d\'options', [
                 'status' => $response->status(),
                 'body' => $response->body()
             ]);
 
             if ($response->successful()) {
                 return $response->json();
-            }
-            else {
-                Log::error('Erreur API BDM lors de la récupération des prix des options', [
+            } else {
+                Log::error('Erreur API BDM lors de la découverte des prix des options', [
                     'status' => $response->status(),
-                    'response' => $response->body(),
-                    'payload' => $payload
+                    'response' => $response->body()
                 ]);
                 return null;
             }
         } catch (\Exception $e) {
-            Log::error('Exception lors de l\'appel API BDM pour les prix des options', [
-                'error' => $e->getMessage(),
-                'payload' => $payload
+            Log::error('Exception lors de l\'appel API BDM pour la découverte des prix des options', [
+                'error' => $e->getMessage()
             ]);
             return null;
         }

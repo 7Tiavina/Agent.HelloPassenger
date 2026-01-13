@@ -190,73 +190,77 @@ async function handleTotalClick() {
             return;
         }
         
-        // --- NOUVEAU : Appel API pour obtenir les prix dynamiques des options ---
-        if (isPriorityAvailable || isPremiumAvailable) {
-            const dateDepot = document.getElementById('date-depot').value;
-            const heureDepot = document.getElementById('heure-depot').value;
-            const dateRecuperation = document.getElementById('date-recuperation').value;
-            const heureRecuperation = document.getElementById('heure-recuperation').value;
+        // --- NOUVELLE LOGIQUE D'OPTIONS ---
+        const dateDepot = document.getElementById('date-depot').value;
+        const heureDepot = document.getElementById('heure-depot').value;
+        const dateRecuperation = document.getElementById('date-recuperation').value;
+        const heureRecuperation = document.getElementById('heure-recuperation').value;
 
-            // Assurez-vous que les baggages ont toutes les infos nécessaires pour l'API BDM
-            const baggagesForOptionsQuote = cartItems.filter(i => i.itemCategory === 'baggage').map(item => {
-                const product = globalProductsData.find(p => p.id === item.productId);
-                return {
-                    productId: item.productId,
-                    serviceId: product ? product.idService : serviceId, // Utilise le serviceId du produit si dispo
-                    dateDebut: `${dateDepot}T${heureDepot}:00Z`,
-                    dateFin: `${dateRecuperation}T${heureRecuperation}:00Z`,
-                    quantity: item.quantity
-                };
+        const baggagesForOptionsQuote = cartItems.filter(i => i.itemCategory === 'baggage').map(item => {
+            const product = globalProductsData.find(p => p.id === item.productId);
+            return {
+                productId: item.productId,
+                serviceId: product ? product.idService : serviceId,
+                dateDebut: `${dateDepot}T${heureDepot}:00Z`,
+                dateFin: `${dateRecuperation}T${heureRecuperation}:00Z`,
+                quantity: item.quantity
+            };
+        });
+
+        let shouldShowOptionsModal = false;
+
+        try {
+            const optionsQuoteResponse = await fetch('/api/commande/options-quote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                body: JSON.stringify({
+                    idPlateforme: airportId,
+                    cartItems: baggagesForOptionsQuote,
+                    guestEmail: guestEmail,
+                    dateDepot: dateDepot,
+                    heureDepot: heureDepot,
+                    dateRecuperation: dateRecuperation,
+                    heureRecuperation: heureRecuperation,
+                    globalProductsData: globalProductsData
+                })
             });
 
-            try {
-                const optionsQuoteResponse = await fetch('/api/commande/options-quote', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                    body: JSON.stringify({
-                        idPlateforme: airportId,
-                        cartItems: baggagesForOptionsQuote,
-                        guestEmail: guestEmail,
-                        dateDepot: dateDepot,
-                        heureDepot: heureDepot,
-                        dateRecuperation: dateRecuperation,
-                        heureRecuperation: heureRecuperation,
-                        globalProductsData: globalProductsData // Pour que le backend puisse mapper les produits
-                    })
-                });
+            const optionsQuoteResult = await optionsQuoteResponse.json();
 
-                const optionsQuoteResult = await optionsQuoteResponse.json();
+            if (optionsQuoteResult.statut === 1 && optionsQuoteResult.content) {
+                console.log('Options from API:', optionsQuoteResult.content);
+                staticOptions.priority = optionsQuoteResult.content.priority;
+                staticOptions.premium = optionsQuoteResult.content.premium;
+                console.log('Updated staticOptions:', staticOptions);
 
-                if (optionsQuoteResult.statut === 1 && optionsQuoteResult.content) {
-                    console.log('Options from API:', optionsQuoteResult.content); // DEBUG
-                    if (optionsQuoteResult.content.priority) {
-                        staticOptions.priority = optionsQuoteResult.content.priority;
-                    }
-                    if (optionsQuoteResult.content.premium) {
-                        staticOptions.premium = optionsQuoteResult.content.premium;
-                    }
-                    console.log('Updated staticOptions:', staticOptions); // DEBUG
-                } else {
-                    await showCustomAlert('Erreur de tarification options', optionsQuoteResult.message || 'Impossible de récupérer les prix des options.');
-                    if (loader) loader.classList.add('hidden');
-                    return;
+                // Déterminer si la modale doit être affichée
+                if (staticOptions.priority || staticOptions.premium) {
+                    shouldShowOptionsModal = true;
                 }
-            } catch (error) {
-                console.error('Erreur lors de la récupération des prix des options:', error);
-                await showCustomAlert('Erreur', 'Une erreur technique est survenue lors de la récupération des prix des options.');
-                if (loader) loader.classList.add('hidden');
-                return;
-            }
 
-            // Afficher la modale des options seulement après avoir récupéré les prix dynamiques
+            } else {
+                // Si l'API renvoie une erreur, on l'affiche mais on continue sans les options
+                await showCustomAlert('Info Tarification Options', optionsQuoteResult.message || 'Impossible de récupérer les prix des options pour le moment. Vous pouvez continuer sans.');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la récupération des prix des options:', error);
+            // En cas d'erreur technique, on continue sans les options
+            await showCustomAlert('Erreur Technique', 'Une erreur technique est survenue lors de la récupération des prix des options. Vous pouvez continuer sans.');
+        }
+
+        if (shouldShowOptionsModal) {
+            // Calculer la disponibilité de premium
+            displayOptions(0); // L'argument n'est pas utilisé mais la fonction est appelée pour isPremiumAvailable
             const result = await showOptionsAdvertisementModal();
             if (result === 'cancelled') {
                 if (loader) loader.classList.add('hidden');
-                return;
+                return; // L'utilisateur a annulé depuis la modale
             }
         }
-        // --- FIN NOUVEAU ---
+        
+        // --- FIN NOUVELLE LOGIQUE ---
 
+        // Le reste du processus de paiement continue ici
         const authResponse = await fetch('/check-auth-status');
         const authData = await authResponse.json();
 

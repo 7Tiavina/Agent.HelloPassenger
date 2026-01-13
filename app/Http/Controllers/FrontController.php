@@ -222,7 +222,7 @@ class FrontController extends Controller
             'heureDepot' => 'required|string',
             'dateRecuperation' => 'required|string',
             'heureRecuperation' => 'required|string',
-            'globalProductsData' => 'required|array', // Utilise pour mapper productId à serviceId
+            'globalProductsData' => 'required|array',
         ]);
 
         $idPlateforme = $validated['idPlateforme'];
@@ -241,44 +241,26 @@ class FrontController extends Controller
             'dates' => "{$dateDepot} {$heureDepot} - {$dateRecuperation} {$heureRecuperation}",
         ]);
 
-        // Transforme les cartItems du frontend en baggages pour le BdmApiService
         $baggages = [];
-        $consigneServiceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'; // Constant Service ID for consigne
+        $consigneServiceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
         foreach ($cartItemsFromFrontend as $item) {
-            // Trouver le produit correspondant dans globalProductsData pour obtenir d'autres détails si nécessaire
             $productInGlobal = collect($globalProductsData)->firstWhere('id', $item['productId']);
-            
             if ($productInGlobal) {
                 $baggages[] = [
                     'productId' => $productInGlobal['id'],
-                    'serviceId' => $consigneServiceId, // Use the constant service ID
-                    'dateDebut' => "{$dateDepot}T{$heureDepot}:00Z", 
+                    'serviceId' => $consigneServiceId,
+                    'dateDebut' => "{$dateDepot}T{$heureDepot}:00Z",
                     'dateFin' => "{$dateRecuperation}T{$heureRecuperation}:00Z",
                     'quantity' => $item['quantity'],
                 ];
             }
         }
         
-        // IDs réels de l\'API BDM pour les options (ces IDs sont des placeholders, à remplacer par les vrais IDs BDM)
-        // Il est crucial d\'avoir les vrais idProduit pour Priority et Premium
-        $priorityBdmProductId = '8d90e0c0-1a7c-4e8b-8e1e-2c9e0d8c7a6f'; // EXEMPLE: Remplacez par le vrai ID BDM
-        $premiumBdmProductId  = 'f2a5d9b1-0e3c-4a7f-8b2d-1e0c9b8a7d6e'; // EXEMPLE: Remplacez par le vrai ID BDM
-
-        // Options que nous voulons évaluer (Priority, Premium)
-        $optionsToEvaluate = [
-            ['productId' => $priorityBdmProductId, 'serviceId' => 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'], // ServiceId de consigne
-            ['productId' => $premiumBdmProductId, 'serviceId' => 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7'], // ServiceId de consigne
-        ];
-        Log::info('FrontController::getOptionsQuote - Baggages construits et options à évaluer', [
-            'baggages' => $baggages,
-            'optionsToEvaluate' => $optionsToEvaluate
-        ]);
-
         try {
+            // Call the service to discover available options and their prices
             $response = $this->bdmApiService->getCommandeOptionsQuote(
                 $idPlateforme,
                 $baggages,
-                $optionsToEvaluate,
                 $guestEmail
             );
             Log::info('FrontController::getOptionsQuote - Réponse de BdmApiService::getCommandeOptionsQuote', ['response' => $response]);
@@ -287,10 +269,10 @@ class FrontController extends Controller
                 $priorityOption = null;
                 $premiumOption = null;
     
+                // Process the API response to find our specific options
                 foreach ($response['content'] ?? [] as $optionItem) {
                     $normalizedLibelle = Str::upper($optionItem['libelle'] ?? '');
 
-                    // Find the main "PRIORITY" option, ignore "PRIORITY CHECK-OUT"
                     if (str_contains($normalizedLibelle, 'PRIORITY') && !str_contains($normalizedLibelle, 'CHECK-OUT')) {
                         $priorityOption = $optionItem;
                     } elseif (str_contains($normalizedLibelle, 'PREMIUM')) {

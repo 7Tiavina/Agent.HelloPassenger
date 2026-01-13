@@ -214,9 +214,6 @@ function setupGlobalModalListeners() {
 // =================================================================================
 
 function displayOptions(dureeEnMinutes) {
-    // Condition pour Priority (ne change pas)
-    isPriorityAvailable = true;
-
     // Nouvelle condition pour Premium
     const dateDepot = document.getElementById('date-depot').value;
     const heureDepot = document.getElementById('heure-depot').value;
@@ -325,43 +322,43 @@ function showOptionsAdvertisementModal() {
     return new Promise(resolve => {
         const modal = document.getElementById('options-advert-modal');
         const closeBtn = document.getElementById('close-options-advert-modal');
-        const prioritySection = document.getElementById('advert-option-priority');
-        const premiumSection = document.getElementById('advert-option-premium');
-        const premiumAvailableContent = document.getElementById('premium-available-content');
-        const premiumUnavailableMessage = document.getElementById('premium-unavailable-message');
         const addPriorityBtn = document.getElementById('add-priority-from-modal');
         const addPremiumBtn = document.getElementById('add-premium-from-modal');
         const continueBtn = document.getElementById('continue-from-options-modal');
 
-        const priorityPriceEl = document.getElementById('advert-priority-price');
-        const premiumPriceEl = document.getElementById('advert-premium-price');
-
-        if (priorityPriceEl && staticOptions.priority.prixUnitaire > 0) {
-            priorityPriceEl.textContent = `+${staticOptions.priority.prixUnitaire.toFixed(2)} €`;
-        }
-
-        if (premiumPriceEl && staticOptions.premium.prixUnitaire > 0) {
-            premiumPriceEl.textContent = `+${staticOptions.premium.prixUnitaire.toFixed(2)} €`;
-        }
+        const prioritySection = document.getElementById('advert-option-priority');
+        const premiumSection = document.getElementById('advert-option-premium');
         
-
-        // Reset visibility
+        // --- NOUVELLE LOGIQUE D'AFFICHAGE ---
+        
+        // Masquer les sections par défaut
         prioritySection.classList.add('hidden');
         premiumSection.classList.add('hidden');
-        
-        if (isPriorityAvailable) {
+
+        // Gérer l'affichage de l'option Priority
+        if (staticOptions.priority && staticOptions.priority.id && staticOptions.priority.prixUnitaire > 0) {
+            const priorityPriceEl = document.getElementById('advert-priority-price');
+            priorityPriceEl.textContent = `+${staticOptions.priority.prixUnitaire.toFixed(2)} €`;
             prioritySection.classList.remove('hidden');
         }
 
-        if (isPremiumAvailable) {
-            premiumSection.classList.remove('hidden');
-            premiumAvailableContent.classList.remove('hidden');
-            premiumUnavailableMessage.classList.add('hidden');
+        // Gérer l'affichage de l'option Premium
+        const premiumAvailableContent = document.getElementById('premium-available-content');
+        const premiumUnavailableMessage = document.getElementById('premium-unavailable-message');
 
-            const premiumDetailsContainer = document.getElementById('premium-details-modal');
-            const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+        if (isPremiumAvailable) { // isPremiumAvailable est calculé dans displayOptions
+            if (staticOptions.premium && staticOptions.premium.id && staticOptions.premium.prixUnitaire > 0) {
+                // Premium est disponible ET a un prix
+                const premiumPriceEl = document.getElementById('advert-premium-price');
+                premiumPriceEl.textContent = `+${staticOptions.premium.prixUnitaire.toFixed(2)} €`;
 
-            premiumDetailsContainer.innerHTML = `
+                premiumAvailableContent.classList.remove('hidden');
+                premiumUnavailableMessage.classList.add('hidden');
+
+                // Injection du formulaire pour les détails Premium (la logique existante est conservée ici)
+                const premiumDetailsContainer = document.getElementById('premium-details-modal');
+                const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+                premiumDetailsContainer.innerHTML = `
                 <div class="space-y-4">
                     <p class="font-medium text-gray-700">Sens de la prise en charge :</p>
                     <div class="flex flex-col sm:flex-row gap-4">
@@ -375,8 +372,6 @@ function showOptionsAdvertisementModal() {
                         </label>
                     </div>
                 </div>
-
-                <!-- Formulaire pour Terminal -> Agence -->
                 <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
                     <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true"></div>
@@ -387,21 +382,13 @@ function showOptionsAdvertisementModal() {
                     <div class="grid grid-cols-2 gap-3">
                          <div>
                              <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge *</label>
-                             <select name="pickup_location_arrival" class="input-style custom-select w-full" data-required="true">
-                                <option value="" selected disabled>Select</option>
-                                ${lieuxOptionsHTML}
-                             </select>
+                             <select name="pickup_location_arrival" class="input-style custom-select w-full" data-required="true"><option value="" selected disabled>Select</option>${lieuxOptionsHTML}</select>
                          </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}">
-</div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}"></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
-                    <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-                        <p><strong>Info :</strong> La récupération de vos bagages se fait en moyenne <strong>45 minutes</strong> après l’heure d’arrivée de votre vol.</p>
-                    </div>
+                    <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg"><p><strong>Info :</strong> La récupération de vos bagages se fait en moyenne <strong>45 minutes</strong> après l’heure d’arrivée de votre vol.</p></div>
                 </div>
-
-                <!-- Formulaire pour Agence -> Terminal -->
                 <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
                     <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_departure" class="input-style w-full" data-required="true"></div>
@@ -412,96 +399,40 @@ function showOptionsAdvertisementModal() {
                      <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Lieu de restitution *</label>
-                            <select name="restitution_location_departure" class="input-style custom-select w-full" data-required="true">
-                                <option value="" selected disabled>Select</option>
-                                ${lieuxOptionsHTML}
-                            </select>
+                            <select name="restitution_location_departure" class="input-style custom-select w-full" data-required="true"><option value="" selected disabled>Select</option>${lieuxOptionsHTML}</select>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" name="restitution_time_departure" class="input-style w-full" data-required="true" max="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}">
-</div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" name="restitution_time_departure" class="input-style w-full" data-required="true" max="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}"></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
-                    <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-                        <p><strong>Info :</strong> La restitution de vos bagages se fait au plus tard <strong>2 heures</strong> avant le départ de votre vol.</p>
-                    </div>
-                </div>
-            `;
-
-            // Add listeners for radio buttons
-            const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
-            const formTerminalToAgence = document.getElementById('premium_fields_terminal_to_agence');
-            const formAgenceToTerminal = document.getElementById('premium_fields_agence_to_terminal');
-            
-            directionRadios.forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    if (e.target.value === 'terminal_to_agence') {
-                        formTerminalToAgence.classList.remove('hidden');
-                        formAgenceToTerminal.classList.add('hidden');
-                    } else {
-                        formTerminalToAgence.classList.add('hidden');
-                        formAgenceToTerminal.classList.remove('hidden');
-                    }
+                    <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg"><p><strong>Info :</strong> La restitution de vos bagages se fait au plus tard <strong>2 heures</strong> avant le départ de votre vol.</p></div>
+                </div>`;
+                
+                // Attacher les listeners nécessaires
+                const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
+                directionRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        document.getElementById('premium_fields_terminal_to_agence').classList.toggle('hidden', e.target.value !== 'terminal_to_agence');
+                        document.getElementById('premium_fields_agence_to_terminal').classList.toggle('hidden', e.target.value !== 'agence_to_terminal');
+                    });
                 });
-            });
-
-            // Add event listeners for time constraint enforcement
-            const pickupTimeInput = document.querySelector('[name="pickup_time_arrival"]');
-            if (pickupTimeInput) {
-                pickupTimeInput.addEventListener('change', (e) => {
-                    const minTime = e.target.min;
-                    if (e.target.value < minTime) {
-                        e.target.value = minTime;
-                    }
-                });
+            } else {
+                // Premium est éligible mais l'API ne renvoie pas de prix/id
+                premiumAvailableContent.classList.add('hidden');
+                premiumUnavailableMessage.classList.remove('hidden');
             }
-
-            const restitutionTimeInput = document.querySelector('[name="restitution_time_departure"]');
-            if (restitutionTimeInput) {
-                restitutionTimeInput.addEventListener('change', (e) => {
-                    const maxTime = e.target.max;
-                    // Only check maxTime if it's set, as it might be empty for future dates
-                    if (maxTime && e.target.value > maxTime) {
-                        e.target.value = maxTime;
-                    }
-                });
-            }
-
-            // Add tooltip listeners for disabled date/time fields
-            const tooltip = document.getElementById('baggage-tooltip');
-            const disabledInputs = premiumDetailsContainer.querySelectorAll('.premium-disabled-date');
-
-            disabledInputs.forEach(input => {
-                input.addEventListener('mouseover', (e) => {
-                    if (!tooltip) return;
-                    tooltip.textContent = 'Ces dates sont à modifier à l’étape précédente.';
-                    tooltip.classList.add('hidden');
-                    const rect = e.target.getBoundingClientRect();
-                    const tooltipRect = tooltip.getBoundingClientRect();
-                    tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX}px`;
-                    tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 5}px`;
-                });
-                input.addEventListener('mouseout', () => {
-                    if (tooltip) tooltip.classList.add('hidden');
-                });
-            });
-
-        } else {
-            premiumSection.classList.remove('hidden'); // Ensure the premium section container is visible
-            premiumAvailableContent.classList.add('hidden');
-            premiumUnavailableMessage.classList.remove('hidden');
+            premiumSection.classList.remove('hidden');
         }
-
-        updateAdvertModalButtons(); // Set initial button states
+        // --- FIN DE LA NOUVELLE LOGIQUE ---
+        
+        updateAdvertModalButtons(); // Met à jour l'état des boutons (Ajouter/Enlever)
 
         const closeModalAndResolve = (resolutionValue = 'continued') => {
             modal.classList.add('hidden');
-            // Clean up event listeners
             continueBtn.onclick = null;
             closeBtn.onclick = null;
             modal.onclick = null;
             addPriorityBtn.onclick = null;
             addPremiumBtn.onclick = null;
-            
             resolve(resolutionValue);
         };
 
@@ -515,7 +446,7 @@ function showOptionsAdvertisementModal() {
             }
         };
         
-modal.classList.remove('hidden');
+        modal.classList.remove('hidden');
     });
 }
 
