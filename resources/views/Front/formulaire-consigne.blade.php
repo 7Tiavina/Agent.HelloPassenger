@@ -505,6 +505,7 @@
     // Injection des données Blade dans JS global
     var initialProducts = @json($products);
 </script>
+
 <!-- Scripts JS externalisés -->
 <script src="{{ asset('js/state.js') }}"></script>
 <script src="{{ asset('js/utils.js') }}"></script>
@@ -516,6 +517,13 @@
 <script>
     // Ce script reste en ligne car il contient une route Blade resolue par PHP
     document.addEventListener('DOMContentLoaded', function () {
+        // Initialisation des listeners qui dépendent d'éléments du DOM chargés
+        if(typeof setupQdmListeners !== 'undefined') setupQdmListeners();
+
+        // Le setup des listeners de la modale custom est déjà dans modal.js
+        // Le setup des listeners du booking est dans booking.js
+        
+        // Listener pour le bouton de réinitialisation
         document.getElementById('reset-form-btn').addEventListener('click', async function () {
             const confirmed = await showCustomConfirm(
                 'Réinitialiser la commande',
@@ -530,6 +538,7 @@
                 sessionStorage.removeItem('formState');
 
                 try {
+                    // La route 'session.reset' est necessaire ici.
                     await fetch('{{ route("session.reset") }}', {
                         method: 'POST',
                         headers: {
@@ -548,7 +557,6 @@
         });
     });
 </script>
-   
 
 </body>
 </html>
