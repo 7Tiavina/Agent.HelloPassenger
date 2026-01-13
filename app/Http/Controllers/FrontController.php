@@ -29,7 +29,7 @@ class FrontController extends Controller
         return view('Front.acceuil');
     }
 
-    public function redirectForm()
+    public function redirectForm(Request $request)
     {
         try {
             $responsePlateformes = $this->bdmApiService->getPlateformes();
@@ -41,6 +41,29 @@ class FrontController extends Controller
                 Log::error("La réponse de l'API BDM pour les plateformes via BdmApiService est invalide.", ['response' => $responsePlateformes]);
                 throw new \Exception("Réponse invalide de l'API pour les plateformes.");
             }
+
+            // Prétraitement pour le paramètre d'URL 'airport'
+            $selectedAirportId = null;
+            $airportIdentifier = $request->query('airport');
+            if ($airportIdentifier && !empty($plateformes)) {
+                $airportIdentifierLower = strtolower($airportIdentifier);
+                $airportMap = ['orly' => 'orly', 'cdg' => 'charles de gaulle'];
+
+                foreach ($plateformes as $plateforme) {
+                    $plateformeLibelleLower = strtolower($plateforme['libelle']);
+                    // Vérifie si l'identifiant correspond à un ID directement
+                    if ($airportIdentifier === $plateforme['id']) {
+                        $selectedAirportId = $plateforme['id'];
+                        break;
+                    }
+                    // Vérifie si l'identifiant est un alias (orly, cdg)
+                    if (isset($airportMap[$airportIdentifierLower]) && str_contains($plateformeLibelleLower, $airportMap[$airportIdentifierLower])) {
+                        $selectedAirportId = $plateforme['id'];
+                        break;
+                    }
+                }
+            }
+
 
             // Utilise le premier aéroport pour obtenir une liste de produits par défaut
             $firstPlateformeId = $plateformes[0]['id'] ?? null;
@@ -60,13 +83,15 @@ class FrontController extends Controller
             return view('Front.formulaire-consigne', [
                 'plateformes' => [],
                 'products' => [],
+                'selectedAirportId' => null, // Assurez-vous de le passer même en cas d'erreur
                 'error' => "Impossible de charger les options de réservation pour le moment. Veuillez réessayer plus tard."
             ]);
         }
 
         return view('Front.formulaire-consigne', [
             'plateformes' => $plateformes,
-            'products' => $products
+            'products' => $products,
+            'selectedAirportId' => $selectedAirportId
         ]);
     }
 

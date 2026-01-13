@@ -128,7 +128,7 @@
     }
     </style>
 </head>
-<body class="min-h-screen bg-white">
+<body class="min-h-screen bg-white" data-selected-airport-id="{{ $selectedAirportId ?? '' }}">
 
 <!-- Loader Overlay -->
 <div id="loader" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center">

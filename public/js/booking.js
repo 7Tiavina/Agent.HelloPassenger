@@ -393,6 +393,20 @@ function applyDateInputConstraints() {
  * Point d'entrée principal, initialise tous les écouteurs d'événements.
  */
 document.addEventListener('DOMContentLoaded', function () {
+    // ---- DEBUT BLOC DE PRE-SELECTION ----
+    const selectedAirportIdFromUrl = document.body.dataset.selectedAirportId;
+    if (selectedAirportIdFromUrl) {
+        const airportSelect = document.getElementById('airport-select');
+        if (airportSelect) {
+            airportSelect.value = selectedAirportIdFromUrl;
+            // Mettre à jour la variable globale utilisée par le script
+            airportId = selectedAirportIdFromUrl;
+            // Simuler un événement de changement pour déclencher toute logique dépendante
+            airportSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    // ---- FIN BLOC DE PRE-SELECTION ----
+
     // Chargement de l'état initial
     loadStateFromSession();
     
