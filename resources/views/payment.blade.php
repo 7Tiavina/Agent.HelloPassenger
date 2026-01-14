@@ -434,8 +434,8 @@
 
         openClientProfileModalBtn.addEventListener('click', () => {
             document.getElementById('modal-email').value = userData.email || '';
-            document.getElementById('modal-nom').value = isGuest ? '' : userData.nom || '';
-            document.getElementById('modal-prenom').value = isGuest ? '' : userData.prenom || '';
+            document.getElementById('modal-nom').value = userData.nom || '';
+            document.getElementById('modal-prenom').value = userData.prenom || '';
             document.getElementById('modal-telephone').value = userData.telephone || '';
             document.getElementById('modal-civilite').value = userData.civilite || 'M.';
             document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
