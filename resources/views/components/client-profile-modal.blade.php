@@ -11,27 +11,27 @@
                     <!-- Email -->
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="email" id="modal-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="email" name="email" id="modal-email" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Nom -->
                     <div>
                         <label for="nom" class="block text-sm font-medium text-gray-700">Nom</label>
-                        <input type="text" name="nom" id="modal-nom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="nom" id="modal-nom" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Prenom -->
                     <div>
                         <label for="prenom" class="block text-sm font-medium text-gray-700">Prénom</label>
-                        <input type="text" name="prenom" id="modal-prenom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="prenom" id="modal-prenom" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Telephone -->
                     <div>
                         <label for="telephone" class="block text-sm font-medium text-gray-700">Téléphone</label>
-                        <input type="tel" name="telephone" id="modal-telephone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="tel" name="telephone" id="modal-telephone" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Civilite -->
                     <div>
                         <label for="civilite" class="block text-sm font-medium text-gray-700">Civilité</label>
-                        <select name="civilite" id="modal-civilite" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <select name="civilite" id="modal-civilite" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                             <option value="M.">M.</option>
                             <option value="Mme">Mme</option>
                             <option value="Mlle">Mlle</option>
@@ -40,32 +40,32 @@
                     <!-- Nom Société -->
                     <div>
                         <label for="nomSociete" class="block text-sm font-medium text-gray-700">Nom Société (optionnel)</label>
-                        <input type="text" name="nomSociete" id="modal-nomSociete" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="nomSociete" id="modal-nomSociete" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Adresse -->
                     <div>
                         <label for="adresse" class="block text-sm font-medium text-gray-700">Adresse</label>
-                        <input type="text" name="adresse" id="modal-adresse" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="adresse" id="modal-adresse" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Complément Adresse -->
                     <div>
                         <label for="complementAdresse" class="block text-sm font-medium text-gray-700">Complément Adresse (optionnel)</label>
-                        <input type="text" name="complementAdresse" id="modal-complementAdresse" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="complementAdresse" id="modal-complementAdresse" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Ville -->
                     <div>
                         <label for="ville" class="block text-sm font-medium text-gray-700">Ville</label>
-                        <input type="text" name="ville" id="modal-ville" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="ville" id="modal-ville" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Code Postal -->
                     <div>
                         <label for="codePostal" class="block text-sm font-medium text-gray-700">Code Postal</label>
-                        <input type="text" name="codePostal" id="modal-codePostal" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="codePostal" id="modal-codePostal" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
                     <!-- Pays -->
                     <div>
                         <label for="pays" class="block text-sm font-medium text-gray-700">Pays</label>
-                        <input type="text" name="pays" id="modal-pays" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+                        <input type="text" name="pays" id="modal-pays" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
                     </div>
 
                     <div class="items-center px-4 py-3">
