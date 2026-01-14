@@ -330,52 +330,57 @@
         // --- Google Places Autocomplete ---
         if (typeof google !== 'undefined' && typeof google.maps !== 'undefined' && typeof google.maps.places !== 'undefined') {
             const addressInput = document.getElementById('modal-adresse');
-            const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-                types: ['address'],
-                componentRestrictions: { country: ['fr'] } // Restreindre la recherche à la France pour commencer
-            });
+            console.log('modal-adresse element:', addressInput); // AJOUTER CETTE LIGNE
+            if (addressInput) { // AJOUTER CETTE CONDITION
+                const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+                    types: ['address'],
+                    componentRestrictions: { country: ['fr'] } // Restreindre la recherche à la France pour commencer
+                });
 
-            autocomplete.addListener('place_changed', function() {
-                const place = autocomplete.getPlace();
-                if (!place.geometry) {
-                    console.log("Returned place contains no geometry");
-                    return;
-                }
-
-                // Réinitialiser les champs
-                document.getElementById('modal-adresse').value = '';
-                document.getElementById('modal-ville').value = '';
-                document.getElementById('modal-codePostal').value = '';
-                document.getElementById('modal-pays').value = '';
-
-                let street_number = '';
-                let route = '';
-                let city = '';
-                let postal_code = '';
-                let countryName = ''; // Nom complet du pays
-                let countryCode = ''; // Code court du pays
-
-                for (let i = 0; i < place.address_components.length; i++) {
-                    const addressType = place.address_components[i].types[0];
-                    if (addressType === 'street_number') {
-                        street_number = place.address_components[i].long_name;
-                    } else if (addressType === 'route') {
-                        route = place.address_components[i].long_name;
-                    } else if (addressType === 'locality' || addressType === 'administrative_area_level_3') {
-                        city = place.address_components[i].long_name;
-                    } else if (addressType === 'postal_code') {
-                        postal_code = place.address_components[i].long_name;
-                    } else if (addressType === 'country') {
-                        countryName = place.address_components[i].long_name; // Nom complet du pays
-                        countryCode = place.address_components[i].short_name; // Code court du pays
+                autocomplete.addListener('place_changed', function() {
+                    const place = autocomplete.getPlace();
+                    if (!place.geometry) {
+                        console.log("Returned place contains no geometry");
+                        return;
                     }
-                }
-                
-                document.getElementById('modal-adresse').value = street_number + ' ' + route;
-                document.getElementById('modal-ville').value = city;
-                document.getElementById('modal-codePostal').value = postal_code;
-                document.getElementById('modal-pays').value = countryName; // Utiliser le nom complet du pays
-            });
+
+                    // Réinitialiser les champs
+                    document.getElementById('modal-adresse').value = '';
+                    document.getElementById('modal-ville').value = '';
+                    document.getElementById('modal-codePostal').value = '';
+                    document.getElementById('modal-pays').value = '';
+
+                    let street_number = '';
+                    let route = '';
+                    let city = '';
+                    let postal_code = '';
+                    let countryName = ''; // Nom complet du pays
+                    let countryCode = ''; // Code court du pays
+
+                    for (let i = 0; i < place.address_components.length; i++) {
+                        const addressType = place.address_components[i].types[0];
+                        if (addressType === 'street_number') {
+                            street_number = place.address_components[i].long_name;
+                        } else if (addressType === 'route') {
+                            route = place.address_components[i].long_name;
+                        } else if (addressType === 'locality' || addressType === 'administrative_area_level_3') {
+                            city = place.address_components[i].long_name;
+                        } else if (addressType === 'postal_code') {
+                            postal_code = place.address_components[i].long_name;
+                        } else if (addressType === 'country') {
+                            countryName = place.address_components[i].long_name; // Nom complet du pays
+                            countryCode = place.address_components[i].short_name; // Code court du pays
+                        }
+                    }
+                    
+                    document.getElementById('modal-adresse').value = street_number + ' ' + route;
+                    document.getElementById('modal-ville').value = city;
+                    document.getElementById('modal-codePostal').value = postal_code;
+                    document.getElementById('modal-pays').value = countryName; // Utiliser le nom complet du pays
+                });
+            } else { // NOUVEAU BLOC ELSE
+                console.error("L'élément #modal-adresse n'a pas été trouvé pour l'autocomplétion Google Places.");
+            }
         }
         // --- Fin Google Places Autocomplete ---
 
