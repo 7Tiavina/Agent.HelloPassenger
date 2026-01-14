@@ -485,3 +485,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+window.addEventListener('pageshow', function(event) {
+    // Vérifie si la page est restaurée depuis le cache (bfcache)
+    if (event.persisted) {
+        // Masque le loader si la page est restaurée depuis le cache du navigateur
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.add('hidden');
+        }
+        console.log('Page restaurée depuis le cache. Loader masqué.');
+    }
+});
