@@ -423,6 +423,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('baggage-selection-step').style.display = 'none';
         document.getElementById('step-1').style.display = 'block';
         this.classList.add('hidden');
+        document.getElementById('sticky-wrapper').classList.add('hidden'); // AJOUTER CETTE LIGNE
         saveStateToSession();
     });
 
@@ -438,6 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('step-1').style.display = 'none';
             document.getElementById('baggage-selection-step').style.display = 'block';
             document.getElementById('back-to-step-1-btn').classList.remove('hidden');
+            document.getElementById('sticky-wrapper').classList.remove('hidden'); // AJOUTER CETTE LIGNE
             displaySelectedDates();
             getQuoteAndDisplay();
             saveStateToSession();

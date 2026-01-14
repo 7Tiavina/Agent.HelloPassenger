@@ -25,40 +25,75 @@
                 <span class="sr-only">Admin</span>
             </a>
 
-            @if($clientGuard->check())
-                <!-- Utilisateur connecté : afficher Déconnecter et lien vers form-consigne -->
-                <a href="{{ route('form-consigne') }}" class="bg-gray-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors">
-                    RÉSERVER
-                </a>
+            <div class="hidden md:flex items-center space-x-4">
+                @if($clientGuard->check())
+                    <!-- Utilisateur connecté : afficher Déconnecter et lien vers form-consigne -->
+                    <a href="{{ route('form-consigne') }}" class="bg-gray-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors">
+                        RÉSERVER
+                    </a>
 
-                <form method="POST" action="{{ route('client.logout') }}" class="inline-block">
-                    @csrf
-                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-500 transition-colors">
-                        DÉCONNECTER
+                    <form method="POST" action="{{ route('client.logout') }}" class="inline-block">
+                        @csrf
+                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-500 transition-colors">
+                            DÉCONNECTER
+                        </button>
+                    </form>
+                @else
+                    <!-- Non connecté : bouton afficher modal login -->
+                    <button id="openLoginDesktop" class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors btn-hover" type="button">
+                        SE CONNECTER
                     </button>
-                </form>
-            @else
-                <!-- Non connecté : bouton afficher modal login -->
-                <button id="openLoginDesktop" class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors btn-hover" type="button">
-                    SE CONNECTER
-                </button>
 
-                <button id="openMyOrders" class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors" type="button">
-                    MES RÉSERVATIONS
-                </button>
-            @endif
+                    <button id="openMyOrders" class="bg-gray-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors" type="button">
+                        MES RÉSERVATIONS
+                    </button>
+                @endif
+            </div>
 
-            <div class="flex items-center space-x-2 cursor-pointer" role="button" tabindex="0" aria-label="Menu">
+            <!-- Menu Hamburger pour mobile -->
+            <button class="md:hidden flex items-center space-x-2 cursor-pointer focus:outline-none" aria-label="Toggle menu" id="mobile-menu-button">
                 <span class="text-black text-sm font-medium">MENU</span>
                 <div class="flex flex-col space-y-1">
                     <div class="w-4 h-0.5 bg-black"></div>
                     <div class="w-4 h-0.5 bg-black"></div>
                     <div class="w-4 h-0.5 bg-black"></div>
                 </div>
-            </div>
+            </button>
         </div>
     </div>
 </header>
+
+<!-- Mobile Menu (Off-canvas ou Modal) -->
+<div id="mobile-menu" class="fixed inset-0 bg-yellow-custom z-40 hidden md:hidden flex-col items-center justify-center space-y-8">
+    <button class="absolute top-4 right-4 text-black text-3xl focus:outline-none" aria-label="Close menu" id="close-mobile-menu">
+        &times;
+    </button>
+
+    <a href="{{ route('login') }}" class="text-gray-600 hover:text-black text-2xl font-medium transition-colors">
+        Admin
+    </a>
+
+    @if($clientGuard->check())
+        <a href="{{ route('form-consigne') }}" class="bg-gray-dark text-white px-8 py-4 rounded-full text-xl font-medium hover:bg-gray-700 transition-colors">
+            RÉSERVER
+        </a>
+
+        <form method="POST" action="{{ route('client.logout') }}" class="inline-block">
+            @csrf
+            <button type="submit" class="bg-red-600 text-white px-8 py-4 rounded-full text-xl font-medium hover:bg-red-500 transition-colors">
+                DÉCONNECTER
+            </button>
+        </form>
+    @else
+        <button id="openLoginMobile" class="bg-gray-dark text-white px-8 py-4 rounded-full text-xl font-medium hover:bg-gray-700 transition-colors btn-hover" type="button">
+            SE CONNECTER
+        </button>
+
+        <button id="openMyOrdersMobile" class="bg-gray-dark text-white px-8 py-4 rounded-full text-xl font-medium hover:bg-gray-700 transition-colors" type="button">
+            MES RÉSERVATIONS
+        </button>
+    @endif
+</div>
 
 <!-- Loading ANIMATION (idem) -->
 <div id="loader" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-50 hidden flex flex-col items-center justify-center" role="status" aria-live="polite" aria-label="Loading">
@@ -291,4 +326,34 @@
             }
         }
     }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMobileMenuButton = document.getElementById('close-mobile-menu');
+
+        if (mobileMenuButton && mobileMenu && closeMobileMenuButton) {
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.remove('hidden');
+                mobileMenu.classList.add('flex'); // Assure que flex est appliqué pour la disposition
+            });
+
+            closeMobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                mobileMenu.classList.remove('flex');
+            });
+        }
+
+        // Gérer le clic sur le bouton "SE CONNECTER" mobile pour ouvrir la modale de login
+        const openLoginMobile = document.getElementById('openLoginMobile');
+        if (openLoginMobile && window.openLoginModal) { // window.openLoginModal est définie dans le script du loginModal
+            openLoginMobile.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden'); // Fermer le menu mobile
+                mobileMenu.classList.remove('flex');
+                window.openLoginModal(); // Ouvrir la modale de login
+            });
+        }
+    });
 </script>

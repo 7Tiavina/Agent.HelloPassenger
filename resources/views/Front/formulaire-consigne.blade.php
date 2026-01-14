@@ -461,7 +461,7 @@
             </div>
         </div>
 
-        <div class="w-full lg:w-full relative" id="sticky-wrapper">
+        <div class="w-full lg:w-full relative hidden" id="sticky-wrapper">
             <div id="sticky-summary" class="space-y-6">
                 <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center">
                     <p class="text-lg font-bold text-gray-800 mb-2">Tarif TOTAL</p>
