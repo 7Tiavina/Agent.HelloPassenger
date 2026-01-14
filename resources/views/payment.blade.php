@@ -24,6 +24,15 @@
     <link rel="stylesheet" href="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
     <script src="https://api.gateway.monetico-retail.com/static/js/krypton-client/V4.0/ext/neon.js"></script>
     <!-- Fin Scripts Monetico -->
+
+    <!-- Google Places API -->
+    @php
+        $googlePlacesApiKey = config('services.google.places_api_key');
+    @endphp
+    @if($googlePlacesApiKey)
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ $googlePlacesApiKey }}&libraries=places&language=fr" async defer></script>
+    @endif
+    <!-- Fin Google Places API -->
     <style>
         tailwind.config = {
             theme: {
@@ -317,6 +326,58 @@
         const clientProfileForm = document.getElementById('clientProfileForm');
 
         const userData = @json($user);
+
+        // --- Google Places Autocomplete ---
+        if (typeof google !== 'undefined' && typeof google.maps !== 'undefined' && typeof google.maps.places !== 'undefined') {
+            const addressInput = document.getElementById('modal-adresse');
+            const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+                types: ['address'],
+                componentRestrictions: { country: ['fr'] } // Restreindre la recherche à la France pour commencer
+            });
+
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    console.log("Returned place contains no geometry");
+                    return;
+                }
+
+                // Réinitialiser les champs
+                document.getElementById('modal-adresse').value = '';
+                document.getElementById('modal-ville').value = '';
+                document.getElementById('modal-codePostal').value = '';
+                document.getElementById('modal-pays').value = '';
+
+                let street_number = '';
+                let route = '';
+                let city = '';
+                let postal_code = '';
+                let countryName = ''; // Nom complet du pays
+                let countryCode = ''; // Code court du pays
+
+                for (let i = 0; i < place.address_components.length; i++) {
+                    const addressType = place.address_components[i].types[0];
+                    if (addressType === 'street_number') {
+                        street_number = place.address_components[i].long_name;
+                    } else if (addressType === 'route') {
+                        route = place.address_components[i].long_name;
+                    } else if (addressType === 'locality' || addressType === 'administrative_area_level_3') {
+                        city = place.address_components[i].long_name;
+                    } else if (addressType === 'postal_code') {
+                        postal_code = place.address_components[i].long_name;
+                    } else if (addressType === 'country') {
+                        countryName = place.address_components[i].long_name; // Nom complet du pays
+                        countryCode = place.address_components[i].short_name; // Code court du pays
+                    }
+                }
+                
+                document.getElementById('modal-adresse').value = street_number + ' ' + route;
+                document.getElementById('modal-ville').value = city;
+                document.getElementById('modal-codePostal').value = postal_code;
+                document.getElementById('modal-pays').value = countryName; // Utiliser le nom complet du pays
+            });
+        }
+        // --- Fin Google Places Autocomplete ---
 
         function validateGuestForm() {
             console.log('validateGuestForm called');
