@@ -208,7 +208,7 @@ class BdmApiService
      * @param string $guestEmail L'email de l'invité, si disponible.
      * @return array|null Les prix des options ou null en cas d'erreur.
      */
-    public function getCommandeOptionsQuote(string $idPlateforme, array $baggages, ?string $guestEmail = null): ?array
+    public function getCommandeOptionsQuote(string $idPlateforme, array $baggages, ?string $guestEmail = null, ?array $premiumDetails = null): ?array
     {
         $url = "{$this->baseUrl}/api/plateforme/{$idPlateforme}/commande/options?lg=fr";
 
@@ -228,6 +228,40 @@ class BdmApiService
 
         // Envoyer un tableau vide pour `commandeOptions` pour découvrir les options disponibles
         $commandeOptions = [];
+
+        // Construction du champ commentaires pour l'API BDM
+        $commentairesForBdm = "Devis options"; // Valeur par défaut
+
+        if ($premiumDetails) {
+            $commentParts = [];
+
+            // Sens de la prise en charge
+            if (isset($premiumDetails['direction'])) {
+                if ($premiumDetails['direction'] === 'terminal_to_agence') {
+                    $commentParts[] = "Type de service: Récupération de vos bagages";
+                    if (isset($premiumDetails['flight_number_arrival'])) $commentParts[] = "Numéro de vol d'arrivée: {$premiumDetails['flight_number_arrival']}";
+                    if (isset($premiumDetails['date_arrival'])) $commentParts[] = "Date d'arrivée: {$premiumDetails['date_arrival']}";
+                    if (isset($premiumDetails['time_arrival'])) $commentParts[] = "Heure d'arrivée: {$premiumDetails['time_arrival']}";
+                    if (isset($premiumDetails['pickup_location_arrival_libelle'])) $commentParts[] = "Lieu de prise en charge: {$premiumDetails['pickup_location_arrival_libelle']}";
+                    else if (isset($premiumDetails['pickup_location_arrival'])) $commentParts[] = "Lieu de prise en charge (ID): {$premiumDetails['pickup_location_arrival']}";
+                    if (isset($premiumDetails['pickup_time_arrival'])) $commentParts[] = "Heure de prise en charge: {$premiumDetails['pickup_time_arrival']}";
+                    if (isset($premiumDetails['instructions_arrival'])) $commentParts[] = "Informations complémentaires: {$premiumDetails['instructions_arrival']}";
+                } else if ($premiumDetails['direction'] === 'agence_to_terminal') {
+                    $commentParts[] = "Type de service: Restitution de vos bagages";
+                    if (isset($premiumDetails['flight_number_departure'])) $commentParts[] = "Numéro de vol de départ: {$premiumDetails['flight_number_departure']}";
+                    if (isset($premiumDetails['date_departure'])) $commentParts[] = "Date de départ: {$premiumDetails['date_departure']}";
+                    if (isset($premiumDetails['time_departure'])) $commentParts[] = "Heure de départ: {$premiumDetails['time_departure']}";
+                    if (isset($premiumDetails['restitution_location_departure_libelle'])) $commentParts[] = "Lieu de restitution: {$premiumDetails['restitution_location_departure_libelle']}";
+                    else if (isset($premiumDetails['restitution_location_departure'])) $commentParts[] = "Lieu de restitution (ID): {$premiumDetails['restitution_location_departure']}";
+                    if (isset($premiumDetails['restitution_time_departure'])) $commentParts[] = "Heure de restitution: {$premiumDetails['restitution_time_departure']}";
+                    if (isset($premiumDetails['instructions_departure'])) $commentParts[] = "Informations complémentaires: {$premiumDetails['instructions_departure']}";
+                }
+            }
+            
+            if (!empty($commentParts)) {
+                $commentairesForBdm = implode('; ', $commentParts);
+            }
+        }
 
         // Données client minimales pour la requête de devis d'options
         $clientData = [
@@ -255,7 +289,7 @@ class BdmApiService
             "commandeInfos" => [
                 "modeTransport" => "Inconnu",
                 "lieu" => "Inconnu",
-                "commentaires" => "Devis options"
+                "commentaires" => $commentairesForBdm // Utilise le commentaire construit
             ],
             "client" => $clientData
         ];

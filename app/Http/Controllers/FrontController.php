@@ -268,7 +268,15 @@ class FrontController extends Controller
 
         $baggages = [];
         $consigneServiceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
+        $premiumDetails = null; // Initialise à null pour contenir l'objet premiumDetails complet
+
         foreach ($cartItemsFromFrontend as $item) {
+            // Si c'est l'option Premium et qu'elle contient des détails, les extraire
+            if (isset($item['key']) && $item['key'] === 'premium' && isset($item['details'])) {
+                $premiumDetails = $item['details'];
+            }
+
+            // ... (reste du code pour les baggages) ...
             $productInGlobal = collect($globalProductsData)->firstWhere('id', $item['productId']);
             if ($productInGlobal) {
                 $baggages[] = [
@@ -286,7 +294,8 @@ class FrontController extends Controller
             $response = $this->bdmApiService->getCommandeOptionsQuote(
                 $idPlateforme,
                 $baggages,
-                $guestEmail
+                $guestEmail, // Conserver guestEmail séparément
+                $premiumDetails // Passer l'objet premiumDetails complet
             );
             Log::info('FrontController::getOptionsQuote - Réponse de BdmApiService::getCommandeOptionsQuote', ['response' => $response]);
     

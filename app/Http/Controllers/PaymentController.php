@@ -107,10 +107,25 @@ class PaymentController extends Controller
                 $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
                 $timeKey = $isArrivalFlow ? 'pickup_time_arrival' : 'restitution_time_departure';
                 $instructionsKey = $isArrivalFlow ? 'instructions_arrival' : 'instructions_departure';
+                // Ajout des clés pour les dates et heures spécifiques du service Premium
+                $dateKey = $isArrivalFlow ? 'date_arrival' : 'date_departure';
+                $heureKey = $isArrivalFlow ? 'time_arrival' : 'time_departure';
+
 
                 $commandeInfos['lieu'] = $details[$locationLabelKey] ?? $details[$locationKey] ?? 'Non spécifié';
 
                 if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
+                
+                // Ajout des dates et heures d'arrivée/départ spécifiques
+                if (!empty($details[$dateKey])) {
+                    $dateLabel = $isArrivalFlow ? 'Date d\'arrivée' : 'Date de départ';
+                    $commentairesArray[] = "$dateLabel: " . $details[$dateKey];
+                }
+                if (!empty($details[$heureKey])) {
+                    $heureLabel = $isArrivalFlow ? 'Heure d\'arrivée' : 'Heure de départ';
+                    $commentairesArray[] = "$heureLabel: " . $details[$heureKey];
+                }
+
                 if (!empty($details[$timeKey])) {
                     $timeLabel = $isArrivalFlow ? 'Heure de prise en charge' : 'Heure de restitution';
                     $commentairesArray[] = "$timeLabel: " . $details[$timeKey];
