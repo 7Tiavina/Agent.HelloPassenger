@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache; // Added
 use Illuminate\Support\Facades\Validator; // Added for guest validation
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use App\Mail\OrderConfirmationMail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaymentController extends Controller
 {
@@ -488,7 +492,6 @@ class PaymentController extends Controller
                 Session::put('api_payment_result', $apiResult);
                 Session::put('last_commande_id', $commande->id);
 
-                /*
                 // --- ENVOI DE L'EMAIL DE CONFIRMATION AVEC FACTURE PDF ---
                 try {
                     // Générer le PDF
@@ -518,7 +521,6 @@ class PaymentController extends Controller
                     // Continuer le processus même si l\'e-mail échoue
                 }
                 // --- FIN ENVOI EMAIL ---
-                */
 
                 return redirect()->route('payment.success.show');
             } else {
