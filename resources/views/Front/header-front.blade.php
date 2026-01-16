@@ -4,78 +4,37 @@
 @endphp
 
 <!-- Header -->
-<header class="bg-gray-dark px-6 py-4 shadow-md">
+<header class="bg-gray-dark px-4 sm:px-6 py-3 shadow-md">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
         <!-- Logo -->
-        <div class="flex items-center">
+        <div class="flex-shrink-0">
             <a href="{{ url('/') }}" class="flex items-center space-x-2">
-    <img src="{{ asset('HP-Logo.png') }}" alt="HelloPassenger" class="h-40 w-auto">
-</a>
-
+                <img src="{{ asset('HP-Logo.png') }}" alt="HelloPassenger" class="h-12 md:h-16 w-auto">
+            </a>
         </div>
 
         <!-- Navigation Desktop -->
-        <div class="hidden md:flex items-center space-x-6">
-    @if($clientGuard->check())
-        <!-- Utilisateur connecté -->
-        <!--
-        <a
-            href="{{ route('form-consigne') }}"
-            class="bg-yellow-custom text-gray-dark px-10 py-5 rounded-full text-lg font-extrabold
-                   hover:bg-yellow-hover transition-all duration-200
-                   shadow-xl hover:shadow-2xl hover:scale-110"
-        >
-            RÉSERVER
-        </a> -->
+        <nav class="hidden md:flex items-center space-x-4">
+            @if($clientGuard->check())
+                <form method="POST" action="{{ route('client.logout') }}" class="inline-block">
+                    @csrf
+                    <button type="submit" class="bg-red-600 text-white px-6 py-2.5 rounded-full text-base font-bold hover:bg-red-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105">
+                        Déconnexion
+                    </button>
+                </form>
+            @else
+                <button id="openLoginDesktop" class="bg-yellow-custom text-gray-dark px-6 py-2.5 rounded-full text-base font-bold hover:bg-yellow-hover transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105" type="button">
+                    Se connecter
+                </button>
+            @endif
 
-        <form method="POST" action="{{ route('client.logout') }}" class="inline-block">
-            @csrf
-            <button
-                type="submit"
-                class="bg-red-600 text-white px-10 py-5 rounded-full text-lg font-extrabold
-                       hover:bg-red-700 transition-all duration-200
-                       shadow-xl hover:shadow-2xl hover:scale-110"
-            >
-                DÉCONNECTER
-            </button>
-        </form>
-    @else
-        <!-- Non connecté -->
-        <button
-            id="openLoginDesktop"
-            class="bg-yellow-custom text-gray-dark px-10 py-5 rounded-full text-lg font-extrabold
-                   hover:bg-yellow-hover transition-all duration-200
-                   shadow-xl hover:shadow-2xl hover:scale-110"
-            type="button"
-        >
-            SE CONNECTER
-        </button>
-
-        <!--
-        <button
-            id="openMyOrders"
-            class="bg-yellow-custom text-gray-dark px-10 py-5 rounded-full text-lg font-extrabold
-                   hover:bg-yellow-hover transition-all duration-200
-                   shadow-xl hover:shadow-2xl hover:scale-110"
-            type="button"
-        >
-            MES RÉSERVATIONS
-        </button> -->
-    @endif
-
-    <!-- Lien Admin discret -->
-    <a
-        href="{{ route('login') }}"
-        class="ml-4 pl-4 border-l border-gray-600
-               text-gray-300 hover:text-white transition-colors"
-        title="Admin"
-    >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-        </svg>
-    </a>
-</div>
-
+            <!-- Lien Admin discret -->
+            <a href="{{ route('login') }}" class="pl-4 border-l border-gray-700 text-gray-400 hover:text-white transition-colors" title="Admin">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                </svg>
+            </a>
+        </nav>
 
         <!-- Menu Hamburger pour mobile -->
         <button class="md:hidden flex items-center space-x-3 cursor-pointer focus:outline-none group" aria-label="Toggle menu" id="mobile-menu-button">
@@ -117,10 +76,6 @@
         <button id="openLoginMobile" class="w-full max-w-sm bg-yellow-custom text-gray-dark px-8 py-5 rounded-full text-xl font-bold hover:bg-yellow-hover transition-all duration-200 transform hover:scale-105 shadow-2xl" type="button">
             SE CONNECTER
         </button>
-
-        <button id="openMyOrdersMobile" class="w-full max-w-sm bg-yellow-custom text-gray-dark px-8 py-5 rounded-full text-xl font-bold hover:bg-yellow-hover transition-all duration-200 transform hover:scale-105 shadow-2xl" type="button">
-            MES RÉSERVATIONS
-        </button>
     @endif
 
     <!-- Lien Admin mobile -->
@@ -150,34 +105,34 @@
 
 <!-- Modal LOGIN -->
 <div id="loginModal" class="fixed inset-0 bg-gray-dark bg-opacity-95 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle" tabindex="-1">
-    <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
-        <button id="closeModal" class="absolute top-4 right-4 text-gray-700 text-2xl font-bold hover:text-black transition-colors" aria-label="Close login modal">&times;</button>
+    <div class="bg-gray-dark w-full max-w-md p-8 rounded-2xl shadow-2xl relative border-2 border-yellow-custom">
+        <button id="closeModal" class="absolute top-4 right-4 text-gray-400 text-2xl font-bold hover:text-white transition-colors" aria-label="Close login modal">&times;</button>
         
         <div class="text-center mb-6">
             <img src="{{ asset('HP-Logo-White.png') }}" alt="HelloPassenger" class="h-14 w-auto mx-auto mb-4">
-            <h2 id="loginModalTitle" class="text-3xl font-bold text-gray-dark mb-2">Se connecter</h2>
-            <p class="text-gray-600">Accédez à votre compte</p>
+            <h2 id="loginModalTitle" class="text-3xl font-bold text-white mb-2">Se connecter</h2>
+            <p class="text-gray-400">Accédez à votre compte</p>
         </div>
 
         <form method="POST" action="{{ route('client.login.submit') }}" class="space-y-5" novalidate>
             @csrf
             <div>
-                <label for="loginEmail" class="block text-sm font-bold text-gray-700 mb-2">VOTRE ADRESSE EMAIL : <span class="text-red-500">*</span></label>
+                <label for="loginEmail" class="block text-sm font-bold text-gray-300 mb-2">VOTRE ADRESSE EMAIL : <span class="text-red-500">*</span></label>
                 <input id="loginEmail" name="email" type="email" value="{{ old('email') }}" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required autocomplete="email" />
             </div>
             <div>
-                <label for="loginPassword" class="block text-sm font-bold text-gray-700 mb-2">VOTRE MOT DE PASSE : <span class="text-red-500">*</span></label>
+                <label for="loginPassword" class="block text-sm font-bold text-gray-300 mb-2">VOTRE MOT DE PASSE : <span class="text-red-500">*</span></label>
                 <input id="loginPassword" name="password" type="password" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required autocomplete="current-password" />
             </div>
             <div class="flex items-center justify-between text-sm">
-                <a href="#" class="text-gray-dark font-bold hover:text-yellow-custom transition-colors underline">Mot de passe oublié ?</a>
+                <a href="#" class="text-gray-300 font-bold hover:text-yellow-custom transition-colors underline">Mot de passe oublié ?</a>
                 <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="checkbox" name="remember" class="accent-yellow-custom" />
-                    <span class="text-gray-700">Rester connecté(e)</span>
+                    <span class="text-gray-400">Rester connecté(e)</span>
                 </label>
             </div>
             <button type="submit" class="w-full bg-yellow-custom text-gray-dark py-4 rounded-full font-bold hover:bg-yellow-hover transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-lg">
@@ -189,8 +144,8 @@
         </form>
 
         <div class="mt-6 text-center">
-            <p class="text-gray-600 mb-3">Pas encore de compte ?</p>
-            <button id="openRegister" class="w-full bg-gray-dark text-white py-3 rounded-full font-bold hover:bg-gray-800 transition-all duration-200 border-2 border-gray-dark" type="button">
+            <p class="text-gray-400 mb-3">Pas encore de compte ?</p>
+            <button id="openRegister" class="w-full bg-gray-700 text-white py-3 rounded-full font-bold hover:bg-gray-600 transition-all duration-200 border-2 border-gray-700" type="button">
                 CRÉER UN COMPTE →
             </button>
         </div>
@@ -211,61 +166,61 @@
 
 <!-- Modal Créer un compte -->
 <div id="registerModal" class="fixed inset-0 bg-gray-dark bg-opacity-95 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle" tabindex="-1">
-    <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
-        <button id="closeRegisterModal" class="absolute top-4 right-4 text-gray-700 text-2xl font-bold hover:text-black transition-colors" aria-label="Close register modal">&times;</button>
+    <div class="bg-gray-dark w-full max-w-md p-8 rounded-2xl shadow-2xl relative border-2 border-yellow-custom max-h-[90vh] overflow-y-auto">
+        <button id="closeRegisterModal" class="absolute top-4 right-4 text-gray-400 text-2xl font-bold hover:text-white transition-colors" aria-label="Close register modal">&times;</button>
         
         <div class="text-center mb-6">
             <img src="{{ asset('HP-Logo-White.png') }}" alt="HelloPassenger" class="h-14 w-auto mx-auto mb-4">
-            <h2 id="registerModalTitle" class="text-3xl font-bold text-gray-dark mb-2">Créer un compte</h2>
-            <p class="text-gray-600">Rejoignez HelloPassenger</p>
+            <h2 id="registerModalTitle" class="text-3xl font-bold text-white mb-2">Créer un compte</h2>
+            <p class="text-gray-400">Rejoignez HelloPassenger</p>
         </div>
 
         <form method="POST" action="{{ route('client.register') }}" class="space-y-4" novalidate>
             @csrf
 
             <div>
-                <label for="registerNom" class="block text-sm font-bold text-gray-700 mb-2">NOM : <span class="text-red-500">*</span></label>
+                <label for="registerNom" class="block text-sm font-bold text-gray-300 mb-2">NOM : <span class="text-red-500">*</span></label>
                 <input id="registerNom" name="nom" type="text" value="{{ old('nom') }}" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required />
                 @error('nom') <p class="text-red-600 text-sm mt-2 font-medium">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="registerPrenom" class="block text-sm font-bold text-gray-700 mb-2">PRÉNOM : <span class="text-red-500">*</span></label>
+                <label for="registerPrenom" class="block text-sm font-bold text-gray-300 mb-2">PRÉNOM : <span class="text-red-500">*</span></label>
                 <input id="registerPrenom" name="prenom" type="text" value="{{ old('prenom') }}" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required />
                 @error('prenom') <p class="text-red-600 text-sm mt-2 font-medium">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="registerEmail" class="block text-sm font-bold text-gray-700 mb-2">ADRESSE EMAIL : <span class="text-red-500">*</span></label>
+                <label for="registerEmail" class="block text-sm font-bold text-gray-300 mb-2">ADRESSE EMAIL : <span class="text-red-500">*</span></label>
                 <input id="registerEmail" name="email" type="email" value="{{ old('email') }}" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required />
                 @error('email') <p class="text-red-600 text-sm mt-2 font-medium">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="registerTelephone" class="block text-sm font-bold text-gray-700 mb-2">TÉLÉPHONE :</label>
+                <label for="registerTelephone" class="block text-sm font-bold text-gray-300 mb-2">TÉLÉPHONE :</label>
                 <input id="registerTelephone" name="telephone" type="text" value="{{ old('telephone') }}" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" />
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" />
                 @error('telephone') <p class="text-red-600 text-sm mt-2 font-medium">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="registerPassword" class="block text-sm font-bold text-gray-700 mb-2">MOT DE PASSE : <span class="text-red-500">*</span></label>
+                <label for="registerPassword" class="block text-sm font-bold text-gray-300 mb-2">MOT DE PASSE : <span class="text-red-500">*</span></label>
                 <input id="registerPassword" name="password" type="password" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required autocomplete="new-password" />
                 @error('password') <p class="text-red-600 text-sm mt-2 font-medium">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="registerPasswordConfirm" class="block text-sm font-bold text-gray-700 mb-2">CONFIRMER MOT DE PASSE : <span class="text-red-500">*</span></label>
+                <label for="registerPasswordConfirm" class="block text-sm font-bold text-gray-300 mb-2">CONFIRMER MOT DE PASSE : <span class="text-red-500">*</span></label>
                 <input id="registerPasswordConfirm" name="password_confirmation" type="password" 
-                       class="w-full px-4 py-3 border-2 border-gray-300 bg-gray-50 text-gray-800 rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
+                       class="w-full px-4 py-3 border-2 border-gray-600 bg-gray-800 text-white rounded-lg focus:border-yellow-custom focus:ring-2 focus:ring-yellow-custom focus:outline-none transition-all" 
                        required />
             </div>
 
@@ -278,8 +233,8 @@
         </form>
 
         <div class="mt-6 text-center">
-            <p class="text-gray-600 mb-3">Déjà un compte ?</p>
-            <button id="goToLoginBtn" class="w-full bg-gray-dark text-white py-3 rounded-full font-bold hover:bg-gray-800 transition-all duration-200 border-2 border-gray-dark">
+            <p class="text-gray-400 mb-3">Déjà un compte ?</p>
+            <button id="goToLoginBtn" class="w-full bg-gray-700 text-white py-3 rounded-full font-bold hover:bg-gray-600 transition-all duration-200 border-2 border-gray-700">
                 SE CONNECTER
             </button>
         </div>
