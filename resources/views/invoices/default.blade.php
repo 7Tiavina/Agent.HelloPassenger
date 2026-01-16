@@ -3,131 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facture #{{ $commande->id_api_commande ?? $commande->id }}</title>
+    <title>Facture #{{ $commande->paymentClient->monetico_order_id ?? $commande->id }}</title>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            -webkit-print-color-adjust: exact; /* Pour les fonds et couleurs d'arrière-plan */
-            background-color: #f8f8f8; /* Couleur de fond légère pour le corps */
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            color: #333;
         }
         .invoice-container {
             width: 100%;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 30px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border: 1px solid #eee;
+            margin: 0 auto;
         }
-        .header-table, .total-table {
+        .header-table, .info-table, .items-table, .total-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
         }
         .header-table td {
-            padding: 0;
+            padding: 10px 0;
             vertical-align: top;
         }
-        .header-table .left-col {
-            width: 50%;
-            text-align: left;
+        .info-table {
+            margin-top: 20px;
+            margin-bottom: 30px;
         }
-        .header-table .right-col {
+        .info-table td {
             width: 50%;
-            text-align: right;
+            vertical-align: top;
+            padding: 0;
         }
-        h1 {
-            font-size: 28px;
+        .company-details p, .client-details p {
+            margin: 0;
+            line-height: 1.4;
+        }
+        .company-details h2 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
             font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
         }
-        h2 {
-            font-size: 22px;
-            font-weight: 600;
-            color: #444;
-            margin-bottom: 5px;
+        .items-table {
+            margin-bottom: 20px;
         }
-        p {
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-            margin-bottom: 3px;
-        }
-        .client-info {
-            margin-bottom: 30px;
-        }
-        .client-info h3 {
-            font-size: 16px;
-            font-weight: 600;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        table th, table td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-        }
-        table th {
-            background-color: #f5f5f5;
+        .items-table th, .items-table td {
+            border-bottom: 1px solid #ddd;
+            padding: 8px;
             text-align: left;
-            font-weight: 600;
-            color: #444;
         }
-        table td {
-            color: #555;
+        .items-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
         }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .font-semibold { font-weight: 600; }
-        .text-xl { font-size: 18px; }
-        .text-sm { font-size: 12px; }
-        .text-gray-800 { color: #333; }
-        .text-gray-700 { color: #444; }
-        .text-gray-600 { color: #555; }
-        .text-gray-500 { color: #777; }
-        .bg-gray-200 { background-color: #eee; }
-        .border-b { border-bottom: 1px solid #eee; }
-        .border-t-2 { border-top: 2px solid #ccc; }
-        .mt-2 { margin-top: 8px; }
-        .mt-3 { margin-top: 12px; }
-        .mt-16 { margin-top: 64px; }
-        .mb-2 { margin-bottom: 8px; }
-        .mb-4 { margin-bottom: 16px; }
-        .mb-8 { margin-bottom: 32px; }
-        .pb-2 { padding-bottom: 8px; }
-        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .items-table .text-center { text-align: center; }
+        .items-table .text-right { text-align: right; }
+        .total-section {
+            width: 40%;
+            margin-left: 60%;
+        }
         .total-table td {
-            padding: 8px 0;
+            padding: 5px;
         }
         .total-table .label {
-            font-weight: 600;
-            color: #555;
+            font-weight: bold;
         }
         .total-table .value {
             text-align: right;
         }
         .total-table .grand-total {
             font-weight: bold;
-            font-size: 18px;
-            border-top: 2px solid #ccc;
-            padding-top: 10px;
-            margin-top: 10px;
+            font-size: 14px;
+            border-top: 2px solid #333;
+            padding-top: 8px;
         }
         .footer-section {
-            margin-top: 60px;
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
             text-align: center;
-            font-size: 12px;
+            font-size: 10px;
             color: #777;
+        }
+        .footer-section p {
+            margin: 2px 0;
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0;
+            color: #000;
         }
     </style>
 </head>
@@ -136,95 +96,94 @@
         <!-- En-tête -->
         <table class="header-table">
             <tr>
-                <td class="left-col">
-                    <h1>FACTURE</h1>
-                    <p>Référence: {{ $commande->paymentClient->monetico_order_id ?? $commande->id }}</p>
-                    <p>Date: {{ $commande->created_at->format('d/m/Y') }}</p>
+                <td>
+                    <!-- Logo temporairement retiré pour diagnostic -->
                 </td>
-                <td class="right-col">
-                    <h2>HelloPassenger</h2>
-                    <p>Service Consigne Bagages</p>
-                    <p>contact@hellopassenger.com</p>
+                <td style="text-align: right;">
+                    <h1>FACTURE</h1>
+                    <p><strong>Facture n°:</strong> {{ $commande->paymentClient->monetico_order_id ?? $commande->id }}</p>
+                    <p><strong>Date:</strong> {{ $commande->created_at->format('d/m/Y') }}</p>
                 </td>
             </tr>
         </table>
 
-        <!-- Informations Client -->
-        <div class="client-info">
-            <h3>Facturé à :</h3>
-            <p class="font-bold">{{ $commande->client_prenom }} {{ $commande->client_nom }}</p>
-            <p>{{ $commande->client_adresse }}</p>
-            <p>{{ $commande->client_code_postal }} {{ $commande->client_ville }}</p>
-            <p>{{ $commande->client_pays }}</p>
-            <p>Email: {{ $commande->client_email }}</p>
-            @if($commande->client_telephone)
-                <p>Téléphone: {{ $commande->client_telephone }}</p>
-            @endif
-            @if($commande->client_nom_societe)
-                <p>Société: {{ $commande->client_nom_societe }}</p>
-            @endif
-        </div>
-
+        <!-- Informations Société et Client -->
+        <table class="info-table">
+            <tr>
+                <td class="client-details">
+                    <p style="font-weight: bold; margin-bottom: 10px;">Facturé à :</p>
+                    <p><strong>{{ $commande->client_prenom }} {{ $commande->client_nom }}</strong></p>
+                    @if($commande->client_adresse)
+                        <p>{{ $commande->client_adresse }}</p>
+                        <p>{{ $commande->client_code_postal }} {{ $commande->client_ville }}</p>
+                    @endif
+                    <p>{{ $commande->client_email }}</p>
+                </td>
+                <td class="company-details" style="text-align: right;">
+                    <h2>Bagages du Monde</h2>
+                    <p>9 RUE DU NOYER ZA DU MOULIN</p>
+                    <p>95700 ROISSY-EN-FRANCE</p>
+                    <p><strong>Tél:</strong> +33 (0)1 34 38 58 98</p>
+                    <p><strong>E-Mail:</strong> contact@hellopassenger.com</p>
+                    <p><strong>Site Web:</strong> hellopassenger.com</p>
+                </td>
+            </tr>
+        </table>
+        
         <!-- Lignes de la commande -->
-        <table>
+        <table class="items-table">
             <thead>
-                <tr class="bg-gray-200">
-                    <th class="p-2 font-semibold">Description</th>
-                    <th class="p-2 font-semibold text-center">Quantité</th>
-                    <th class="p-2 font-semibold text-right">Prix Unitaire</th>
-                    <th class="p-2 font-semibold text-right">Total</th>
+                <tr>
+                    <th>Description</th>
+                    <th class="text-center">Quantité</th>
+                    <th class="text-right">Prix Unitaire HT</th>
+                    <th class="text-right">Total HT</th>
                 </tr>
             </thead>
             <tbody>
                 @php
                     $details = json_decode($commande->details_commande_lignes, true);
+                    $taux_tva = 1.20;
                 @endphp
                 @foreach($details as $item)
-                    <tr class="border-b">
-                        <td class="p-2">
-                            {{ $item['libelleProduit'] }}
-                            @if(isset($item['idLieu']) && $item['idLieu'])
-                                <span class="text-sm text-gray-500 block">Lieu: {{ $item['idLieu'] }}</span>
-                            @endif
-                             @if(isset($item['informationsComplementaires']) && $item['informationsComplementaires'])
-                                <span class="text-sm text-gray-500 block">Infos: {{ $item['informationsComplementaires'] }}</span>
-                            @endif
-                        </td>
-                        <td class="p-2 text-center">{{ $item['quantite'] }}</td>
-                        <td class="p-2 text-right">{{ number_format($item['prixTTC'] / $item['quantite'], 2, ',', ' ') }} €</td>
-                        <td class="p-2 text-right">{{ number_format($item['prixTTC'], 2, ',', ' ') }} €</td>
+                    <tr>
+                        <td>{{ $item['libelleProduit'] }}</td>
+                        <td class="text-center">{{ $item['quantite'] }}</td>
+                        <td class="text-right">{{ number_format(($item['prixTTC'] / $item['quantite']) / $taux_tva, 2, ',', ' ') }} €</td>
+                        <td class="text-right">{{ number_format($item['prixTTC'] / $taux_tva, 2, ',', ' ') }} €</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
         <!-- Total -->
-        <table class="total-table">
-            <tr>
-                <td style="width: 67%;"></td> <!-- Colonne vide pour aligner à droite -->
-                <td style="width: 33%;">
-                    <table>
-                        <tr>
-                            <td class="label">Sous-total</td>
-                            <td class="value">{{ number_format($commande->total_prix_ttc, 2, ',', ' ') }} €</td>
-                        </tr>
-                        <tr>
-                            <td class="label">TVA (0%)</td>
-                            <td class="value">0,00 €</td>
-                        </tr>
-                        <tr class="grand-total">
-                            <td class="label">TOTAL</td>
-                            <td class="value">{{ number_format($commande->total_prix_ttc, 2, ',', ' ') }} €</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+        <div class="total-section">
+             @php
+                $prix_ttc = $commande->total_prix_ttc;
+                $prix_ht = $prix_ttc / $taux_tva;
+                $montant_tva = $prix_ttc - $prix_ht;
+            @endphp
+            <table class="total-table">
+                <tr>
+                    <td class="label">Total HT</td>
+                    <td class="value">{{ number_format($prix_ht, 2, ',', ' ') }} €</td>
+                </tr>
+                <tr>
+                    <td class="label">TVA (20%)</td>
+                    <td class="value">{{ number_format($montant_tva, 2, ',', ' ') }} €</td>
+                </tr>
+                <tr class="grand-total">
+                    <td class="label">Total TTC</td>
+                    <td class="value">{{ number_format($prix_ttc, 2, ',', ' ') }} €</td>
+                </tr>
+            </table>
+        </div>
 
         <!-- Pied de page -->
         <div class="footer-section">
-            <p>Merci pour votre confiance.</p>
-            <p>HelloPassenger - SAS au capital de 1000€ - SIRET 123456789</p>
+            <p>Merci pour votre confiance !</p>
+            <p><strong>Bagages du Monde</strong> - 9 RUE DU NOYER ZA DU MOULIN, 95700 ROISSY-EN-FRANCE</p>
+            <p><strong>Siret :</strong> 43919478800055 | <strong>TVA :</strong> FR08439194788</p>
         </div>
     </div>
 </body>

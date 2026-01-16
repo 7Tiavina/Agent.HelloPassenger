@@ -494,30 +494,38 @@ class PaymentController extends Controller
 
                 // --- ENVOI DE L'EMAIL DE CONFIRMATION AVEC FACTURE PDF ---
                 try {
+                    Log::info('DEBUT du processus d\'envoi d\'email pour la commande ' . $commande->id);
+
                     // Générer le PDF
+                    Log::info('Etape 1: Tentative de génération du PDF...');
                     $pdf = PDF::loadView('invoices.default', compact('commande'));
+                    Log::info('Etape 2: PDF généré en mémoire avec succès.');
                     
                     // Sauvegarder le PDF temporairement
                     $reference = $commande->paymentClient->monetico_order_id ?? $commande->id;
                     $fileName = 'facture-' . $reference . '.pdf';
                     
-                    // Assurez-vous que le répertoire 'temp' existe
                     if (!Storage::exists('temp')) {
                         Storage::makeDirectory('temp');
                     }
 
                     $pdfPath = Storage::path('temp/' . $fileName);
+                    Log::info('Etape 3: Sauvegarde du PDF vers le chemin: ' . $pdfPath);
                     $pdf->save($pdfPath);
+                    Log::info('Etape 4: PDF sauvegardé avec succès.');
 
                     // Envoyer l'e-mail
+                    Log::info('Etape 5: Tentative d\'envoi de l\'e-mail à ' . $commande->client_email);
                     Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande, $pdfPath));
-                    Log::info('Email de confirmation de commande envoyé à ' . $commande->client_email);
+                    Log::info('Etape 6: E-mail envoyé avec succès.');
 
                     // Supprimer le fichier PDF temporaire
+                    Log::info('Etape 7: Suppression du fichier PDF temporaire.');
                     Storage::delete('temp/' . $fileName);
+                    Log::info('Etape 8: Fichier PDF temporaire supprimé.');
 
                 } catch (\Exception $mailException) {
-                    Log::error('Erreur lors de l\'envoi de l\'e-mail de confirmation: ' . $mailException->getMessage(), ['exception' => $mailException]);
+                    Log::error('ERREUR FATALE lors de l\'envoi de l\'e-mail de confirmation: ' . $mailException->getMessage(), ['exception' => $mailException]);
                     // Continuer le processus même si l\'e-mail échoue
                 }
                 // --- FIN ENVOI EMAIL ---
