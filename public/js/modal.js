@@ -377,15 +377,15 @@ function showOptionsAdvertisementModal() {
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
                     <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true"></div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" name="date_arrival" class="input-style w-full" value="${document.getElementById('date-depot').value}"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" name="time_arrival" class="input-style w-full" value="${document.getElementById('heure-depot').value}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" id="flight_date_arrival" name="date_arrival" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure d’arrivée</label><input type="time" id="flight_time_arrival" name="time_arrival" class="input-style w-full"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                          <div>
                              <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge *</label>
                              <select name="pickup_location_arrival" class="input-style custom-select w-full" data-required="true"><option value="" selected disabled>Select</option>${lieuxOptionsHTML}</select>
                          </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" name="pickup_time_arrival" class="input-style w-full" data-required="true" min="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-depot').value}T${document.getElementById('heure-depot').value}`); dt.setMinutes(dt.getMinutes() + 45); return dt.toTimeString().substring(0,5); })()}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de prise en charge*</label><input type="time" id="pickup_time_arrival" name="pickup_time_arrival" class="input-style w-full bg-gray-100" data-required="true" readonly></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
                     <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg"><p><strong>Info :</strong> La récupération de vos bagages se fait en moyenne <strong>45 minutes</strong> après l’heure d’arrivée de votre vol.</p></div>
@@ -394,20 +394,176 @@ function showOptionsAdvertisementModal() {
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
                     <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_departure" class="input-style w-full" data-required="true"></div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" name="date_departure" class="input-style w-full" value="${document.getElementById('date-recuperation').value}"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" name="time_departure" class="input-style w-full" value="${document.getElementById('heure-recuperation').value}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" id="flight_date_departure" name="date_departure" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de départ</label><input type="time" id="flight_time_departure" name="time_departure" class="input-style w-full"></div>
                     </div>
                      <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Lieu de restitution *</label>
                             <select name="restitution_location_departure" class="input-style custom-select w-full" data-required="true"><option value="" selected disabled>Select</option>${lieuxOptionsHTML}</select>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" name="restitution_time_departure" class="input-style w-full" data-required="true" max="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}" value="${(() => { const dt = new Date(`${document.getElementById('date-recuperation').value}T${document.getElementById('heure-recuperation').value}`); dt.setHours(dt.getHours() - 2); return dt.toTimeString().substring(0,5); })()}"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Heure de restitution *</label><input type="time" id="restitution_time_departure" name="restitution_time_departure" class="input-style w-full bg-gray-100" data-required="true" readonly></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_departure" class="input-style w-full" rows="2"></textarea></div>
                     <div class="mt-4 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg"><p><strong>Info :</strong> La restitution de vos bagages se fait au plus tard <strong>2 heures</strong> avant le départ de votre vol.</p></div>
                 </div>`;
                 
+                // --- START DYNAMIC PREMIUM LOGIC ---
+                
+                // Get elements
+                const flightDateArrival = document.getElementById('flight_date_arrival');
+                const flightTimeArrival = document.getElementById('flight_time_arrival');
+                const pickupTimeArrival = document.getElementById('pickup_time_arrival');
+                const flightDateDeparture = document.getElementById('flight_date_departure');
+                                const flightTimeDeparture = document.getElementById('flight_time_departure');
+                                const restitutionTimeDeparture = document.getElementById('restitution_time_departure');
+                
+                                // Pre-fill dates from main form
+                                flightDateArrival.value = document.getElementById('date-depot').value;
+                                flightDateDeparture.value = document.getElementById('date-recuperation').value;
+                
+                                                // Arrival calculation logic
+                
+                                                const calculateAndSetPickupTime = () => {
+                
+                                                    if (flightDateArrival.value && flightTimeArrival.value) {
+                
+                                                        // Get fresh main form values every time for validation
+                
+                                                        const depotDate = document.getElementById('date-depot').value;
+                
+                                                        const depotTime = document.getElementById('heure-depot').value;
+                
+                                                        const depotDateTime = new Date(`${depotDate}T${depotTime}`);
+                
+                                                        const maxFlightArrivalDateTime = new Date(depotDateTime);
+                
+                                                        maxFlightArrivalDateTime.setMinutes(maxFlightArrivalDateTime.getMinutes() - 45);
+                
+                                
+                
+                                                        const flightArrivalDateTime = new Date(`${flightDateArrival.value}T${flightTimeArrival.value}`);
+                
+                                                        
+                
+                                                        if (flightArrivalDateTime > maxFlightArrivalDateTime) {
+                
+                                                            flightDateArrival.value = maxFlightArrivalDateTime.toISOString().split('T')[0];
+                
+                                                            flightTimeArrival.value = maxFlightArrivalDateTime.toTimeString().substring(0, 5);
+                
+                                                            showCustomAlert('Correction automatique', 'L\'heure d\'arrivée du vol a été ajustée pour respecter l\'heure limite de prise en charge.');
+                
+                                                        }
+                
+                                                        
+                
+                                                        const correctedFlightArrival = new Date(`${flightDateArrival.value}T${flightTimeArrival.value}`);
+                
+                                                        correctedFlightArrival.setMinutes(correctedFlightArrival.getMinutes() + 45);
+                
+                                                        pickupTimeArrival.value = correctedFlightArrival.toTimeString().substring(0, 5);
+                
+                                                    }
+                
+                                                };
+                
+                                
+                
+                                                // Departure calculation logic
+                
+                                                const calculateAndSetRestitutionTime = () => {
+                
+                                                    if (flightDateDeparture.value && flightTimeDeparture.value) {
+                
+                                                        // Get fresh main form values every time for validation
+                
+                                                        const recupDate = document.getElementById('date-recuperation').value;
+                
+                                                        const recupTime = document.getElementById('heure-recuperation').value;
+                
+                                                        const recupDateTime = new Date(`${recupDate}T${recupTime}`);
+                
+                                                        const minFlightDepartureDateTime = new Date(recupDateTime);
+                
+                                                        minFlightDepartureDateTime.setHours(minFlightDepartureDateTime.getHours() + 2);
+                
+                                                        
+                
+                                                        const flightDepartureDateTime = new Date(`${flightDateDeparture.value}T${flightTimeDeparture.value}`);
+                
+                                
+                
+                                                        if (flightDepartureDateTime < minFlightDepartureDateTime) {
+                
+                                                             flightDateDeparture.value = minFlightDepartureDateTime.toISOString().split('T')[0];
+                
+                                                             flightTimeDeparture.value = minFlightDepartureDateTime.toTimeString().substring(0, 5);
+                
+                                                             showCustomAlert('Correction automatique', 'L\'heure de départ du vol a été ajustée pour respecter l\'heure limite de restitution.');
+                
+                                                        }
+                
+                                                        
+                
+                                                        const correctedFlightDeparture = new Date(`${flightDateDeparture.value}T${flightTimeDeparture.value}`);
+                
+                                                        correctedFlightDeparture.setHours(correctedFlightDeparture.getHours() - 2);
+                
+                                                        restitutionTimeDeparture.value = correctedFlightDeparture.toTimeString().substring(0, 5);
+                
+                                                    }
+                
+                                                };
+                
+                                                
+                
+                                                // Set initial constraints on open
+                
+                                                (function setInitialConstraints() {
+                
+                                                    const depotDate = document.getElementById('date-depot').value;
+                
+                                                    const depotTime = document.getElementById('heure-depot').value;
+                
+                                                    const depotDateTime = new Date(`${depotDate}T${depotTime}`);
+                
+                                                    const maxFlightArrivalDateTime = new Date(depotDateTime);
+                
+                                                    maxFlightArrivalDateTime.setMinutes(maxFlightArrivalDateTime.getMinutes() - 45);
+                
+                                                    flightDateArrival.max = maxFlightArrivalDateTime.toISOString().split('T')[0];
+                
+                                                    flightTimeArrival.max = maxFlightArrivalDateTime.toTimeString().substring(0, 5);
+                
+                                
+                
+                                                    const recupDate = document.getElementById('date-recuperation').value;
+                
+                                                    const recupTime = document.getElementById('heure-recuperation').value;
+                
+                                                    const recupDateTime = new Date(`${recupDate}T${recupTime}`);
+                
+                                                    const minFlightDepartureDateTime = new Date(recupDateTime);
+                
+                                                    minFlightDepartureDateTime.setHours(minFlightDepartureDateTime.getHours() + 2);
+                
+                                                    flightDateDeparture.min = minFlightDepartureDateTime.toISOString().split('T')[0];
+                
+                                                    flightTimeDeparture.min = minFlightDepartureDateTime.toTimeString().substring(0, 5);
+                
+                                                })();
+                
+                                
+                
+                                                // Attach listeners
+                
+                                                flightDateArrival.addEventListener('change', calculateAndSetPickupTime);                flightTimeArrival.addEventListener('change', calculateAndSetPickupTime);
+                flightDateDeparture.addEventListener('change', calculateAndSetRestitutionTime);
+                flightTimeDeparture.addEventListener('change', calculateAndSetRestitutionTime);
+
+                // --- END DYNAMIC PREMIUM LOGIC ---
+
                 // Attacher les listeners nécessaires
                 const directionRadios = premiumDetailsContainer.querySelectorAll('input[name="premium_direction"]');
                 directionRadios.forEach(radio => {

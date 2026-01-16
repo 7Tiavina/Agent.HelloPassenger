@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache; // Added
 use Illuminate\Support\Facades\Validator; // Added for guest validation
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -39,7 +40,67 @@ class PaymentController extends Controller
                 'options.*.libelle' => 'required|string',
                 'options.*.prix' => 'required|numeric',
                 'options.*.details' => 'nullable|array',
+                // Validation for Premium option details
+                'options.*.details.direction' => 'nullable|string|in:terminal_to_agence,agence_to_terminal',
+                'options.*.details.flight_number_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string',
+                'options.*.details.date_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date',
+                'options.*.details.time_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date_format:H:i',
+                'options.*.details.pickup_time_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date_format:H:i',
+                'options.*.details.flight_number_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string',
+                'options.*.details.date_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date',
+                'options.*.details.time_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date_format:H:i',
+                'options.*.details.restitution_time_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date_format:H:i',
             ]);
+
+            // Manual validation for complex date/time rules for Premium option
+            $premiumOption = collect($validatedData['options'])->first(function ($option) {
+                return isset($option['key']) && $option['key'] === 'premium' && isset($option['details']);
+            });
+
+            if ($premiumOption) {
+                $details = $premiumOption['details'];
+                $mainDepotDateTime = \Carbon\Carbon::parse($validatedData['dateDepot'] . ' ' . $validatedData['heureDepot']);
+                $mainRecupDateTime = \Carbon\Carbon::parse($validatedData['dateRecuperation'] . ' ' . $validatedData['heureRecuperation']);
+
+                if (($details['direction'] ?? null) === 'terminal_to_agence') {
+                    $flightArrivalDateTime = \Carbon\Carbon::parse($details['date_arrival'] . ' ' . $details['time_arrival']);
+                    $calculatedPickupDateTime = $flightArrivalDateTime->copy()->addMinutes(45);
+                    $actualPickupDateTime = \Carbon\Carbon::parse($details['date_arrival'] . ' ' . $details['pickup_time_arrival']);
+
+                    // Check 1: Is actual pickup time roughly what we calculated? (Allow 1 min tolerance)
+                    if ($actualPickupDateTime->diffInMinutes($calculatedPickupDateTime) > 1) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'premium' => 'L\'heure de prise en charge ne correspond pas à l\'heure calculée (+45min après l\'arrivée du vol).'
+                        ]);
+                    }
+                    // Check 2: Is pickup time before the main drop-off time?
+                    if ($actualPickupDateTime > $mainDepotDateTime) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'premium' => 'La prise en charge des bagages (' . $actualPickupDateTime->format('H:i') . ') doit avoir lieu avant leur dépôt en consigne (' . $mainDepotDateTime->format('H:i') . ').'
+                        ]);
+                    }
+                }
+
+                if (($details['direction'] ?? null) === 'agence_to_terminal') {
+                    $flightDepartureDateTime = \Carbon\Carbon::parse($details['date_departure'] . ' ' . $details['time_departure']);
+                    $calculatedRestitutionDateTime = $flightDepartureDateTime->copy()->subHours(2);
+                    $actualRestitutionDateTime = \Carbon\Carbon::parse($details['date_departure'] . ' ' . $details['restitution_time_departure']);
+
+                    // Check 1: Is actual restitution time roughly what we calculated?
+                    if ($actualRestitutionDateTime->diffInMinutes($calculatedRestitutionDateTime) > 1) {
+                         throw \Illuminate\Validation\ValidationException::withMessages([
+                            'premium' => 'L\'heure de restitution ne correspond pas à l\'heure calculée (2h avant le départ du vol).'
+                        ]);
+                    }
+                    // Check 2: Is restitution time after the main pickup time?
+                    if ($actualRestitutionDateTime < $mainRecupDateTime) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'premium' => 'La restitution des bagages (' . $actualRestitutionDateTime->format('H:i') . ') doit avoir lieu après leur récupération en consigne (' . $mainRecupDateTime->format('H:i') . ').'
+                        ]);
+                    }
+                }
+            }
+
 
             $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
             $baggageTypeToLibelleMap = [
