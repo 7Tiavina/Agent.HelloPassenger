@@ -358,9 +358,48 @@ function showOptionsAdvertisementModal() {
                 premiumAvailableContent.classList.remove('hidden');
                 premiumUnavailableMessage.classList.add('hidden');
 
-                // Injection du formulaire pour les détails Premium (la logique existante est conservée ici)
                 const premiumDetailsContainer = document.getElementById('premium-details-modal');
                 const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
+
+                const orlyAirportId = '64f00ace-31b6-45b0-bcb2-b562b1ac08d9';
+                const isOrly = airportId === orlyAirportId;
+
+                const transportOptions = {
+                    orly: `
+                        <option value="" selected disabled>Sélectionner...</option>
+                        <option value="car">Voiture</option>
+                        <option value="taxi">Taxi</option>
+                        <option value="vtc">VTC</option>
+                        <option value="bus">Bus</option>
+                        <option value="metro">Métro</option>
+                        <option value="flight">Avion</option>
+                    `,
+                    cdg: `
+                        <option value="" selected disabled>Sélectionner...</option>
+                        <option value="tgv">TGV</option>
+                        <option value="rer_metro">RER/Métro</option>
+                        <option value="car">Voiture</option>
+                        <option value="taxi">Taxi</option>
+                        <option value="vtc">VTC</option>
+                        <option value="bus">Bus</option>
+                        <option value="flight">Avion</option>
+                    `
+                };
+                
+                const transportSpecificFields = (direction) => {
+                    const dir = direction.toLowerCase(); // 'arrival' or 'departure'
+                    return `
+                        <div id="transport_details_${dir}_flight" class="hidden mt-2">
+                            <label class="block text-sm font-medium text-gray-700">Numéro de vol *</label>
+                            <input type="text" name="flight_number_${dir}" class="input-style w-full" data-required="true">
+                        </div>
+                        <div id="transport_details_${dir}_tgv" class="hidden mt-2">
+                            <label class="block text-sm font-medium text-gray-700">Numéro du TGV *</label>
+                            <input type="text" name="tgv_number_${dir}" class="input-style w-full" data-required="true">
+                        </div>
+                    `;
+                };
+
                 premiumDetailsContainer.innerHTML = `
                 <div class="space-y-4">
                     <p class="font-medium text-gray-700">Sens de la prise en charge :</p>
@@ -377,30 +416,27 @@ function showOptionsAdvertisementModal() {
                 </div>
                 <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Moyen de transport *</label>
                         <select name="transport_type_arrival" class="input-style custom-select w-full" data-required="true">
-                            <option value="" selected disabled>Sélectionner...</option>
-                            <option value="flight">Avion</option>
-                            <option value="train">Train</option>
-                            <option value="car">Voiture</option>
+                            ${isOrly ? `
+                                <option value="" selected disabled>Sélectionner...</option>
+                                <option value="car">Voiture</option>
+                                <option value="taxi">Taxi</option>
+                                <option value="vtc">VTC</option>
+                                <option value="bus">Bus</option>
+                                <option value="metro">Métro</option>
+                                <option value="flight">Avion</option>
+                            ` : `
+                                <option value="" selected disabled>Sélectionner...</option>
+                                <option value="tgv">TGV</option>
+                                <option value="rer_metro">RER/Métro</n>
+                                <option value="car_taxi_vtc_bus">Voiture/Taxi/VTC/Bus</option>
+                                <option value="flight">Avion</n>
+                            `}
                         </select>
                     </div>
-
-                    <div id="transport_details_arrival_flight" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Numéro de vol *</label>
-                        <input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true">
-                    </div>
-                    <div id="transport_details_arrival_train" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Numéro de train *</label>
-                        <input type="text" name="train_number_arrival" class="input-style w-full" data-required="true">
-                    </div>
-                    <div id="transport_details_arrival_car" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Plaque d'immatriculation *</label>
-                        <input type="text" name="car_plate_arrival" class="input-style w-full" data-required="true">
-                    </div>
-
+                    ${transportSpecificFields('arrival')}
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" id="flight_date_arrival" name="date_arrival" class="input-style w-full"></div>
                         <div>
@@ -415,30 +451,27 @@ function showOptionsAdvertisementModal() {
                 </div>
                 <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Moyen de transport *</label>
                         <select name="transport_type_departure" class="input-style custom-select w-full" data-required="true">
-                            <option value="" selected disabled>Sélectionner...</option>
-                            <option value="flight">Vol</option>
-                            <option value="train">Train</option>
-                            <option value="car">Voiture</option>
+                            ${isOrly ? `
+                                <option value="" selected disabled>Sélectionner...</option>
+                                <option value="car">Voiture</option>
+                                <option value="taxi">Taxi</option>
+                                <option value="vtc">VTC</option>
+                                <option value="bus">Bus</option>
+                                <option value="metro">Métro</option>
+                                <option value="flight">Avion</option>
+                            ` : `
+                                <option value="" selected disabled>Sélectionner...</option>
+                                <option value="tgv">TGV</option>
+                                <option value="rer_metro">RER/Métro</n>
+                                <option value="car_taxi_vtc_bus">Voiture/Taxi/VTC/Bus</option>
+                                <option value="flight">Avion</n>
+                            `}
                         </select>
                     </div>
-
-                    <div id="transport_details_departure_flight" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Numéro de vol *</label>
-                        <input type="text" name="flight_number_departure" class="input-style w-full" data-required="true">
-                    </div>
-                    <div id="transport_details_departure_train" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Numéro de train *</label>
-                        <input type="text" name="train_number_departure" class="input-style w-full" data-required="true">
-                    </div>
-                    <div id="transport_details_departure_car" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Plaque d'immatriculation *</label>
-                        <input type="text" name="car_plate_departure" class="input-style w-full" data-required="true">
-                    </div>
-
+                    ${transportSpecificFields('departure')}
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" id="flight_date_departure" name="date_departure" class="input-style w-full"></div>
                         <div>
@@ -469,17 +502,20 @@ function showOptionsAdvertisementModal() {
                 // Transport type change handler
                 const setupTransportTypeHandler = (direction) => {
                     const transportSelect = document.querySelector(`select[name="transport_type_${direction}"]`);
+                    // Update detailsContainer to include the new types
                     const detailsContainer = {
                         flight: document.getElementById(`transport_details_${direction}_flight`),
-                        train: document.getElementById(`transport_details_${direction}_train`),
-                        car: document.getElementById(`transport_details_${direction}_car`),
+                        tgv: document.getElementById(`transport_details_${direction}_tgv`),
+                        // Note: car_taxi_vtc, bus, metro, rer_metro, car_taxi_vtc_bus do not have specific fields
                     };
 
                     transportSelect.addEventListener('change', (e) => {
-                        // Hide all containers
-                        Object.values(detailsContainer).forEach(container => container.classList.add('hidden'));
+                        // Hide all containers that might have been shown
+                        Object.values(detailsContainer).forEach(container => {
+                            if(container) container.classList.add('hidden')
+                        });
                         
-                        // Show the selected one
+                        // Show the selected one if it requires details
                         const selectedType = e.target.value;
                         if (detailsContainer[selectedType]) {
                             detailsContainer[selectedType].classList.remove('hidden');

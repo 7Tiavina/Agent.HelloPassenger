@@ -47,21 +47,23 @@ class PaymentController extends Controller
                 // Validation for Premium option details
                 'options.*.details.direction' => 'nullable|string|in:terminal_to_agence,agence_to_terminal',
                 
-                // Arrival flow (terminal_to_agence)
-                'options.*.details.transport_type_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string|in:flight,train,car',
-                'options.*.details.flight_number_arrival' => 'required_if:options.*.details.transport_type_arrival,flight|nullable|string',
-                'options.*.details.train_number_arrival' => 'required_if:options.*.details.transport_type_arrival,train|nullable|string',
-                'options.*.details.car_plate_arrival' => 'required_if:options.*.details.transport_type_arrival,car|nullable|string',
+                // Arrival flow
+                'options.*.details.transport_type_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string',
+                'options.*.details.flight_number_arrival' => 'nullable|string',
+                'options.*.details.train_number_arrival' => 'nullable|string',
+                'options.*.details.tgv_number_arrival' => 'nullable|string',
+                'options.*.details.car_plate_arrival' => 'nullable|string',
                 'options.*.details.date_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date',
                 'options.*.details.pickup_location_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string',
                 'options.*.details.pickup_time_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date_format:H:i',
                 'options.*.details.instructions_arrival' => 'nullable|string',
 
-                // Departure flow (agence_to_terminal)
-                'options.*.details.transport_type_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string|in:flight,train,car',
-                'options.*.details.flight_number_departure' => 'required_if:options.*.details.transport_type_departure,flight|nullable|string',
-                'options.*.details.train_number_departure' => 'required_if:options.*.details.transport_type_departure,train|nullable|string',
-                'options.*.details.car_plate_departure' => 'required_if:options.*.details.transport_type_departure,car|nullable|string',
+                // Departure flow
+                'options.*.details.transport_type_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string',
+                'options.*.details.flight_number_departure' => 'nullable|string',
+                'options.*.details.train_number_departure' => 'nullable|string',
+                'options.*.details.tgv_number_departure' => 'nullable|string',
+                'options.*.details.car_plate_departure' => 'nullable|string',
                 'options.*.details.date_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date',
                 'options.*.details.restitution_location_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string',
                 'options.*.details.restitution_time_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date_format:H:i',
@@ -131,21 +133,29 @@ class PaymentController extends Controller
                 $transportTypeKey = $isArrivalFlow ? 'transport_type_arrival' : 'transport_type_departure';
                 
                 $modeTransport = $details[$transportTypeKey] ?? 'Non spécifié';
-                $commandeInfos['modeTransport'] = ucfirst($modeTransport);
+                // Mapper les valeurs techniques du frontend aux libellés lisibles
+                $displayModeTransport = [
+                    'car' => 'Voiture',
+                    'taxi' => 'Taxi',
+                    'vtc' => 'VTC',
+                    'bus' => 'Bus',
+                    'metro' => 'Métro',
+                    'flight' => 'Avion',
+                    'tgv' => 'TGV',
+                    'rer_metro' => 'RER/Métro',
+                ][$modeTransport] ?? ucfirst(str_replace('_', ' ', $modeTransport));
+                $commandeInfos['modeTransport'] = $displayModeTransport;
 
                 switch ($modeTransport) {
                     case 'flight':
                         $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
                         if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
                         break;
-                    case 'train':
-                        $trainNumberKey = $isArrivalFlow ? 'train_number_arrival' : 'train_number_departure';
-                        if (!empty($details[$trainNumberKey])) $commentairesArray[] = "Numéro de train: " . $details[$trainNumberKey];
+                    case 'tgv':
+                        $tgvNumberKey = $isArrivalFlow ? 'tgv_number_arrival' : 'tgv_number_departure';
+                        if (!empty($details[$tgvNumberKey])) $commentairesArray[] = "Numéro du TGV: " . $details[$tgvNumberKey];
                         break;
-                    case 'car':
-                        $carPlateKey = $isArrivalFlow ? 'car_plate_arrival' : 'car_plate_departure';
-                        if (!empty($details[$carPlateKey])) $commentairesArray[] = "Plaque d'immatriculation: " . $details[$carPlateKey];
-                        break;
+                    // No details needed for other transport types
                 }
 
                 $locationKey = $isArrivalFlow ? 'pickup_location_arrival' : 'restitution_location_departure';
