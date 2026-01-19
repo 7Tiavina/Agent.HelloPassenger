@@ -449,16 +449,21 @@ class PaymentController extends Controller
                     return redirect()->route('form-consigne')->with('error', 'Impossible de déterminer le client pour la commande.');
                 }
 
+                // Log the Base64 content before storing
+                if (isset($apiResult['content'])) {
+                    \Illuminate\Support\Facades\Log::debug('Invoice Base64 content received from BDM API (first 100 chars): ' . substr($apiResult['content'], 0, 100));
+                    \Illuminate\Support\Facades\Log::debug('Invoice Base64 content length: ' . strlen($apiResult['content']));
+                }
                 $commande = Commande::create([
                     'client_id' => $clientId, 'client_email' => $clientData['email'], 'client_nom' => $clientData['nom'],
                     'client_prenom' => $clientData['prenom'], 'client_telephone' => $clientData['telephone'],
                     'client_civilite' => $clientData['civilite'] ?? null, 'client_nom_societe' => $clientData['nomSociete'] ?? null,
                     'client_adresse' => $clientData['adresse'] ?? null, 'client_complement_adresse' => $clientData['complementAdresse'] ?? null,
-                    'client_ville' => $clientData['ville'] ?? null, 'client_code_postal' => $clientData['codePostal'] ?? null,
+                    'client_ville' => $clientData['ville'] ?? null, 'client_codePostal' => $clientData['codePostal'] ?? null,
                     'client_pays' => $clientData['pays'] ?? null, 'id_api_commande' => $apiResult['message'] ?? null,
                     'id_plateforme' => $idPlateforme, 'total_prix_ttc' => $totalPrixTTC, 'statut' => 'completed',
                     'details_commande_lignes' => json_encode($commandeLignes),
-                    'invoice_content' => isset($apiResult['content']) ? json_encode($apiResult['content']) : null,
+                    'invoice_content' => isset($apiResult['content']) ? $apiResult['content'] : null,
                 ]);
 
                 PaymentClient::create([
@@ -477,33 +482,17 @@ class PaymentController extends Controller
                 try {
                     Log::info('DEBUT du processus d\'envoi d\'email pour la commande ' . $commande->id);
 
-                    // Générer le PDF
-                    Log::info('Etape 1: Tentative de génération du PDF...');
-                    $pdf = PDF::loadView('invoices.default', compact('commande'));
-                    Log::info('Etape 2: PDF généré en mémoire avec succès.');
+                    // Récupérer le contenu de la facture Base64 depuis la commande
+                    $invoiceBase64 = $commande->invoice_content;
                     
-                    // Sauvegarder le PDF temporairement
-                    $reference = $commande->paymentClient->monetico_order_id ?? $commande->id;
-                    $fileName = 'facture-' . $reference . '.pdf';
-                    
-                    if (!Storage::exists('temp')) {
-                        Storage::makeDirectory('temp');
+                    if ($invoiceBase64) {
+                        Log::info('Facture Base64 récupérée depuis la commande. Préparation de l\'envoi par e-mail.');
+                        Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande, $invoiceBase64));
+                        Log::info('E-mail de confirmation envoyé avec la facture attachée.');
+                    } else {
+                        Log::warning('Facture Base64 non trouvée pour la commande ' . $commande->id . '. Envoi de l\'e-mail sans facture attachée.');
+                        Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande));
                     }
-
-                    $pdfPath = Storage::path('temp/' . $fileName);
-                    Log::info('Etape 3: Sauvegarde du PDF vers le chemin: ' . $pdfPath);
-                    $pdf->save($pdfPath);
-                    Log::info('Etape 4: PDF sauvegardé avec succès.');
-
-                    // Envoyer l'e-mail
-                    Log::info('Etape 5: Tentative d\'envoi de l\'e-mail à ' . $commande->client_email);
-                    Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande, $pdfPath));
-                    Log::info('Etape 6: E-mail envoyé avec succès.');
-
-                    // Supprimer le fichier PDF temporaire
-                    Log::info('Etape 7: Suppression du fichier PDF temporaire.');
-                    Storage::delete('temp/' . $fileName);
-                    Log::info('Etape 8: Fichier PDF temporaire supprimé.');
 
                 } catch (\Exception $mailException) {
                     Log::error('ERREUR FATALE lors de l\'envoi de l\'e-mail de confirmation: ' . $mailException->getMessage(), ['exception' => $mailException]);
@@ -536,20 +525,32 @@ class PaymentController extends Controller
 
     public function showPaymentSuccess()
     {
+        \Illuminate\Support\Facades\Log::info('[showPaymentSuccess] START - Displaying payment success page.');
         $apiResult = Session::get('api_payment_result');
         $lastCommandeId = Session::get('last_commande_id');
 
         if (!$apiResult || !$lastCommandeId) {
-            // Optionally handle cases where session data is missing
+            \Illuminate\Support\Facades\Log::error('[showPaymentSuccess] CRITICAL: api_payment_result or last_commande_id NOT FOUND in session. Redirecting.');
             return redirect()->route('form-consigne')->with('error', 'La session de paiement a expiré. Veuillez réessayer.');
         }
+
+        \Illuminate\Support\Facades\Log::debug('[showPaymentSuccess] last_commande_id from session: ' . $lastCommandeId);
 
         // Fetch the Commande object with its paymentClient to get the monetico_order_id
         $commande = Commande::with('paymentClient')->find($lastCommandeId);
 
         if (!$commande) {
+            \Illuminate\Support\Facades\Log::error('[showPaymentSuccess] CRITICAL: Commande object NOT FOUND in DB for ID: ' . $lastCommandeId . '. Redirecting.');
             return redirect()->route('form-consigne')->with('error', 'Commande introuvable.');
         }
+        
+        // Log the presence and part of invoice_content
+        if ($commande->invoice_content) {
+            \Illuminate\Support\Facades\Log::debug('[showPaymentSuccess] Commande invoice_content present. Length: ' . strlen($commande->invoice_content) . ', First 100 chars: ' . substr($commande->invoice_content, 0, 100));
+        } else {
+            \Illuminate\Support\Facades\Log::warning('[showPaymentSuccess] Commande invoice_content is NULL or empty for Commande ID: ' . $commande->id);
+        }
+
 
         // Forget the session data after using it
         Session::forget(['api_payment_result', 'last_commande_id']);

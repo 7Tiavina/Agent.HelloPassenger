@@ -16,15 +16,15 @@ class OrderConfirmationMail extends Mailable
     use Queueable, SerializesModels;
 
     public $commande;
-    public $pdfPath;
+    public ?string $invoiceBase64; // Renommé et rendu nullable
 
     /**
      * Create a new message instance.
      */
-    public function __construct(Commande $commande, string $pdfPath)
+    public function __construct(Commande $commande, ?string $invoiceBase64 = null) // Accepte Base64, nullable
     {
         $this->commande = $commande;
-        $this->pdfPath = $pdfPath;
+        $this->invoiceBase64 = $invoiceBase64;
     }
 
     /**
@@ -58,9 +58,17 @@ class OrderConfirmationMail extends Mailable
      */
     public function attachments(): array
     {
+        if (!$this->invoiceBase64) {
+            \Illuminate\Support\Facades\Log::debug('No invoiceBase64 found to attach for command ' . ($this->commande->id ?? 'unknown'));
+            return []; // Pas de facture à attacher
+        }
+
+        \Illuminate\Support\Facades\Log::debug('Attempting to attach invoice (first 100 chars): ' . substr($this->invoiceBase64, 0, 100));
+        \Illuminate\Support\Facades\Log::debug('Invoice Base64 length to attach: ' . strlen($this->invoiceBase64));
+
         $reference = $this->commande->paymentClient->monetico_order_id ?? $this->commande->id;
         return [
-            Attachment::fromPath($this->pdfPath)
+            Attachment::fromData(fn () => base64_decode($this->invoiceBase64))
                       ->as('facture-' . $reference . '.pdf')
                       ->withMime('application/pdf'),
         ];
