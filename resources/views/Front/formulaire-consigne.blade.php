@@ -520,6 +520,11 @@
         // Initialisation des listeners qui dépendent d'éléments du DOM chargés
         if(typeof setupQdmListeners !== 'undefined') setupQdmListeners();
 
+        // Appeler loadStateFromSession au chargement de la page pour restaurer l'état
+        if(typeof loadStateFromSession !== 'undefined') {
+            loadStateFromSession();
+        }
+
         // Le setup des listeners de la modale custom est déjà dans modal.js
         // Le setup des listeners du booking est dans booking.js
         

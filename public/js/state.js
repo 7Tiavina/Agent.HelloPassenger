@@ -28,6 +28,7 @@ function saveStateToSession() {
         dateRecuperation: document.getElementById('date-recuperation').value,
         heureRecuperation: document.getElementById('heure-recuperation').value,
         isBaggageStepVisible: document.getElementById('baggage-selection-step').style.display === 'block',
+        isStickyWrapperVisible: document.getElementById('sticky-wrapper').classList.contains('hidden') === false,
         cartItems: cartItems,
         globalProductsData: globalProductsData,
         globalLieuxData: globalLieuxData,
@@ -75,6 +76,13 @@ function loadStateFromSession() {
                 displayOptions(dureeEnMinutes);
             }
         }
+    }
+
+    // Restaurer la visibilité de sticky-wrapper
+    if (state.isStickyWrapperVisible) {
+        document.getElementById('sticky-wrapper').classList.remove('hidden');
+    } else {
+        document.getElementById('sticky-wrapper').classList.add('hidden');
     }
 
     // Assurez-vous que cette fonction est disponible
