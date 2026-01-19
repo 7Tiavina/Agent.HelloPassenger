@@ -550,27 +550,21 @@
 
                 // Validation des champs additionnels seulement s'ils sont visibles et non vides
                 if (areAdditionalFieldsVisible) {
-                    const additionalRequiredFields = ['modal-civilite', 'modal-ville', 'modal-codePostal', 'modal-pays']; // Email n'est plus requis ici
-
-                    additionalRequiredFields.forEach(fieldId => {
-                        const input = document.getElementById(fieldId);
-                        if (input) {
-                            const value = input.value.trim();
-                            if (value === '') {
-                                isValid = false;
-                                input.classList.add('input-error');
-                            } else {
-                                input.classList.remove('input-error');
-                            }
-                        } else {
-                            console.error('Input not found for ID:', fieldId);
+                    // Tous les champs du container additionnel sont validés si visibles
+                    const additionalInputs = additionalFieldsContainer.querySelectorAll('input:not([type="hidden"]), select, textarea');
+                    additionalInputs.forEach(input => {
+                        // Email (input hidden) ne sera pas validé ici
+                        if (input.id !== 'modal-email' && input.value.trim() === '') {
                             isValid = false;
+                            input.classList.add('input-error');
+                        } else {
+                            input.classList.remove('input-error');
                         }
                     });
 
-                    // Validation spécifique pour le code postal
+                    // Validation spécifique pour le code postal s'il est visible et non vide
                     const postalCodeInput = document.getElementById('modal-codePostal');
-                    if (postalCodeInput && postalCodeInput.value.trim() !== '') {
+                    if (postalCodeInput && !postalCodeInput.classList.contains('input-error') && postalCodeInput.value.trim() !== '') {
                         const postalCodeRegex = /^\d{5}$/;
                         if (!postalCodeRegex.test(postalCodeInput.value.trim())) {
                             isValid = false;
@@ -596,17 +590,29 @@
                     }
 
                     // Pré-remplir les champs
-                    // modal-email n'est plus dans la modale
-                    document.getElementById('modal-nom').value = userData.nom || '';
-                    document.getElementById('modal-prenom').value = userData.prenom || '';
+                    // Le champ email est un champ caché dans la modale maintenant, il faut le préremplir
+                    document.getElementById('modal-email').value = userData.email || '';
+
+                    // Nom et Prénom vides par défaut pour l'invité
+                    document.getElementById('modal-nom').value = (isGuest && (userData.nom === 'Invité' || userData.nom === null)) ? '' : (userData.nom || '');
+                    document.getElementById('modal-prenom').value = (isGuest && (userData.prenom === 'Client' || userData.prenom === null)) ? '' : (userData.prenom || '');
                     document.getElementById('modal-telephone').value = userData.telephone || '';
+                    document.getElementById('modal-adresse').value = userData.adresse || '';
+
+                    // Champs optionnels avec valeurs par défaut pour l'invité si non remplis
+                    if (isGuest) {
+                        document.getElementById('modal-ville').value = (userData.ville === 'Ville inconnue' || userData.ville === null) ? 'Paris' : (userData.ville || 'Paris');
+                        document.getElementById('modal-codePostal').value = (userData.codePostal === '00000' || userData.codePostal === null) ? '75000' : (userData.codePostal || '75000');
+                        document.getElementById('modal-pays').value = (userData.pays === 'FRA' || userData.pays === null) ? 'France' : (userData.pays || 'France');
+                    } else {
+                        document.getElementById('modal-ville').value = userData.ville || '';
+                        document.getElementById('modal-codePostal').value = userData.codePostal || '';
+                        document.getElementById('modal-pays').value = userData.pays || '';
+                    }
+                    
                     document.getElementById('modal-civilite').value = userData.civilite || 'M.';
                     document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
-                    document.getElementById('modal-adresse').value = userData.adresse || '';
                     document.getElementById('modal-complementAdresse').value = userData.complementAdresse || '';
-                    document.getElementById('modal-ville').value = userData.ville || '';
-                    document.getElementById('modal-codePostal').value = userData.codePostal || '';
-                    document.getElementById('modal-pays').value = userData.pays || '';
 
                     clientProfileModal.classList.remove('hidden');
                 });
