@@ -505,37 +505,38 @@
             const closeClientProfileModalBtn = document.getElementById('closeClientProfileModalBtn');
             const clientProfileForm = document.getElementById('clientProfileForm');
             const userData = @json($user);
+            let areAdditionalFieldsVisible = false; // Nouvelle variable d'état
+
+            // Référence aux éléments de la modale
+            const additionalFieldsContainer = document.getElementById('additional-fields-container');
+            const toggleAdditionalFieldsBtn = document.getElementById('toggleAdditionalFieldsBtn');
+            const toggleText = document.getElementById('toggleText');
+
+            // Fonction pour basculer la visibilité des champs additionnels
+            function toggleAdditionalFields() {
+                if (additionalFieldsContainer) {
+                    additionalFieldsContainer.classList.toggle('hidden');
+                    areAdditionalFieldsVisible = !additionalFieldsContainer.classList.contains('hidden');
+                    toggleText.textContent = areAdditionalFieldsVisible ? "Masquer les champs optionnels" : "Compléter mon profil (facultatif)";
+                }
+            }
+
+            // Écouteur pour le bouton de bascule
+            if (toggleAdditionalFieldsBtn) {
+                toggleAdditionalFieldsBtn.addEventListener('click', toggleAdditionalFields);
+            }
 
             function validateGuestForm() {
                 console.log('validateGuestForm called');
-                const requiredFields = ['modal-prenom', 'modal-nom', 'modal-email', 'modal-telephone', 'modal-adresse', 'modal-ville', 'modal-codePostal', 'modal-pays'];
+                const requiredFields = ['modal-prenom', 'modal-nom', 'modal-telephone', 'modal-adresse']; // Champs essentiels
                 let isValid = true;
 
+                // Validation des champs essentiels
                 requiredFields.forEach(fieldId => {
                     const input = document.getElementById(fieldId);
                     if (input) {
-                        let fieldIsValid = true;
                         const value = input.value.trim();
-
                         if (value === '') {
-                            fieldIsValid = false;
-                        }
-                        
-                        if (fieldId === 'modal-email' && value !== '') {
-                            const emailRegex = /^\S+@\S+\.\S+$/;
-                            if (!emailRegex.test(value)) {
-                                fieldIsValid = false;
-                            }
-                        }
-
-                        if (fieldId === 'modal-codePostal' && value !== '') {
-                            const postalCodeRegex = /^\d{5}$/;
-                            if (!postalCodeRegex.test(value)) {
-                                fieldIsValid = false;
-                            }
-                        }
-
-                        if (!fieldIsValid) {
                             isValid = false;
                             input.classList.add('input-error');
                         } else {
@@ -546,6 +547,39 @@
                         isValid = false;
                     }
                 });
+
+                // Validation des champs additionnels seulement s'ils sont visibles et non vides
+                if (areAdditionalFieldsVisible) {
+                    const additionalRequiredFields = ['modal-civilite', 'modal-ville', 'modal-codePostal', 'modal-pays']; // Email n'est plus requis ici
+
+                    additionalRequiredFields.forEach(fieldId => {
+                        const input = document.getElementById(fieldId);
+                        if (input) {
+                            const value = input.value.trim();
+                            if (value === '') {
+                                isValid = false;
+                                input.classList.add('input-error');
+                            } else {
+                                input.classList.remove('input-error');
+                            }
+                        } else {
+                            console.error('Input not found for ID:', fieldId);
+                            isValid = false;
+                        }
+                    });
+
+                    // Validation spécifique pour le code postal
+                    const postalCodeInput = document.getElementById('modal-codePostal');
+                    if (postalCodeInput && postalCodeInput.value.trim() !== '') {
+                        const postalCodeRegex = /^\d{5}$/;
+                        if (!postalCodeRegex.test(postalCodeInput.value.trim())) {
+                            isValid = false;
+                            postalCodeInput.classList.add('input-error');
+                        } else {
+                            postalCodeInput.classList.remove('input-error');
+                        }
+                    }
+                }
                 
                 console.log('Validation result (isValid):', isValid);
                 return isValid;
@@ -554,7 +588,15 @@
             // Pré-remplir le formulaire quand on ouvre la modale
             if (openClientProfileModalBtn) {
                 openClientProfileModalBtn.addEventListener('click', () => {
-                    document.getElementById('modal-email').value = userData.email || '';
+                    // Masquer les champs additionnels par défaut à l'ouverture de la modale
+                    if (additionalFieldsContainer) {
+                        additionalFieldsContainer.classList.add('hidden');
+                        areAdditionalFieldsVisible = false;
+                        toggleText.textContent = "Compléter mon profil (facultatif)";
+                    }
+
+                    // Pré-remplir les champs
+                    // modal-email n'est plus dans la modale
                     document.getElementById('modal-nom').value = userData.nom || '';
                     document.getElementById('modal-prenom').value = userData.prenom || '';
                     document.getElementById('modal-telephone').value = userData.telephone || '';

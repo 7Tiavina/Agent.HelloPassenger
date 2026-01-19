@@ -1,83 +1,110 @@
-<div id="clientProfileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border max-w-xl shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Mettre à jour mes informations</h3>
-            <p class="mt-2 text-sm text-gray-500 px-4">
-                Tous les bagages déposés en consigne sont préalablement contrôlés par Rayon X. Pour des raisons de sûreté - sécurité nous avons donc besoin d'informations complémentaires pour valider votre commande.
+<div id="clientProfileModal" class="fixed inset-0 bg-[#212121] bg-opacity-80 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="relative mx-auto border-none max-w-5xl w-full shadow-2xl rounded-3xl bg-white overflow-hidden transform transition-all">
+        
+        <div class="bg-[#ffc107] p-6 text-[#212121] text-center">
+            <h3 class="text-2xl font-bold">Dernière étape pour votre sécurité</h3>
+            <p class="text-[#212121] text-opacity-90 text-sm mt-1">
+                Conformément aux normes aéroportuaires, merci de valider vos informations de contact.
             </p>
-            <div class="mt-4 px-7 py-3">
-                <form id="clientProfileForm" class="space-y-4">
-                    @csrf
-                    <!-- Email -->
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="email" id="modal-email" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Nom -->
-                    <div>
-                        <label for="nom" class="block text-sm font-medium text-gray-700">Nom</label>
-                        <input type="text" name="nom" id="modal-nom" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Prenom -->
-                    <div>
-                        <label for="prenom" class="block text-sm font-medium text-gray-700">Prénom</label>
-                        <input type="text" name="prenom" id="modal-prenom" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Telephone -->
-                    <div>
-                        <label for="telephone" class="block text-sm font-medium text-gray-700">Téléphone</label>
-                        <input type="tel" name="telephone" id="modal-telephone" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Civilite -->
-                    <div>
-                        <label for="civilite" class="block text-sm font-medium text-gray-700">Civilité</label>
-                        <select name="civilite" id="modal-civilite" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                            <option value="M.">M.</option>
-                            <option value="Mme">Mme</option>
-                            <option value="Mlle">Mlle</option>
-                        </select>
-                    </div>
-                    <!-- Nom Société -->
-                    <div>
-                        <label for="nomSociete" class="block text-sm font-medium text-gray-700">Nom Société (optionnel)</label>
-                        <input type="text" name="nomSociete" id="modal-nomSociete" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Adresse -->
-                    <div>
-                        <label for="adresse" class="block text-sm font-medium text-gray-700">Adresse</label>
-                        <input type="text" name="adresse" id="modal-adresse" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Complément Adresse -->
-                    <div>
-                        <label for="complementAdresse" class="block text-sm font-medium text-gray-700">Complément Adresse (optionnel)</label>
-                        <input type="text" name="complementAdresse" id="modal-complementAdresse" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Ville -->
-                    <div>
-                        <label for="ville" class="block text-sm font-medium text-gray-700">Ville</label>
-                        <input type="text" name="ville" id="modal-ville" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Code Postal -->
-                    <div>
-                        <label for="codePostal" class="block text-sm font-medium text-gray-700">Code Postal</label>
-                        <input type="text" name="codePostal" id="modal-codePostal" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
-                    </div>
-                    <!-- Pays -->
-                    <div>
-                        <label for="pays" class="block text-sm font-medium text-gray-700">Pays</label>
-                        <input type="text" name="pays" id="modal-pays" class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-base">
+        </div>
+
+        <div class="p-8">
+            <form id="clientProfileForm">
+                @csrf
+                
+                <input type="hidden" name="email" id="modal-email">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-[#212121] flex items-center">
+                            <span class="w-8 h-8 bg-[#ffc107] bg-opacity-20 text-[#212121] rounded-full flex items-center justify-center mr-2 text-sm font-bold">1</span>
+                            Vos coordonnées
+                        </h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase">Prénom</label>
+                                <input type="text" name="prenom" id="modal-prenom" placeholder="Prénom" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ffc107] focus:ring-[#ffc107] transition-all py-3">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase">Nom</label>
+                                <input type="text" name="nom" id="modal-nom" placeholder="Nom" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ffc107] focus:ring-[#ffc107] transition-all py-3">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase">Téléphone mobile</label>
+                            <input type="tel" name="telephone" id="modal-telephone" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ffc107] focus:ring-[#ffc107] transition-all py-3">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase">Pays</label>
+                            <input type="text" name="pays" id="modal-pays" placeholder="Ex: France" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ffc107] focus:ring-[#ffc107] transition-all py-3">
+                        </div>
                     </div>
 
-                    <div class="items-center px-4 py-3">
-                        <button id="saveClientProfileBtn" type="submit" class="px-4 py-2 bg-yellow-custom text-gray-dark font-medium rounded-md w-full shadow-sm hover:bg-yellow-hover focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
-                            Enregistrer
-                        </button>
-                        <button id="closeClientProfileModalBtn" type="button" class="mt-3 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                            Annuler
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-[#212121] flex items-center">
+                            <span class="w-8 h-8 bg-[#ffc107] bg-opacity-20 text-[#212121] rounded-full flex items-center justify-center mr-2 text-sm font-bold">2</span>
+                            Adresse de facturation
+                        </h4>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase">Adresse (Auto-complétion Google)</label>
+                            <input type="text" name="adresse" id="modal-adresse" placeholder="Saisissez votre adresse..." class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-[#ffc107] focus:ring-[#ffc107] transition-all py-3">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase">Ville</label>
+                                <input type="text" name="ville" id="modal-ville" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-[#ffc107] py-3">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase">Code Postal</label>
+                                <input type="text" name="codePostal" id="modal-codePostal" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-[#ffc107] py-3">
+                            </div>
+                        </div>
+
+                        <button type="button" id="toggleAdditionalFieldsBtn" class="flex items-center text-[#212121] hover:text-black text-sm font-bold transition-colors pt-2 underline decoration-[#ffc107] decoration-2 underline-offset-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-[#ffc107]" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            <span id="toggleText">Compléter mon profil (optionnel)</span>
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <div id="additional-fields-container" class="hidden mt-6 pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase">Civilité</label>
+                        <select name="civilite" id="modal-civilite" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-[#ffc107]">
+                            <option value="M.">Monsieur</option>
+                            <option value="Mme">Madame</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase">Société</label>
+                        <input type="text" name="nomSociete" id="modal-nomSociete" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-[#ffc107]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase">Complément</label>
+                        <input type="text" name="complementAdresse" id="modal-complementAdresse" class="mt-1 block w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-[#ffc107]">
+                    </div>
+                </div>
+
+                <div class="mt-10 flex flex-col md:flex-row gap-4 items-center justify-center">
+                    <button id="closeClientProfileModalBtn" type="button" class="order-2 md:order-1 px-8 py-3 text-gray-400 font-semibold hover:text-gray-600 transition-all">
+                        Annuler
+                    </button>
+                    <button id="saveClientProfileBtn" type="submit" class="order-1 md:order-2 px-12 py-4 bg-[#ffc107] text-[#212121] font-bold rounded-full shadow-lg hover:bg-[#212121] hover:text-white transform transition-all flex items-center">
+                        Confirmer et payer
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
