@@ -621,13 +621,31 @@ class PaymentController extends Controller
         if ($guestEmail) {
             \Illuminate\Support\Facades\Validator::make(['guest_email' => $guestEmail], ['guest_email' => 'required|email|max:255'])->validate();
             $persistentGuestDetails = Session::get('guest_customer_details', []);
-            return array_merge([
-                "email" => $guestEmail, "telephone" => null, "nom" => 'Invité',
-                "prenom" => 'Client', "civilite" => null, "nomSociete" => null,
-                "adresse" => null, "complementAdresse" => null, "ville" => null,
-                "codePostal" => null, "pays" => null,
+            
+            // Définir les valeurs de base pour les invités
+            $baseGuestValues = [
+                "email" => $guestEmail, 
+                "telephone" => null, 
+                "nom" => '',  // Laisser vide pour que l'utilisateur les remplisse
+                "prenom" => '', 
+                "adresse" => null,
                 "is_guest" => true
-            ], $persistentGuestDetails);
+            ];
+            
+            // Appliquer les valeurs par défaut pour les champs supplémentaires uniquement s'ils ne sont pas déjà définis
+            $defaultValues = [
+                "civilite" => 'M.',
+                "nomSociete" => 'invité',
+                "complementAdresse" => 'invité', 
+                "ville" => 'invité',
+                "codePostal" => '11111', 
+                "pays" => 'invité'
+            ];
+            
+            // Fusionner les valeurs persistantes avec les valeurs par défaut, en priorisant les valeurs persistantes
+            $mergedValues = array_merge($baseGuestValues, $defaultValues, $persistentGuestDetails);
+            
+            return $mergedValues;
         }
         
         return null;

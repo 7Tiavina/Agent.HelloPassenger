@@ -263,10 +263,14 @@
                     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
                         <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Vos informations</h2>
                         <div class="text-sm text-gray-600 space-y-2 text-left mx-auto max-w-sm">
-                            <p id="display-user-name"><strong>Nom:</strong> {{ $user->prenom }} {{ $user->nom }}</p>
+                            <p id="display-user-name"><strong>Nom:</strong> {{ $user->prenom ?? 'Non renseigné' }} {{ $user->nom ?? 'Non renseigné' }}</p>
                             <p id="display-user-email"><strong>Email:</strong> {{ $user->email }}</p>
                             <p id="display-user-phone"><strong>Téléphone:</strong> {{ $user->telephone ?? 'Non renseigné' }}</p>
                             <p id="display-user-address"><strong>Adresse:</strong> {{ $user->adresse ?? 'Non renseignée' }}</p>
+                            <p id="display-user-company"><strong>Société:</strong> {{ $user->nomSociete ?? 'Non renseignée' }}</p>
+                            <p id="display-user-city"><strong>Ville:</strong> {{ $user->ville ?? 'Non renseignée' }}</p>
+                            <p id="display-user-zipcode"><strong>Code postal:</strong> {{ $user->codePostal ?? 'Non renseigné' }}</p>
+                            <p id="display-user-country"><strong>Pays:</strong> {{ $user->pays ?? 'Non renseigné' }}</p>
                         </div>
                         <button id="openClientProfileModalBtn" class="mt-4 bg-yellow-custom text-gray-dark font-bold py-2 px-4 rounded-full btn-hover mx-auto">Modifier</button>
                     </div>
