@@ -278,9 +278,11 @@ function toggleOptionFromModal(optionKey) {
                     input.classList.remove('border-red-500');
                 });
                 
-                // Check required fields
+                // Check required fields that are visible
                 formContainer.querySelectorAll('[data-required="true"]').forEach(input => {
-                    if (!input.value.trim()) {
+                    // An element is visible if its offsetParent is not null
+                    const isVisible = !!input.offsetParent;
+                    if (isVisible && !input.value.trim()) {
                         isFormValid = false;
                         input.classList.add('border-red-500');
                     }
@@ -375,7 +377,30 @@ function showOptionsAdvertisementModal() {
                 </div>
                 <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
-                    <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true"></div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Moyen de transport *</label>
+                        <select name="transport_type_arrival" class="input-style custom-select w-full" data-required="true">
+                            <option value="" selected disabled>Sélectionner...</option>
+                            <option value="flight">Avion</option>
+                            <option value="train">Train</option>
+                            <option value="car">Voiture</option>
+                        </select>
+                    </div>
+
+                    <div id="transport_details_arrival_flight" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Numéro de vol *</label>
+                        <input type="text" name="flight_number_arrival" class="input-style w-full" data-required="true">
+                    </div>
+                    <div id="transport_details_arrival_train" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Numéro de train *</label>
+                        <input type="text" name="train_number_arrival" class="input-style w-full" data-required="true">
+                    </div>
+                    <div id="transport_details_arrival_car" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Plaque d'immatriculation *</label>
+                        <input type="text" name="car_plate_arrival" class="input-style w-full" data-required="true">
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" id="flight_date_arrival" name="date_arrival" class="input-style w-full"></div>
                         <div>
@@ -390,7 +415,30 @@ function showOptionsAdvertisementModal() {
                 </div>
                 <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
                     <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
-                    <div><label class="block text-sm font-medium text-gray-700">Numéro de vol *</label><input type="text" name="flight_number_departure" class="input-style w-full" data-required="true"></div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Moyen de transport *</label>
+                        <select name="transport_type_departure" class="input-style custom-select w-full" data-required="true">
+                            <option value="" selected disabled>Sélectionner...</option>
+                            <option value="flight">Vol</option>
+                            <option value="train">Train</option>
+                            <option value="car">Voiture</option>
+                        </select>
+                    </div>
+
+                    <div id="transport_details_departure_flight" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Numéro de vol *</label>
+                        <input type="text" name="flight_number_departure" class="input-style w-full" data-required="true">
+                    </div>
+                    <div id="transport_details_departure_train" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Numéro de train *</label>
+                        <input type="text" name="train_number_departure" class="input-style w-full" data-required="true">
+                    </div>
+                    <div id="transport_details_departure_car" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Plaque d'immatriculation *</label>
+                        <input type="text" name="car_plate_departure" class="input-style w-full" data-required="true">
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-sm font-medium text-gray-700">Date de départ</label><input type="date" id="flight_date_departure" name="date_departure" class="input-style w-full"></div>
                         <div>
@@ -408,7 +456,6 @@ function showOptionsAdvertisementModal() {
                 
                 // Get elements
                 const flightDateArrival = document.getElementById('flight_date_arrival');
-                const flightTimeArrival = document.getElementById('flight_time_arrival');
                 const pickupTimeArrival = document.getElementById('pickup_time_arrival');
                 const flightDateDeparture = document.getElementById('flight_date_departure');
                 const restitutionTimeDeparture = document.getElementById('restitution_time_departure');
@@ -418,6 +465,30 @@ function showOptionsAdvertisementModal() {
                 pickupTimeArrival.value = document.getElementById('heure-depot').value;
                 flightDateDeparture.value = document.getElementById('date-recuperation').value;
                 restitutionTimeDeparture.value = document.getElementById('heure-recuperation').value;
+
+                // Transport type change handler
+                const setupTransportTypeHandler = (direction) => {
+                    const transportSelect = document.querySelector(`select[name="transport_type_${direction}"]`);
+                    const detailsContainer = {
+                        flight: document.getElementById(`transport_details_${direction}_flight`),
+                        train: document.getElementById(`transport_details_${direction}_train`),
+                        car: document.getElementById(`transport_details_${direction}_car`),
+                    };
+
+                    transportSelect.addEventListener('change', (e) => {
+                        // Hide all containers
+                        Object.values(detailsContainer).forEach(container => container.classList.add('hidden'));
+                        
+                        // Show the selected one
+                        const selectedType = e.target.value;
+                        if (detailsContainer[selectedType]) {
+                            detailsContainer[selectedType].classList.remove('hidden');
+                        }
+                    });
+                };
+
+                setupTransportTypeHandler('arrival');
+                setupTransportTypeHandler('departure');
 
                 // --- END DYNAMIC PREMIUM LOGIC ---
 

@@ -46,64 +46,27 @@ class PaymentController extends Controller
                 'options.*.details' => 'nullable|array',
                 // Validation for Premium option details
                 'options.*.details.direction' => 'nullable|string|in:terminal_to_agence,agence_to_terminal',
-                'options.*.details.flight_number_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string',
+                
+                // Arrival flow (terminal_to_agence)
+                'options.*.details.transport_type_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string|in:flight,train,car',
+                'options.*.details.flight_number_arrival' => 'required_if:options.*.details.transport_type_arrival,flight|nullable|string',
+                'options.*.details.train_number_arrival' => 'required_if:options.*.details.transport_type_arrival,train|nullable|string',
+                'options.*.details.car_plate_arrival' => 'required_if:options.*.details.transport_type_arrival,car|nullable|string',
                 'options.*.details.date_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date',
-                'options.*.details.time_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date_format:H:i',
+                'options.*.details.pickup_location_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|string',
                 'options.*.details.pickup_time_arrival' => 'required_if:options.*.details.direction,terminal_to_agence|nullable|date_format:H:i',
-                'options.*.details.flight_number_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string',
+                'options.*.details.instructions_arrival' => 'nullable|string',
+
+                // Departure flow (agence_to_terminal)
+                'options.*.details.transport_type_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string|in:flight,train,car',
+                'options.*.details.flight_number_departure' => 'required_if:options.*.details.transport_type_departure,flight|nullable|string',
+                'options.*.details.train_number_departure' => 'required_if:options.*.details.transport_type_departure,train|nullable|string',
+                'options.*.details.car_plate_departure' => 'required_if:options.*.details.transport_type_departure,car|nullable|string',
                 'options.*.details.date_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date',
-                'options.*.details.time_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date_format:H:i',
+                'options.*.details.restitution_location_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|string',
                 'options.*.details.restitution_time_departure' => 'required_if:options.*.details.direction,agence_to_terminal|nullable|date_format:H:i',
+                'options.*.details.instructions_departure' => 'nullable|string',
             ]);
-
-            // Manual validation for complex date/time rules for Premium option
-            $premiumOption = collect($validatedData['options'])->first(function ($option) {
-                return isset($option['key']) && $option['key'] === 'premium' && isset($option['details']);
-            });
-
-            if ($premiumOption) {
-                $details = $premiumOption['details'];
-                $mainDepotDateTime = \Carbon\Carbon::parse($validatedData['dateDepot'] . ' ' . $validatedData['heureDepot']);
-                $mainRecupDateTime = \Carbon\Carbon::parse($validatedData['dateRecuperation'] . ' ' . $validatedData['heureRecuperation']);
-
-                if (($details['direction'] ?? null) === 'terminal_to_agence') {
-                    $flightArrivalDateTime = \Carbon\Carbon::parse($details['date_arrival'] . ' ' . $details['time_arrival']);
-                    $calculatedPickupDateTime = $flightArrivalDateTime->copy()->addMinutes(45);
-                    $actualPickupDateTime = \Carbon\Carbon::parse($details['date_arrival'] . ' ' . $details['pickup_time_arrival']);
-
-                    // Check 1: Is actual pickup time roughly what we calculated? (Allow 1 min tolerance)
-                    if ($actualPickupDateTime->diffInMinutes($calculatedPickupDateTime) > 1) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'premium' => 'L\'heure de prise en charge ne correspond pas à l\'heure calculée (+45min après l\'arrivée du vol).'
-                        ]);
-                    }
-                    // Check 2: Is pickup time before the main drop-off time?
-                    if ($actualPickupDateTime > $mainDepotDateTime) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'premium' => 'La prise en charge des bagages (' . $actualPickupDateTime->format('H:i') . ') doit avoir lieu avant leur dépôt en consigne (' . $mainDepotDateTime->format('H:i') . ').'
-                        ]);
-                    }
-                }
-
-                if (($details['direction'] ?? null) === 'agence_to_terminal') {
-                    $flightDepartureDateTime = \Carbon\Carbon::parse($details['date_departure'] . ' ' . $details['time_departure']);
-                    $calculatedRestitutionDateTime = $flightDepartureDateTime->copy()->subHours(2);
-                    $actualRestitutionDateTime = \Carbon\Carbon::parse($details['date_departure'] . ' ' . $details['restitution_time_departure']);
-
-                    // Check 1: Is actual restitution time roughly what we calculated?
-                    if ($actualRestitutionDateTime->diffInMinutes($calculatedRestitutionDateTime) > 1) {
-                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'premium' => 'L\'heure de restitution ne correspond pas à l\'heure calculée (2h avant le départ du vol).'
-                        ]);
-                    }
-                    // Check 2: Is restitution time after the main pickup time?
-                    if ($actualRestitutionDateTime < $mainRecupDateTime) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'premium' => 'La restitution des bagages (' . $actualRestitutionDateTime->format('H:i') . ') doit avoir lieu après leur récupération en consigne (' . $mainRecupDateTime->format('H:i') . ').'
-                        ]);
-                    }
-                }
-            }
 
 
             $serviceId = 'dfb8ac1b-8bb1-4957-afb4-1faedaf641b7';
@@ -164,37 +127,45 @@ class PaymentController extends Controller
                 $directionText = ($details['direction'] ?? '') === 'terminal_to_agence' ? 'Récupération bagages' : 'Restitution bagages';
                 $commentairesArray[] = "Type de service: " . $directionText;
 
-                $commandeInfos['modeTransport'] = $details['modeTransport'] ?? $directionText; // Prioritize dedicated field if ever added
-                
                 $isArrivalFlow = ($details['direction'] ?? '') === 'terminal_to_agence';
+                $transportTypeKey = $isArrivalFlow ? 'transport_type_arrival' : 'transport_type_departure';
+                
+                $modeTransport = $details[$transportTypeKey] ?? 'Non spécifié';
+                $commandeInfos['modeTransport'] = ucfirst($modeTransport);
+
+                switch ($modeTransport) {
+                    case 'flight':
+                        $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
+                        if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
+                        break;
+                    case 'train':
+                        $trainNumberKey = $isArrivalFlow ? 'train_number_arrival' : 'train_number_departure';
+                        if (!empty($details[$trainNumberKey])) $commentairesArray[] = "Numéro de train: " . $details[$trainNumberKey];
+                        break;
+                    case 'car':
+                        $carPlateKey = $isArrivalFlow ? 'car_plate_arrival' : 'car_plate_departure';
+                        if (!empty($details[$carPlateKey])) $commentairesArray[] = "Plaque d'immatriculation: " . $details[$carPlateKey];
+                        break;
+                }
+
                 $locationKey = $isArrivalFlow ? 'pickup_location_arrival' : 'restitution_location_departure';
                 $locationLabelKey = $locationKey . '_libelle';
-                $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
                 $timeKey = $isArrivalFlow ? 'pickup_time_arrival' : 'restitution_time_departure';
                 $instructionsKey = $isArrivalFlow ? 'instructions_arrival' : 'instructions_departure';
-                // Ajout des clés pour les dates et heures spécifiques du service Premium
                 $dateKey = $isArrivalFlow ? 'date_arrival' : 'date_departure';
-                $heureKey = $isArrivalFlow ? 'time_arrival' : 'time_departure';
-
 
                 $commandeInfos['lieu'] = $details[$locationLabelKey] ?? $details[$locationKey] ?? 'Non spécifié';
 
-                if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
-                
-                // Ajout des dates et heures d'arrivée/départ spécifiques
                 if (!empty($details[$dateKey])) {
-                    $dateLabel = $isArrivalFlow ? 'Date d\'arrivée' : 'Date de départ';
+                    $dateLabel = $isArrivalFlow ? 'Date de prise en charge' : 'Date de restitution';
                     $commentairesArray[] = "$dateLabel: " . $details[$dateKey];
                 }
-                if (!empty($details[$heureKey])) {
-                    $heureLabel = $isArrivalFlow ? 'Heure d\'arrivée' : 'Heure de départ';
-                    $commentairesArray[] = "$heureLabel: " . $details[$heureKey];
-                }
-
+                
                 if (!empty($details[$timeKey])) {
                     $timeLabel = $isArrivalFlow ? 'Heure de prise en charge' : 'Heure de restitution';
                     $commentairesArray[] = "$timeLabel: " . $details[$timeKey];
                 }
+
                 if (!empty($details[$instructionsKey])) $commentairesArray[] = "Informations complémentaires: " . $details[$instructionsKey];
                 
                 $commandeInfos['commentaires'] = implode('; ', $commentairesArray);
