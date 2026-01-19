@@ -362,7 +362,9 @@ function showOptionsAdvertisementModal() {
                 const lieuxOptionsHTML = globalLieuxData.map(lieu => `<option value="${lieu.id}">${lieu.libelle}</option>`).join('');
 
                 const orlyAirportId = '64f00ace-31b6-45b0-bcb2-b562b1ac08d9';
+                const cdgAirportId = '88bb89e0-b966-4420-9ed3-7a6745e4d947';
                 const isOrly = airportId === orlyAirportId;
+                const isCdg = airportId === cdgAirportId;
 
                 const transportOptions = {
                     orly: `
@@ -427,12 +429,23 @@ function showOptionsAdvertisementModal() {
                                 <option value="bus">Bus</option>
                                 <option value="metro">Métro</option>
                                 <option value="flight">Avion</option>
-                            ` : `
+                            ` : isCdg ? `
                                 <option value="" selected disabled>Sélectionner...</option>
                                 <option value="tgv">TGV</option>
-                                <option value="rer_metro">RER/Métro</n>
-                                <option value="car_taxi_vtc_bus">Voiture/Taxi/VTC/Bus</option>
-                                <option value="flight">Avion</n>
+                                <option value="rer_metro">RER/Métro</option>
+                                <option value="car">Voiture</option>
+                                <option value="taxi">Taxi</option>
+                                <option value="vtc">VTC</option>
+                                <option value="bus">Bus</option>
+                                <option value="flight">Avion</option>
+                            ` : `
+                                <option value="" selected disabled>Sélectionner...</option>
+                                <option value="car">Voiture</option>
+                                <option value="taxi">Taxi</option>
+                                <option value="vtc">VTC</option>
+                                <option value="bus">Bus</option>
+                                <option value="metro">Métro</option>
+                                <option value="flight">Avion</option>
                             `}
                         </select>
                     </div>
@@ -462,12 +475,23 @@ function showOptionsAdvertisementModal() {
                                 <option value="bus">Bus</option>
                                 <option value="metro">Métro</option>
                                 <option value="flight">Avion</option>
-                            ` : `
+                            ` : isCdg ? `
                                 <option value="" selected disabled>Sélectionner...</option>
                                 <option value="tgv">TGV</option>
-                                <option value="rer_metro">RER/Métro</n>
-                                <option value="car_taxi_vtc_bus">Voiture/Taxi/VTC/Bus</option>
-                                <option value="flight">Avion</n>
+                                <option value="rer_metro">RER/Métro</option>
+                                <option value="car">Voiture</option>
+                                <option value="taxi">Taxi</option>
+                                <option value="vtc">VTC</option>
+                                <option value="bus">Bus</option>
+                                <option value="flight">Avion</option>
+                            ` : `
+                                <option value="" selected disabled>Sélectionner...</option>
+                                <option value="car">Voiture</option>
+                                <option value="taxi">Taxi</option>
+                                <option value="vtc">VTC</option>
+                                <option value="bus">Bus</option>
+                                <option value="metro">Métro</option>
+                                <option value="flight">Avion</option>
                             `}
                         </select>
                     </div>
