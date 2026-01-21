@@ -379,7 +379,7 @@
             try {
                 const autocomplete = new google.maps.places.Autocomplete(addressInput, {
                     types: ['address'],
-                    componentRestrictions: { country: ['fr'] },
+                    componentRestrictions: { country: [] },
                     fields: ['address_components', 'geometry', 'name']
                 });
 
