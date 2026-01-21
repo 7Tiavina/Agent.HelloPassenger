@@ -358,9 +358,9 @@
         theme: {
             extend: {
                 colors: {
-                    'yellow-custom': '#FFC107',
-                    'yellow-hover': '#FFB300',
-                    'gray-dark': '#1f2937'
+                    'yellow-custom': '#f9c52d',
+                    'yellow-hover': '#f9c52d',
+                    'gray-dark': '#212121'
                 },
                 keyframes: {
                     progress: {

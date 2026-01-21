@@ -102,7 +102,7 @@
     </div>
     
     <!-- Custom Modal -->
-    <div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+    <div id="custom-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center px-4">
         <div id="custom-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all" onclick="event.stopPropagation();">
             <div class="flex justify-between items-center pb-3 border-b border-gray-200">
                 <h3 id="custom-modal-title" class="text-xl font-bold text-gray-800"></h3>
