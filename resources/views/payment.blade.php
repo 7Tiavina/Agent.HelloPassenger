@@ -574,7 +574,7 @@
                     // Validation spécifique pour le code postal s'il est visible et non vide
                     const postalCodeInput = document.getElementById('modal-codePostal');
                     if (postalCodeInput && !postalCodeInput.classList.contains('input-error') && postalCodeInput.value.trim() !== '') {
-                        const postalCodeRegex = /^\d{5}$/;
+                        const postalCodeRegex = /^\d+$/;
                         if (!postalCodeRegex.test(postalCodeInput.value.trim())) {
                             isValid = false;
                             postalCodeInput.classList.add('input-error');
