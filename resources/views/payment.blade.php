@@ -391,11 +391,8 @@
                         return;
                     }
 
-                    // Réinitialiser les champs
+                    // Réinitialiser uniquement le champ d'adresse principale
                     document.getElementById('modal-adresse').value = '';
-                    document.getElementById('modal-ville').value = '';
-                    document.getElementById('modal-codePostal').value = '';
-                    document.getElementById('modal-pays').value = '';
 
                     let street_number = '';
                     let route = '';
@@ -420,12 +417,20 @@
                         }
                     }
                     
-                    // Construire l'adresse
+                    // Construire l'adresse et mettre à jour le champ
                     const fullAddress = street_number + (route ? ' ' + route : '');
                     document.getElementById('modal-adresse').value = fullAddress.trim();
-                    document.getElementById('modal-ville').value = city;
-                    document.getElementById('modal-codePostal').value = postal_code;
-                    document.getElementById('modal-pays').value = countryName;
+                    
+                    // Mettre à jour les autres champs uniquement s'ils ont une valeur
+                    if (city) {
+                        document.getElementById('modal-ville').value = city;
+                    }
+                    if (postal_code) {
+                        document.getElementById('modal-codePostal').value = postal_code;
+                    }
+                    if (countryName) {
+                        document.getElementById('modal-pays').value = countryName;
+                    }
                     
                     console.log('Address autocompleted:', fullAddress);
                 });
