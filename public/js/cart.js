@@ -5,41 +5,40 @@ function handleQuantityChange(e) {
     const cartSpinner = document.getElementById('loading-spinner-cart');
     if (cartSpinner) cartSpinner.style.display = 'inline-block';
 
-    setTimeout(() => {
-        const action = target.dataset.action;
-        const productId = target.dataset.productId;
-        const product = initialProducts.find(p => p.id == productId);
-        if (!product) {
-            if (cartSpinner) cartSpinner.style.display = 'none';
-            return;
-        }
+    // Remplacement du setTimeout par une exécution directe
+    const action = target.dataset.action;
+    const productId = target.dataset.productId;
+    const product = initialProducts.find(p => p.id == productId);
+    if (!product) {
+        if (cartSpinner) cartSpinner.style.display = 'none';
+        return;
+    }
 
-        let itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
+    let itemInCart = cartItems.find(item => item.productId === productId && item.itemCategory === 'baggage');
 
-        if (action === 'plus') {
-            if (itemInCart) {
-                itemInCart.quantity++;
-            } else {
-                const mapData = productMapJs[product.libelle];
-                const type = mapData ? mapData.type : 'unknown';
-                cartItems.push({
-                    itemCategory: 'baggage',
-                    productId: productId,
-                    libelle: product.libelle,
-                    type: type,
-                    quantity: 1
-                });
-            }
-        } else if (action === 'minus') {
-            if (itemInCart) {
-                itemInCart.quantity--;
-                if (itemInCart.quantity <= 0) {
-                    cartItems = cartItems.filter(item => item.productId !== productId || item.itemCategory !== 'baggage');
-                }
+    if (action === 'plus') {
+        if (itemInCart) {
+            itemInCart.quantity++;
+        } else {
+            const mapData = productMapJs[product.libelle];
+            const type = mapData ? mapData.type : 'unknown';
+            cartItems.push({
+                itemCategory: 'baggage',
+                productId: productId,
+                libelle: product.libelle,
+                type: type,
+                quantity: 1
+            });
+        }
+    } else if (action === 'minus') {
+        if (itemInCart) {
+            itemInCart.quantity--;
+            if (itemInCart.quantity <= 0) {
+                cartItems = cartItems.filter(item => item.productId !== productId || item.itemCategory !== 'baggage');
             }
         }
-        updateCartDisplay();
-    }, 1000);
+    }
+    updateCartDisplay();
 }
 
 function updateCartDisplay() {

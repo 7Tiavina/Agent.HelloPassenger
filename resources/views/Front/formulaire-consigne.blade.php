@@ -126,6 +126,9 @@
     .cart-updated {
         animation: pulse-bg 0.5s ease-in-out;
     }
+    .baggage-option.selected .w-20.h-20 { /* Cibler le div de l'icône */
+        background-color: #fef9e7 !important; /* Même fond jaune pâle que l'option sélectionnée */
+    }
     </style>
 </head>
 <body class="min-h-screen bg-white" data-selected-airport-id="{{ $selectedAirportId ?? '' }}">
@@ -407,11 +410,11 @@
                         @if(isset($products) && count($products) > 0)
                             @php
                                 $product_map_icons = [
-                                    'Accessoires' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M12 14a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M17.94 6.06a8 8 0 00-11.88 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-                                    'Bagage cabine' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="6" y="8" width="12" height="10" rx="1" stroke="currentColor" stroke-width="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="18" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/><path d="M10 10v4M14 10v4" stroke="currentColor" stroke-width="1.5"/></svg>',
-                                    'Bagage soute' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="5" y="6" width="14" height="12" rx="1" stroke="currentColor" stroke-width="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2"/><path d="M5 10h14" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>',
-                                    'Bagage spécial' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-                                    'Vestiaire' => '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path d="M16 10V8a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-8Z" stroke="currentColor" stroke-width="2"/><path d="M8 10v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.5"/></svg>'
+                                    'Accessoires' => '<img src="' . asset('accessoires.png') . '" alt="Accessoires" class="h-full w-full object-contain p-1" />',
+                                    'Bagage cabine' => '<img src="' . asset('bag_cabine.png') . '" alt="Bagage cabine" class="h-full w-full object-contain p-1" />',
+                                    'Bagage soute' => '<img src="' . asset('bag_soute.png') . '" alt="Bagage soute" class="h-full w-full object-contain p-1" />',
+                                    'Bagage spécial' => '<img src="' . asset('bag_special.png') . '" alt="Bagage spécial" class="h-full w-full object-contain p-1" />',
+                                    'Vestiaire' => '<img src="' . asset('vestiaire.png') . '" alt="Vestiaire" class="h-full w-full object-contain p-1" />',
                                 ];
                                 $default_icon = '<svg width="24" height="24" fill="none" viewBox="0 0 24 24" class="text-gray-600"><path stroke="currentColor" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke="currentColor" stroke-width="2" d="M9.5 9.5h.01v.01h-.01V9.5zm5 0h.01v.01h-.01V9.5zm-2.5 5a2.5 2.5 0 00-5 0h5z" /></svg>';
                             @endphp
@@ -421,7 +424,7 @@
                                     $icon = $product_map_icons[$libelle] ?? $default_icon;
                                 @endphp
                                 <div class="baggage-option p-4 rounded-lg flex flex-col items-center justify-between space-y-2" data-product-id="{{ $product['id'] }}">
-                                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                    <div class="w-20 h-20 bg-white rounded flex items-center justify-center">
                                         {!! $icon !!}
                                     </div>
                                     <div class="flex items-center justify-center space-x-1">
