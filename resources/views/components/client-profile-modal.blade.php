@@ -2,11 +2,10 @@
     <div class="relative mx-auto border-none max-w-5xl w-full shadow-2xl rounded-3xl bg-white overflow-hidden transform transition-all">
         
         <div class="bg-[#ffc107] p-6 text-[#212121] text-center rounded-t-3xl">
-            <h3 class="text-2xl font-bold">Dernière étape pour votre sécurité</h3>
+            <h3 class="text-2xl font-bold">Votre sécurité, notre priorité !</h3>
             <p class="text-[#212121] text-opacity-90 text-sm mt-1">
-                Conformément aux normes aéroportuaires, merci de valider vos informations de contact.
-            </p>
-        </div>
+                Pour la protection de vos biens et le respect des normes aéroportuaires (contrôle par rayons X), veuillez compléter vos informations de contact.
+            </p>        </div>
 
         <div class="p-8">
             <form id="clientProfileForm">

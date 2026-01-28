@@ -147,9 +147,9 @@
 
         <!-- Afficheur de message d'erreur -->
         @if(!$isProfileComplete)
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-                <p class="font-bold">Action requise</p>
-                <p>Tous les bagages déposés en consigne sont préalablement contrôlés par Rayon X. Pour des raisons de sûreté - sécurité nous avons donc besoin d'informations complémentaires pour valider votre commande.</p>
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="status">
+                <p class="font-bold">Votre sécurité est notre priorité</p>
+                <p>Afin de garantir la protection de vos effets personnels et de respecter les normes de sécurité par rayons X, merci de compléter les informations manquantes.</p>
             </div>
         @endif
 
