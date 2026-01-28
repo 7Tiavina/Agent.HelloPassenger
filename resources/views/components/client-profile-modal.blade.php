@@ -1,4 +1,4 @@
-<div id="clientProfileModal" class="fixed inset-0 bg-[#212121] bg-opacity-80 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+<div id="clientProfileModal" class="fixed inset-0 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center p-4" style="background-image: linear-gradient(rgba(33, 33, 33, 0.8), rgba(33, 33, 33, 0.8)), url('{{ asset('rayonx.png') }}'); background-size: cover; background-position: center;">
     <div class="relative mx-auto border-none max-w-5xl w-full shadow-2xl rounded-3xl bg-white overflow-hidden transform transition-all">
         
         <div class="bg-[#ffc107] p-6 text-[#212121] text-center rounded-t-3xl">
