@@ -210,30 +210,43 @@ class PaymentController extends Controller
     }
 
     public function updateGuestInfoInSession(Request $request)
-    {
-        $validated = $request->validate([
-            'telephone' => 'required|string|max:255',
-            'nom' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'civilite' => 'nullable|string',
-            'nomSociete' => 'nullable|string',
-            'adresse' => 'required|string',
-            'complementAdresse' => 'nullable|string',
-            'ville' => 'required|string',
-            'codePostal' => 'required|string',
-            'pays' => 'required|string',
-        ]);
+{
+    $validated = $request->validate([
+        // REQUIRED
+        'telephone' => 'required|string|max:255',
+        'nom'       => 'required|string|max:255',
+        'prenom'    => 'required|string|max:255',
+        'adresse'   => 'required|string|max:255',
 
-        Session::put('guest_customer_details', $validated);
+        // OPTIONAL (Swagger-safe)
+        'civilite'          => 'sometimes|nullable|string|max:10',
+        'nomSociete'        => 'sometimes|nullable|string|max:255',
+        'complementAdresse' => 'sometimes|nullable|string|max:255',
+        'ville'             => 'sometimes|nullable|string|max:255',
+        'codePostal'        => 'sometimes|nullable|string|max:20',
+        'pays'              => 'sometimes|nullable|string|max:255',
+    ]);
 
-        $commandeData = Session::get('commande_en_cours');
-        if ($commandeData && isset($commandeData['client']['is_guest']) && $commandeData['client']['is_guest']) {
-            $commandeData['client'] = array_merge($commandeData['client'], $validated);
-            Session::put('commande_en_cours', $commandeData);
-        }
+    // SERVER-SIDE DEFAULTS
+    $data = array_merge([
+        'nomSociete'        => null,
+        'complementAdresse' => null,
+    ], $validated);
 
-        return response()->json(['success' => true, 'message' => 'Guest information updated in session.']);
+    Session::put('guest_customer_details', $data);
+
+    $commandeData = Session::get('commande_en_cours');
+    if ($commandeData && isset($commandeData['client']['is_guest']) && $commandeData['client']['is_guest']) {
+        $commandeData['client'] = array_merge($commandeData['client'], $data);
+        Session::put('commande_en_cours', $commandeData);
     }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Guest information updated in session.',
+    ]);
+}
+
 
     private function getBdmToken(): string
     {
@@ -670,12 +683,7 @@ class PaymentController extends Controller
             
             // Appliquer les valeurs par défaut pour les champs supplémentaires uniquement s'ils ne sont pas déjà définis
             $defaultValues = [
-                "civilite" => 'M.',
-                "nomSociete" => 'invité',
-                "complementAdresse" => 'invité', 
-                "ville" => 'invité',
-                "codePostal" => '11111', 
-                "pays" => 'invité'
+                // Ces champs sont maintenant gérés par le frontend ou la validation
             ];
             
             // Fusionner les valeurs persistantes avec les valeurs par défaut, en priorisant les valeurs persistantes

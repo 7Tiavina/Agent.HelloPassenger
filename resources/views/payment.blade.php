@@ -553,57 +553,57 @@
             }
 
             function validateGuestForm() {
-                console.log('validateGuestForm called');
-                const requiredFields = ['modal-prenom', 'modal-nom', 'modal-telephone', 'modal-adresse']; // Champs essentiels
-                let isValid = true;
+    console.log('validateGuestForm called');
 
-                // Validation des champs essentiels
-                requiredFields.forEach(fieldId => {
-                    const input = document.getElementById(fieldId);
-                    if (input) {
-                        const value = input.value.trim();
-                        if (value === '') {
-                            isValid = false;
-                            input.classList.add('input-error');
-                        } else {
-                            input.classList.remove('input-error');
-                        }
-                    } else {
-                        console.error('Input not found for ID:', fieldId);
-                        isValid = false;
-                    }
-                });
+    // CHAMPS OBLIGATOIRES UNIQUEMENT
+    const requiredFields = [
+        'modal-prenom',
+        'modal-nom',
+        'modal-telephone',
+        'modal-adresse'
+    ];
 
-                // Validation des champs additionnels seulement s'ils sont visibles et non vides
-                if (areAdditionalFieldsVisible) {
-                    // Tous les champs du container additionnel sont validés si visibles
-                    const additionalInputs = additionalFieldsContainer.querySelectorAll('input:not([type="hidden"]), select, textarea');
-                    additionalInputs.forEach(input => {
-                        // Email (input hidden) ne sera pas validé ici
-                        if (input.id !== 'modal-email' && input.value.trim() === '') {
-                            isValid = false;
-                            input.classList.add('input-error');
-                        } else {
-                            input.classList.remove('input-error');
-                        }
-                    });
+    let isValid = true;
 
-                    // Validation spécifique pour le code postal s'il est visible et non vide
-                    const postalCodeInput = document.getElementById('modal-codePostal');
-                    if (postalCodeInput && !postalCodeInput.classList.contains('input-error') && postalCodeInput.value.trim() !== '') {
-                        const postalCodeRegex = /^\d+$/;
-                        if (!postalCodeRegex.test(postalCodeInput.value.trim())) {
-                            isValid = false;
-                            postalCodeInput.classList.add('input-error');
-                        } else {
-                            postalCodeInput.classList.remove('input-error');
-                        }
-                    }
-                }
-                
-                console.log('Validation result (isValid):', isValid);
-                return isValid;
+    // Validation champs obligatoires
+    requiredFields.forEach(fieldId => {
+        const input = document.getElementById(fieldId);
+        if (!input || input.value.trim() === '') {
+            isValid = false;
+            if (input) input.classList.add('input-error');
+        } else {
+            input.classList.remove('input-error');
+        }
+    });
+
+    // ⚠️ CHAMPS OPTIONNELS
+    // ➜ VALIDÉS UNIQUEMENT S’ILS SONT REMPLIS
+    const optionalValidators = [
+        {
+            id: 'modal-codePostal',
+            validate: value => /^\d+$/.test(value),
+            error: 'Code postal invalide'
+        }
+    ];
+
+    optionalValidators.forEach(({ id, validate }) => {
+        const input = document.getElementById(id);
+        if (input && input.value.trim() !== '') {
+            if (!validate(input.value.trim())) {
+                isValid = false;
+                input.classList.add('input-error');
+            } else {
+                input.classList.remove('input-error');
             }
+        } else if (input) {
+            input.classList.remove('input-error');
+        }
+    });
+
+    console.log('Validation result:', isValid);
+    return isValid;
+}
+
 
             // Pré-remplir le formulaire quand on ouvre la modale
             if (openClientProfileModalBtn) {
@@ -626,17 +626,11 @@
                     document.getElementById('modal-adresse').value = userData.adresse || '';
 
                     // Champs optionnels avec valeurs par défaut pour l'invité si non remplis
-                    if (isGuest) {
-                        document.getElementById('modal-ville').value = (userData.ville === 'Ville inconnue' || userData.ville === null) ? 'Paris' : (userData.ville || 'Paris');
-                        document.getElementById('modal-codePostal').value = (userData.codePostal === '00000' || userData.codePostal === null) ? '75000' : (userData.codePostal || '75000');
-                        document.getElementById('modal-pays').value = (userData.pays === 'FRA' || userData.pays === null) ? 'France' : (userData.pays || 'France');
-                    } else {
-                        document.getElementById('modal-ville').value = userData.ville || '';
-                        document.getElementById('modal-codePostal').value = userData.codePostal || '';
-                        document.getElementById('modal-pays').value = userData.pays || '';
-                    }
+                    document.getElementById('modal-ville').value = userData.ville || '';
+                    document.getElementById('modal-codePostal').value = userData.codePostal || '';
+                    document.getElementById('modal-pays').value = userData.pays || '';
                     
-                    document.getElementById('modal-civilite').value = userData.civilite || 'M.';
+                    document.getElementById('modal-civilite').value = userData.civilite || '';
                     document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
                     document.getElementById('modal-complementAdresse').value = userData.complementAdresse || '';
 
