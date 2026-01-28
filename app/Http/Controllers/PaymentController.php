@@ -151,9 +151,9 @@ class PaymentController extends Controller
                         $flightNumberKey = $isArrivalFlow ? 'flight_number_arrival' : 'flight_number_departure';
                         if (!empty($details[$flightNumberKey])) $commentairesArray[] = "Numéro de vol: " . $details[$flightNumberKey];
                         break;
-                    case 'tgv':
-                        $tgvNumberKey = $isArrivalFlow ? 'tgv_number_arrival' : 'tgv_number_departure';
-                        if (!empty($details[$tgvNumberKey])) $commentairesArray[] = "Numéro du TGV: " . $details[$tgvNumberKey];
+                    case 'train': // Changé de 'tgv' à 'train'
+                        $trainNumberKey = $isArrivalFlow ? 'train_number_arrival' : 'train_number_departure'; // Changé de 'tgv_number'
+                        if (!empty($details[$trainNumberKey])) $commentairesArray[] = "Indicatif de ligne: " . $details[$trainNumberKey]; // Changé le libellé
                         break;
                     // No details needed for other transport types
                 }
