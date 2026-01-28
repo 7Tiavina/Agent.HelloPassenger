@@ -457,21 +457,38 @@
                 const confirmBtn = document.getElementById('custom-modal-confirm-btn');
                 const closeBtn = document.getElementById('custom-modal-close');
                 const cancelBtn = document.getElementById('custom-modal-cancel-btn');
-                
+                const promptContainer = document.getElementById('custom-modal-prompt-container');
+
                 titleEl.textContent = title;
                 messageEl.textContent = message;
-                
+
+                // Hide prompt container for error messages
+                promptContainer.classList.add('hidden');
+
+                // Change button text depending on title
+                if (title === 'Erreur') {
+                    confirmBtn.textContent = 'Retour au formulaire';
+                } else {
+                    confirmBtn.textContent = 'OK';
+                }
+
                 modal.classList.remove('hidden');
-                
+
                 const closeModal = () => {
                     modal.classList.add('hidden');
+
+                    // Stay on payment page after closing error modal
+                    if (title === 'Erreur') {
+                        window.location.href = '{{ route("form-consigne") }}';
+                    }
+
                     resolve(true);
                 };
-                
+
                 confirmBtn.onclick = closeModal;
                 closeBtn.onclick = closeModal;
                 cancelBtn.onclick = closeModal;
-                
+
                 // Fermer en cliquant sur l'overlay
                 modal.onclick = function(e) {
                     if (e.target === modal) closeModal();
@@ -782,5 +799,10 @@
                     }
                 });
             }
+
+            // Show error modal if there's an error message in the session
+            @if(session('error'))
+                showCustomAlert('Erreur', '{{ session('error') }}');
+            @endif
         });
     </script>

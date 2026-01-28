@@ -289,6 +289,7 @@ class PaymentController extends Controller
         $payload = [
             'shopId' => config('monetico.login'), 'amount' => (int)($commandeData['total_prix_ttc'] * 100), 'currency' => 'EUR',
             'orderId' => $orderId,
+            'paymentAction' => 'Authorization', // Demander une pré-autorisation au lieu d'un paiement direct
             'customer' => ['email' => $customerEmail, 'firstName' => $customerFirstName, 'lastName' => $customerLastName],
             'paymentMethod' => ['type' => 'Card'],
             'urls' => [
@@ -323,7 +324,7 @@ class PaymentController extends Controller
         $commandeData = Session::get('commande_en_cours');
         if (!$commandeData || !isset($commandeData['client'])) {
             Log::error('[showPaymentPage] CRITICAL: Commande data or client info NOT FOUND in session. Aborting.');
-            return redirect()->route('form-consigne')->with('error', 'Votre session de commande a expiré ou est invalide. Veuillez recommencer.');
+            return redirect()->route('payment')->with('error', 'Votre session a expiré ou vos informations sont invalides. Veuillez recommencer votre commande depuis le début.');
         }
 
         $clientDataFromSession = $commandeData['client'];
@@ -332,79 +333,81 @@ class PaymentController extends Controller
 
         if ($isGuest) {
             $user = (object) $clientDataFromSession;
-            Log::debug('[showPaymentPage] Guest user data from session: ', ['clientDataFromSession' => $clientDataFromSession, 'userObject' => $user]);
-            Log::info('[showPaymentPage] Handling guest user from session.', ['data' => $user]);
         } else {
             $user = Auth::guard('client')->user();
             if (!$user) {
-                Log::error('[showPaymentPage] Authenticated client not found via Auth::guard. Redirecting to form-consigne.');
-                return redirect()->route('form-consigne')->with('error', 'Erreur interne: Client authentifié introuvable. Veuillez vous reconnecter.');
-            }
-            Log::info('[showPaymentPage] Handling authenticated user from Auth::guard.', ['data' => $user]);
-        }
-        
-        $isProfileComplete = true;
-        $requiredFields = ['telephone'];
-        foreach ($requiredFields as $field) {
-            if (empty($user->$field)) {
-                $isProfileComplete = false;
-                break;
+                return redirect()->route('payment')->with('error', 'Un problème de connexion est survenu. Veuillez vous reconnecter.');
             }
         }
 
+        $isProfileComplete = !empty($user->telephone);
         $formToken = null;
 
         if ($isProfileComplete) {
-            Log::info('[showPaymentPage] Client profile is complete (or sufficient for guest). Proceeding to get formToken.');
+            Log::info('[showPaymentPage] Client profile is complete. Proceeding to get formToken for pre-authorization.');
             $commandeData['client'] = (array) $user;
             Session::put('commande_en_cours', $commandeData);
-            Log::info('[showPaymentPage] Session data updated with latest client info.');
 
             $formToken = $this->redirectToMonetico();
-            if ($formToken) {
-                Log::info('[showPaymentPage] SUCCESS: formToken received.');
-            } else {
-                Log::error('[showPaymentPage] FAILURE: Did not receive formToken.');
-                return redirect()->route('form-consigne')->with('error', 'Erreur lors de l\initiation du paiement.');
+            if (!$formToken) {
+                Log::error('[showPaymentPage] FAILURE: Did not receive formToken from Monetico.');
+                // Store error in session and let the view handle it
+                Session::flash('error', 'Un problème est survenu lors de l\'initialisation du paiement. Veuillez réessayer.');
             }
+            Log::info('[showPaymentPage] SUCCESS: formToken for pre-authorization received.');
         } else {
             Log::warning('[showPaymentPage] Profile for client ' . ($user->email ?? '') . ' is incomplete. Displaying form for completion.');
         }
 
-        return view('payment', compact('user', 'formToken', 'isProfileComplete', 'isGuest'));
+        // Get any error message from the session
+        $errorMessage = session('error');
+        $hasError = !empty($errorMessage);
+
+        return view('payment', compact('user', 'formToken', 'isProfileComplete', 'isGuest', 'errorMessage', 'hasError'));
     }
 
     public function paymentSuccess(Request $request)
     {
         $commandeData = Session::get('commande_en_cours');
         if (!$commandeData) {
-            return redirect()->route('form-consigne')->with('error', 'Aucune commande en cours. Veuillez recommencer.');
+            return redirect()->route('payment')->with('error', 'Votre session a expiré. Veuillez recommencer votre commande.');
         }
 
-        $idPlateforme = $commandeData['idPlateforme'];
-        $commandeLignes = $commandeData['commandeLignes'];
-        $clientData = $commandeData['client'];
+        Log::info('[paymentSuccess] Requête reçue de Monetico', $request->all());
 
-        if (!isset($clientData['email']) && Auth::guard('client')->check()) {
-            $authenticatedUser = Auth::guard('client')->user();
-            $clientData['email'] = $authenticatedUser->email;
-            $clientData = array_merge($clientData, (array) $authenticatedUser);
+        // Extraire le transactionId de la réponse Monetico
+        $krAnswer = json_decode($request->get('kr-answer'), true);
+        $moneticoTransactionId = null;
+
+        if ($krAnswer && isset($krAnswer['transactions']) && is_array($krAnswer['transactions']) && count($krAnswer['transactions']) > 0) {
+            // Prendre le premier UUID de transaction
+            $moneticoTransactionId = $krAnswer['transactions'][0]['uuid'] ?? null;
         }
 
-        if (!isset($clientData['email'])) {
-            Log::error('paymentSuccess failed: Client email not available in session or from authenticated user.', ['commandeData' => $commandeData]);
-            return redirect()->route('form-consigne')->with('error', 'Erreur: Email client non disponible pour finaliser la commande.');
+        if (!$moneticoTransactionId) {
+            Log::error('[paymentSuccess] Monetico transactionId not found in the request.', [
+                'request_all' => $request->all(),
+                'query_params' => $request->query(),
+                'kr_answer_decoded' => $krAnswer,
+                'has_transaction_id_key' => $request->has('transactionId'),
+                'available_keys' => array_keys($request->all())
+            ]);
+            return redirect()->route('payment')->with('error', 'Une erreur est survenue lors du traitement de votre paiement. Aucun débit n\'a été effectué. Veuillez réessayer.');
         }
 
-        $commandeInfos = $commandeData['commandeInfos'] ?? new \stdClass();
-        $totalPrixTTC = $commandeData['total_prix_ttc'];
+        Log::info('[paymentSuccess] Pre-authorization successful. Starting BDM validation.', [
+            'monetico_transaction_id' => $moneticoTransactionId,
+            'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? null
+        ]);
 
+        // STEP 1: Call BDM API to create the definitive order
         try {
             $token = $this->getBdmToken();
+            $idPlateforme = $commandeData['idPlateforme'];
 
             $lignesProduits = [];
             $lignesOptions = [];
-            foreach ($commandeLignes as $ligne) {
+            foreach ($commandeData['commandeLignes'] as $ligne) {
                 if (isset($ligne['is_option']) && $ligne['is_option']) {
                     unset($ligne['is_option']);
                     $lignesOptions[] = $ligne;
@@ -416,44 +419,55 @@ class PaymentController extends Controller
             $payload = [
                 'commandeLignes' => $lignesProduits,
                 'commandeOptions' => $lignesOptions,
-                'client' => $clientData,
-                'commandeInfos' => $commandeInfos,
+                'client' => $commandeData['client'],
+                'commandeInfos' => $commandeData['commandeInfos'] ?? new \stdClass(),
             ];
 
-            Log::info('Données envoyées à l\'API Commande BDM:', ['payload' => $payload]);
+            Log::info('[paymentSuccess] Sending final creation request to BDM API.', ['payload' => $payload]);
 
-            $response = Http::withHeaders([
+            $bdmResponse = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token, 'Accept' => 'application/json',
             ])->post(config('services.bdm.base_url') . "/api/plateforme/{$idPlateforme}/commande", $payload);
 
-            Log::info('API Commande response: ' . $response->body());
+            Log::info('[paymentSuccess] BDM API response received.', [
+                'status_code' => $bdmResponse->status(),
+                'response_body' => $bdmResponse->body(),
+                'monetico_transaction_id' => $moneticoTransactionId
+            ]);
 
-            $apiResult = $response->json();
+            $apiResult = $bdmResponse->json();
 
-            if ($response->successful() && isset($apiResult['statut']) && $apiResult['statut'] === 1) {
+            // STEP 2: Handle BDM API response
+            if ($bdmResponse->successful() && isset($apiResult['statut']) && $apiResult['statut'] === 1) {
+
+                // BDM Success -> Capture Payment
+                Log::info('[paymentSuccess] BDM order creation successful. Proceeding to capture payment.', ['bdm_order_id' => $apiResult['message']]);
                 
-                $clientId = null;
-                if (isset($clientData['is_guest']) && $clientData['is_guest']) {
-                    $client = \App\Models\Client::updateOrCreate(
-                        ['email' => $clientData['email']],
-                        array_merge($clientData, ['password_hash' => \App\Models\Client::where('email', $clientData['email'])->value('password_hash') ?? bcrypt('')])
-                    );
-                    $clientId = $client->id;
-                } else {
-                    $client = Auth::guard('client')->user();
-                    $clientId = $client ? $client->id : null;
+                Log::info('[paymentSuccess] Attempting to capture payment with Monetico.', [
+                    'monetico_transaction_id' => $moneticoTransactionId,
+                    'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? Session::get('monetico_order_id')
+                ]);
+
+                $captureResponse = $this->_moneticoCapturePayment($moneticoTransactionId);
+
+                Log::info('[paymentSuccess] Monetico capture response received.', [
+                    'status_code' => $captureResponse->status(),
+                    'response_body' => $captureResponse->body(),
+                    'monetico_transaction_id' => $moneticoTransactionId,
+                    'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? Session::get('monetico_order_id')
+                ]);
+
+                if (!$captureResponse->successful()) {
+                    // CRITICAL: BDM order is created, but payment capture failed. Requires manual intervention.
+                    throw new \Exception('CRITICAL: BDM order created but Monetico capture failed. Response: ' . $captureResponse->body());
                 }
 
-                if (!$clientId) {
-                    Log::error('API Commande success but could not determine client ID.');
-                    return redirect()->route('form-consigne')->with('error', 'Impossible de déterminer le client pour la commande.');
-                }
+                Log::info('[paymentSuccess] Monetico payment capture successful.');
 
-                // Log the Base64 content before storing
-                if (isset($apiResult['content'])) {
-                    \Illuminate\Support\Facades\Log::debug('Invoice Base64 content received from BDM API (first 100 chars): ' . substr($apiResult['content'], 0, 100));
-                    \Illuminate\Support\Facades\Log::debug('Invoice Base64 content length: ' . strlen($apiResult['content']));
-                }
+                // Proceed to save everything in local DB
+                $clientData = $commandeData['client'];
+                $clientId = \App\Models\Client::updateOrCreate(['email' => $clientData['email']], $clientData)->id;
+
                 $commande = Commande::create([
                     'client_id' => $clientId, 'client_email' => $clientData['email'], 'client_nom' => $clientData['nom'],
                     'client_prenom' => $clientData['prenom'], 'client_telephone' => $clientData['telephone'],
@@ -461,54 +475,76 @@ class PaymentController extends Controller
                     'client_adresse' => $clientData['adresse'] ?? null, 'client_complement_adresse' => $clientData['complementAdresse'] ?? null,
                     'client_ville' => $clientData['ville'] ?? null, 'client_codePostal' => $clientData['codePostal'] ?? null,
                     'client_pays' => $clientData['pays'] ?? null, 'id_api_commande' => $apiResult['message'] ?? null,
-                    'id_plateforme' => $idPlateforme, 'total_prix_ttc' => $totalPrixTTC, 'statut' => 'completed',
-                    'details_commande_lignes' => json_encode($commandeLignes),
-                    'invoice_content' => isset($apiResult['content']) ? $apiResult['content'] : null,
+                    'id_plateforme' => $idPlateforme, 'total_prix_ttc' => $commandeData['total_prix_ttc'], 'statut' => 'completed',
+                    'details_commande_lignes' => json_encode($commandeData['commandeLignes']),
+                    'invoice_content' => $apiResult['content'] ?? null,
                 ]);
 
                 PaymentClient::create([
                     'client_id' => $clientId, 'commande_id' => $commande->id,
-                    'monetico_order_id' => $request->input('orderId', Session::get('monetico_order_id')),
-                    'monetico_transaction_id' => $request->input('transactionId'),
+                    'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? Session::get('monetico_order_id'),
+                    'monetico_transaction_id' => $moneticoTransactionId,
                     'amount' => $commande->total_prix_ttc * 100, 'currency' => 'EUR', 'status' => 'paid',
                     'payment_method' => $request->input('brand'), 'raw_response' => json_encode($request->all()),
                 ]);
 
+                // Send email, clear session, and redirect
                 Session::forget(['commande_en_cours', 'monetico_order_id']);
                 Session::put('api_payment_result', $apiResult);
                 Session::put('last_commande_id', $commande->id);
 
-                // --- ENVOI DE L'EMAIL DE CONFIRMATION AVEC FACTURE PDF ---
                 try {
-                    Log::info('DEBUT du processus d\'envoi d\'email pour la commande ' . $commande->id);
-
-                    // Récupérer le contenu de la facture Base64 depuis la commande
-                    $invoiceBase64 = $commande->invoice_content;
-                    
-                    if ($invoiceBase64) {
-                        Log::info('Facture Base64 récupérée depuis la commande. Préparation de l\'envoi par e-mail.');
-                        Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande, $invoiceBase64));
-                        Log::info('E-mail de confirmation envoyé avec la facture attachée.');
-                    } else {
-                        Log::warning('Facture Base64 non trouvée pour la commande ' . $commande->id . '. Envoi de l\'e-mail sans facture attachée.');
-                        Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande));
-                    }
-
+                    Mail::to($commande->client_email)->send(new OrderConfirmationMail($commande, $commande->invoice_content));
+                    Log::info('[paymentSuccess] Confirmation email sent successfully.');
                 } catch (\Exception $mailException) {
-                    Log::error('ERREUR FATALE lors de l\'envoi de l\'e-mail de confirmation: ' . $mailException->getMessage(), ['exception' => $mailException]);
-                    // Continuer le processus même si l\'e-mail échoue
+                    Log::error('[paymentSuccess] Failed to send confirmation email.', ['error' => $mailException->getMessage()]);
                 }
-                // --- FIN ENVOI EMAIL ---
 
                 return redirect()->route('payment.success.show');
+
             } else {
-                Log::error('API Commande failed. Status: ' . $response->status() . ' Body: ' . $response->body());
-                $errorMessage = $apiResult['message'] ?? 'Erreur inconnue lors de la communication avec le service de réservation.';
-                return redirect()->route('form-consigne')->with('error', 'Votre paiement a été accepté, mais une erreur est survenue lors de la finalisation de votre réservation. Veuillez contacter le support. Détails : ' . $errorMessage);
+                // BDM Failure -> Void Payment
+                $errorMessage = $apiResult['message'] ?? 'Erreur inconnue de l\'API BDM.';
+                Log::error('[paymentSuccess] BDM order creation failed. Voiding payment.', [
+                    'error' => $errorMessage,
+                    'api_result' => $apiResult,
+                    'monetico_transaction_id' => $moneticoTransactionId,
+                    'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? Session::get('monetico_order_id'),
+                    'response_status' => $bdmResponse->status(),
+                    'response_body' => $bdmResponse->body()
+                ]);
+
+                $this->_moneticoVoidPayment($moneticoTransactionId);
+
+                // Personnaliser le message d'erreur en fonction du type d'erreur
+                $friendlyMessage = $this->getFriendlyErrorMessage($errorMessage, $apiResult);
+                return redirect()->route('payment')->with('error', $friendlyMessage);
             }
+
         } catch (\Exception $e) {
-            Log::error('Technical error during payment processing: ' . $e->getMessage(), ['exception' => $e]);
-            return redirect()->route('form-consigne')->with('error', 'Une erreur technique est survenue après le paiement. Veuillez contacter le support.');
+            // General exception handler
+            Log::critical('[paymentSuccess] A critical error occurred during the transaction.', [
+                'error' => $e->getMessage(),
+                'monetico_transaction_id' => $moneticoTransactionId ?? null,
+                'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? Session::get('monetico_order_id'),
+                'exception' => $e,
+                'commande_data_exists' => isset($commandeData),
+                'full_request' => $request->all()
+            ]);
+
+            // Attempt to void the payment as a safety net, if it hasn't been captured.
+            // (If capture fails, the exception is thrown, so we land here)
+            if (isset($moneticoTransactionId)) {
+                $voidResponse = $this->_moneticoVoidPayment($moneticoTransactionId);
+                Log::info('[paymentSuccess] Void response after exception.', [
+                    'status_code' => $voidResponse->status(),
+                    'response_body' => $voidResponse->body(),
+                    'monetico_transaction_id' => $moneticoTransactionId,
+                    'monetico_order_id' => $krAnswer['orderDetails']['orderId'] ?? Session::get('monetico_order_id')
+                ]);
+            }
+
+            return redirect()->route('payment')->with('error', 'Un problème technique est survenu. Aucun débit n\'a été effectué. Veuillez réessayer ou contacter le support si le problème persiste.');
         }
     }
 
@@ -531,7 +567,7 @@ class PaymentController extends Controller
 
         if (!$apiResult || !$lastCommandeId) {
             \Illuminate\Support\Facades\Log::error('[showPaymentSuccess] CRITICAL: api_payment_result or last_commande_id NOT FOUND in session. Redirecting.');
-            return redirect()->route('form-consigne')->with('error', 'La session de paiement a expiré. Veuillez réessayer.');
+            return redirect()->route('payment')->with('error', 'Votre session de paiement a expiré. Veuillez recommencer votre commande.');
         }
 
         \Illuminate\Support\Facades\Log::debug('[showPaymentSuccess] last_commande_id from session: ' . $lastCommandeId);
@@ -541,7 +577,7 @@ class PaymentController extends Controller
 
         if (!$commande) {
             \Illuminate\Support\Facades\Log::error('[showPaymentSuccess] CRITICAL: Commande object NOT FOUND in DB for ID: ' . $lastCommandeId . '. Redirecting.');
-            return redirect()->route('form-consigne')->with('error', 'Commande introuvable.');
+            return redirect()->route('payment')->with('error', 'La commande n\'a pas été trouvée. Veuillez recommencer votre commande.');
         }
         
         // Log the presence and part of invoice_content
@@ -565,13 +601,13 @@ class PaymentController extends Controller
     public function paymentError(Request $request)
     {
         Log::error('Payment failed or was rejected by Monetico.', $request->all());
-        return redirect()->route('form-consigne')->with('error', 'Le paiement a échoué ou a été refusé. Veuillez réessayer ou contacter le support.');
+        return redirect()->route('payment')->with('error', 'Votre paiement a été refusé par votre banque. Veuillez vérifier vos informations de paiement et réessayer.');
     }
 
     public function paymentCancel(Request $request)
     {
         Log::info('Payment was cancelled by the user.', $request->all());
-        return redirect()->route('form-consigne')->with('info', 'Vous avez annulé le processus de paiement.');
+        return redirect()->route('payment')->with('info', 'Vous avez annulé le processus de paiement. Vous pouvez recommencer votre commande.');
     }
 
     public function paymentReturn(Request $request)
@@ -649,5 +685,85 @@ class PaymentController extends Controller
         }
         
         return null;
+    }
+
+    /**
+     * Capture a pre-authorized payment via Monetico API.
+     * @param string $transactionId The transaction ID from the authorization.
+     * @return \Illuminate\Http\Client\Response
+     */
+    private function _moneticoCapturePayment(string $transactionId)
+    {
+        $url = config('monetico.base_url') . "/Charge/{$transactionId}/Capture";
+        Log::info('Calling Monetico Capture API.', ['url' => $url]);
+
+        return Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode(config('monetico.login') . ':' . config('monetico.secret_key')),
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])->post($url);
+    }
+
+    /**
+     * Void a pre-authorized payment via Monetico API.
+     * @param string $transactionId The transaction ID from the authorization.
+     * @return \Illuminate\Http\Client\Response
+     */
+    private function _moneticoVoidPayment(string $transactionId)
+    {
+        $url = config('monetico.base_url') . "/Charge/{$transactionId}/Void";
+        Log::info('Calling Monetico Void API.', ['url' => $url]);
+
+        return Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode(config('monetico.login') . ':' . config('monetico.secret_key')),
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])->post($url);
+    }
+
+    /**
+     * Génère un message d'erreur convivial en fonction du type d'erreur
+     */
+    private function getFriendlyErrorMessage($errorMessage, $apiResult = null)
+    {
+        // Si c'est une erreur de validation du code postal
+        if (strpos(strtolower($errorMessage), 'codepostal') !== false ||
+            strpos(strtolower($errorMessage), 'code postal') !== false ||
+            (is_array($apiResult) && isset($apiResult['errors']) &&
+             strpos(json_encode($apiResult['errors']), 'CodePostal') !== false)) {
+            return "Le code postal que vous avez saisi n'est pas valide. Veuillez vérifier votre adresse et réessayer.";
+        }
+
+        // Si c'est une erreur de validation d'email
+        if (strpos(strtolower($errorMessage), 'email') !== false) {
+            return "L'adresse email que vous avez saisie n'est pas valide. Veuillez la corriger et réessayer.";
+        }
+
+        // Si c'est une erreur de validation de téléphone
+        if (strpos(strtolower($errorMessage), 'telephone') !== false ||
+            strpos(strtolower($errorMessage), 'téléphone') !== false) {
+            return "Le numéro de téléphone que vous avez saisi n'est pas valide. Veuillez le corriger et réessayer.";
+        }
+
+        // Si c'est une erreur de disponibilité
+        if (strpos(strtolower($errorMessage), 'disponibilité') !== false ||
+            strpos(strtolower($errorMessage), 'disponible') !== false) {
+            return "Le créneau horaire sélectionné n'est plus disponible. Veuillez choisir un autre horaire et réessayer.";
+        }
+
+        // Si c'est une erreur de produit indisponible
+        if (strpos(strtolower($errorMessage), 'produit') !== false &&
+            (strpos(strtolower($errorMessage), 'disponible') !== false ||
+             strpos(strtolower($errorMessage), 'indisponible') !== false)) {
+            return "Le service que vous avez sélectionné n'est plus disponible. Veuillez modifier votre commande et réessayer.";
+        }
+
+        // Messages d'erreur génériques plus conviviaux
+        if ($errorMessage === 'Erreur inconnue de l\'API BDM.' || empty(trim($errorMessage))) {
+            return "Un problème est survenu lors de l'enregistrement de votre commande. Aucun débit n'a été effectué. Veuillez réessayer.";
+        }
+
+        // Retourner un message personnalisé basé sur le contenu de l'erreur
+        return "Un problème est survenu lors de l'enregistrement de votre commande : {$errorMessage}. Aucun débit n'a été effectué. Veuillez vérifier vos informations et réessayer.";
     }
 }
