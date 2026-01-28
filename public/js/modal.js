@@ -404,15 +404,25 @@ function showOptionsAdvertisementModal() {
 
                 premiumDetailsContainer.innerHTML = `
                 <div class="space-y-4">
-                    <p class="font-medium text-gray-700">Sens de la prise en charge :</p>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
-                            <input type="radio" name="premium_direction" value="terminal_to_agence" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                            <span class="ml-3 text-gray-700 font-medium">Récupération de vos bagages</span>
+                    <p class="font-medium text-gray-700 text-center">Choisissez votre service Premium :</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Carte Arrivée -->
+                        <label class="relative flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-300 has-[:checked]:border-yellow-custom has-[:checked]:bg-yellow-50 has-[:checked]:shadow-lg">
+                            <input type="radio" name="premium_direction" value="terminal_to_agence" class="absolute opacity-0 w-0 h-0">
+                            <span class="text-4xl mb-2">
+                                <img src="/plane-arrival.svg" alt="Arrivée" class="h-10 w-10 mx-auto text-gray-700" />
+                            </span>
+                            <span class="text-lg font-bold text-gray-800">J'arrive à l'aéroport</span>
+                            <span class="text-sm text-gray-500 mt-1">Récupération de vos bagages</span>
                         </label>
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-yellow-50 has-[:checked]:border-yellow-custom transition-all">
-                            <input type="radio" name="premium_direction" value="agence_to_terminal" class="form-radio h-5 w-5 text-yellow-custom focus:ring-yellow-hover">
-                            <span class="ml-3 text-gray-700 font-medium">Restitution de vos bagages</span>
+                        <!-- Carte Départ -->
+                        <label class="relative flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-300 has-[:checked]:border-yellow-custom has-[:checked]:bg-yellow-50 has-[:checked]:shadow-lg">
+                            <input type="radio" name="premium_direction" value="agence_to_terminal" class="absolute opacity-0 w-0 h-0">
+                            <span class="text-4xl mb-2">
+                                <img src="/plane-departure.svg" alt="Départ" class="h-10 w-10 mx-auto text-gray-700" />
+                            </span>
+                            <span class="text-lg font-bold text-gray-800">Je pars de l'aéroport</span>
+                            <span class="text-sm text-gray-500 mt-1">Dépôt de vos bagages</span>
                         </label>
                     </div>
                 </div>
