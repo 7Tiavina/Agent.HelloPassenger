@@ -6,6 +6,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ asset('favicon-hellopassenger.png') }}">
     <title>Réserver une consigne - HelloPassenger</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nj-timepicker@1.0.0/dist/njtimepicker.min.css">
+    <style>
+.nj-timepick {
+  position: fixed;
+  right: -100%;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 5000;
+  transition: right 0.7s ease;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0,0,0,0.8);
+}
+</style>
+    
+    <!-- jQuery & NJ-Timepicker scripts -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -516,6 +536,10 @@
 <script src="{{ asset('js/quick-date-modal.js') }}"></script>
 <script src="{{ asset('js/cart.js') }}"></script>
 <script src="{{ asset('js/booking.js') }}"></script>
+
+<!-- Scripts for new timepicker plugin -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nj-timepicker@1.0.0/dist/njtimepicker.min.js"></script>
 
 <script>
     // Ce script reste en ligne car il contient une route Blade resolue par PHP
