@@ -343,14 +343,12 @@
             // Gérer les erreurs de chargement
             script.onerror = function() {
                 console.error('Failed to load Google Places API');
-                // Essayer de recharger sans callback
                 const fallbackScript = document.createElement('script');
                 fallbackScript.src = `https://maps.googleapis.com/maps/api/js?key=${googlePlacesApiKey}&libraries=places&language=fr&v=3.52`;
                 fallbackScript.async = true;
                 fallbackScript.defer = true;
                 document.head.appendChild(fallbackScript);
                 
-                // Vérifier périodiquement si l'API est chargée
                 const checkGoogleAPI = setInterval(function() {
                     if (window.google && window.google.maps && window.google.maps.places) {
                         clearInterval(checkGoogleAPI);
@@ -391,14 +389,10 @@
                         return;
                     }
 
-                    // Réinitialiser uniquement le champ d'adresse principale
-                    document.getElementById('modal-adresse').value = '';
-
                     let street_number = '';
                     let route = '';
                     let city = '';
                     let postal_code = '';
-                    let countryName = '';
 
                     for (let i = 0; i < place.address_components.length; i++) {
                         const component = place.address_components[i];
@@ -412,27 +406,20 @@
                             city = component.long_name;
                         } else if (addressType === 'postal_code') {
                             postal_code = component.long_name;
-                        } else if (addressType === 'country') {
-                            countryName = component.long_name;
                         }
                     }
                     
-                    // Construire l'adresse et mettre à jour le champ
-                    const fullAddress = street_number + (route ? ' ' + route : '');
+                    let fullAddress = street_number + (route ? ' ' + route : '');
+                    if (postal_code) {
+                        fullAddress += ', ' + postal_code;
+                    }
+                    if (city) {
+                        fullAddress += ' ' + city;
+                    }
+                    
                     document.getElementById('modal-adresse').value = fullAddress.trim();
                     
-                    // Mettre à jour les autres champs uniquement s'ils ont une valeur
-                    if (city) {
-                        document.getElementById('modal-ville').value = city;
-                    }
-                    if (postal_code) {
-                        document.getElementById('modal-codePostal').value = postal_code;
-                    }
-                    if (countryName) {
-                        document.getElementById('modal-pays').value = countryName;
-                    }
-                    
-                    console.log('Address autocompleted:', fullAddress);
+                    console.log('Complete address filled:', fullAddress);
                 });
                 
                 console.log('Google Places Autocomplete initialized');
@@ -448,6 +435,170 @@
     @endif
     
     <script>
+        // ========================================================================
+        // SIMPLIFIED PHONE NUMBER NORMALIZATION - FOCUS ON RELIABILITY
+        // ========================================================================
+        
+        function normalizePhoneNumber(value, countryData) {
+            if (!value) return '';
+
+            const raw = value.trim();
+            const dialCode = String(countryData.dialCode || '');
+            const countryCode = String(countryData.iso2 || '').toLowerCase();
+            const countryCodeUpper = countryCode.toUpperCase();
+
+            console.log('🔧 Input:', value, '| Country:', countryCode, '| DialCode:', dialCode);
+
+            // Normaliser l'entrée (garder + et chiffres)
+            let normalizedInput = raw;
+            if (normalizedInput.startsWith('00')) {
+                normalizedInput = '+' + normalizedInput.substring(2);
+            }
+            normalizedInput = normalizedInput.replace(/[\s\-\(\)\.]/g, '');
+            if (normalizedInput.startsWith('+')) {
+                normalizedInput = '+' + normalizedInput.substring(1).replace(/\D/g, '');
+            } else {
+                normalizedInput = normalizedInput.replace(/\D/g, '');
+            }
+
+            // Utiliser libphonenumber via intl-tel-input utils pour TOUS les pays
+            if (window.intlTelInputUtils) {
+                const candidates = [normalizedInput];
+                if (!normalizedInput.startsWith('0') && !normalizedInput.startsWith('+')) {
+                    candidates.push('0' + normalizedInput);
+                }
+
+                for (const candidate of candidates) {
+                    const e164 = window.intlTelInputUtils.formatNumber(
+                        candidate,
+                        countryCodeUpper,
+                        window.intlTelInputUtils.numberFormat.E164
+                    );
+
+                    if (e164) {
+                        const isValid = window.intlTelInputUtils.isValidNumber(
+                            e164,
+                            countryCodeUpper
+                        );
+
+                        if (isValid) {
+                            console.log('→ E164 via utils:', e164);
+                            return e164;
+                        }
+                    }
+                }
+
+                // Si utils renvoie un format sans +, on tente de le corriger
+                const e164Loose = window.intlTelInputUtils.formatNumber(
+                    normalizedInput,
+                    countryCodeUpper,
+                    window.intlTelInputUtils.numberFormat.E164
+                );
+
+                if (e164Loose) {
+                    let fixed = e164Loose;
+                    if (!fixed.startsWith('+')) {
+                        if (dialCode && fixed.startsWith(dialCode)) {
+                            fixed = '+' + fixed;
+                        } else {
+                            fixed = '+' + dialCode + fixed;
+                        }
+                    }
+                    console.log('→ E164 corrigé:', fixed);
+                    return fixed;
+                }
+            }
+
+            // Fallback générique si utils non disponible
+            if (!normalizedInput) return '';
+
+            if (normalizedInput.startsWith('+')) {
+                console.log('→ Fallback +:', normalizedInput);
+                return normalizedInput;
+            }
+
+            // Si ça commence déjà par le dialCode, on ajoute juste le +
+            if (dialCode && normalizedInput.startsWith(dialCode) && normalizedInput.length > dialCode.length) {
+                const withPlus = '+' + normalizedInput;
+                console.log('→ Fallback dial code:', withPlus);
+                return withPlus;
+            }
+
+            const fallback = '+' + dialCode + normalizedInput;
+            console.log('→ Fallback concat:', fallback);
+            return fallback;
+        }
+
+        function isLenientlyValidNumber(value, countryCodeUpper) {
+            if (!value) return false;
+
+            if (window.intlTelInputUtils) {
+                if (window.intlTelInputUtils.isValidNumber(value, countryCodeUpper)) {
+                    return true;
+                }
+            }
+
+            const digits = value.replace(/\D/g, '');
+            return digits.length >= 6 && digits.length <= 15;
+        }
+
+        function detectCountryFromNumber(phoneNumber, itiInstance) {
+            if (!window.intlTelInputUtils || !itiInstance) return null;
+
+            console.log('🔎 Attempting auto-detection for:', phoneNumber);
+
+            // Essayer d'abord avec région vide (pour numéros avec code pays)
+            try {
+                const parsed = window.intlTelInputUtils.parseNumber(phoneNumber, '');
+                if (parsed && parsed.getCountryCode && parsed.getNationalNumber) {
+                    const cc = parsed.getCountryCode();
+                    const nn = parsed.getNationalNumber();
+                    
+                    if (cc && nn) {
+                        const regionCode = window.intlTelInputUtils.getRegionCodeForCountryCode(cc);
+                        if (regionCode) {
+                            console.log('🌐 Auto-detected (with intl code):', regionCode, '(country code:', cc, ')');
+                            return regionCode;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('  → Parse attempt 1 (empty region) failed:', e.message);
+            }
+
+            // Si le numéro ne commence pas par +, essayer en ajoutant TOUS les codes pays (1-999)
+            if (!phoneNumber.startsWith('+')) {
+                console.log('  → Trying all country codes 1-999 for bare number...');
+                
+                for (let cc = 1; cc <= 999; cc++) {
+                    try {
+                        // Essayer en préfixant avec le code pays
+                        const testNumber = '+' + cc + phoneNumber;
+                        const parsed = window.intlTelInputUtils.parseNumber(testNumber, '');
+                        
+                        if (parsed && parsed.getCountryCode && parsed.getNationalNumber) {
+                            const parsedCC = parsed.getCountryCode();
+                            const nn = parsed.getNationalNumber();
+                            
+                            // Vérifier que le code pays correspond et que le numéro national est valide
+                            if (parsedCC === cc && nn && String(nn).length >= 6) {
+                                const regionCode = window.intlTelInputUtils.getRegionCodeForCountryCode(cc);
+                                if (regionCode) {
+                                    console.log('🌐 Auto-detected (country code', cc, '):', regionCode);
+                                    return regionCode;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Continue to next code - fail silently for speed
+                    }
+                }
+            }
+
+            console.log('  → No country auto-detection successful');
+            return null;
+        }
+
         // Fonction utilitaire pour afficher des alertes personnalisées
         async function showCustomAlert(title, message) {
             return new Promise(resolve => {
@@ -461,11 +612,8 @@
 
                 titleEl.textContent = title;
                 messageEl.textContent = message;
-
-                // Hide prompt container for error messages
                 promptContainer.classList.add('hidden');
 
-                // Change button text depending on title
                 if (title === 'Erreur') {
                     confirmBtn.textContent = 'Retour au formulaire';
                 } else {
@@ -476,12 +624,9 @@
 
                 const closeModal = () => {
                     modal.classList.add('hidden');
-
-                    // Stay on payment page after closing error modal
                     if (title === 'Erreur') {
                         window.location.href = '{{ route("form-consigne") }}';
                     }
-
                     resolve(true);
                 };
 
@@ -489,7 +634,6 @@
                 closeBtn.onclick = closeModal;
                 cancelBtn.onclick = closeModal;
 
-                // Fermer en cliquant sur l'overlay
                 modal.onclick = function(e) {
                     if (e.target === modal) closeModal();
                 };
@@ -499,24 +643,112 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialiser intl-tel-input
             const phoneInput = document.querySelector("#modal-telephone");
+            let itiInstance = null;
+            
             if (phoneInput) {
-                window.intlTelInput(phoneInput, {
+                itiInstance = window.intlTelInput(phoneInput, {
                     initialCountry: "fr",
-                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js"
+                    preferredCountries: ["fr", "be", "ch", "ca", "mu"],
+                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
+                    formatOnDisplay: false, // Changé à false pour plus de contrôle
+                    autoPlaceholder: "aggressive",
+                    separateDialCode: true,
+                    nationalMode: false
+                });
+
+                console.log('✅ Phone input initialized');
+
+                // Permettre la saisie libre
+                phoneInput.addEventListener('input', function(e) {
+                    let value = phoneInput.value;
+                    // Garder: chiffres, +, espaces, tirets, parenthèses
+                    value = value.replace(/[^\d+\s\-\(\)]/g, '');
+                    phoneInput.value = value;
+                });
+
+                // Valider au blur
+                phoneInput.addEventListener('blur', function() {
+                    const value = phoneInput.value.trim();
+                    
+                    if (!value) {
+                        phoneInput.classList.remove('input-error');
+                        const errorMsg = phoneInput.parentElement.querySelector('.phone-error-msg');
+                        if (errorMsg) errorMsg.remove();
+                        return;
+                    }
+                    
+                    console.log('🔍 Validation du numéro...');
+                    
+                    let countryData = itiInstance.getSelectedCountryData();
+                    let countryCodeUpper = String(countryData.iso2 || '').toUpperCase();
+                    const normalized = normalizePhoneNumber(value, countryData);
+                    
+                    // Tenter de détecter le pays depuis le numéro
+                    const detectedRegion = detectCountryFromNumber(normalized, itiInstance);
+                    if (detectedRegion && detectedRegion !== countryCodeUpper) {
+                        console.log('🔄 Switching country to detected:', detectedRegion);
+                        itiInstance.setCountry(detectedRegion.toLowerCase());
+                        countryData = itiInstance.getSelectedCountryData();
+                        countryCodeUpper = detectedRegion;
+                    }
+                    
+                    phoneInput.value = normalized;
+                    itiInstance.setNumber(normalized);
+                    
+                    // Attendre que ITI traite le numéro
+                    setTimeout(() => {
+                        const formatted = itiInstance.getNumber() || normalized;
+                        const isValid = isLenientlyValidNumber(formatted, countryCodeUpper);
+                        
+                        if (isValid) {
+                            phoneInput.classList.remove('input-error');
+                            const errorMsg = phoneInput.parentElement.querySelector('.phone-error-msg');
+                            if (errorMsg) errorMsg.remove();
+                            
+                            phoneInput.value = formatted;
+                            console.log('✅ Numéro valide:', formatted);
+                        } else {
+                            phoneInput.classList.add('input-error');
+                            
+                            let errorMsg = phoneInput.parentElement.querySelector('.phone-error-msg');
+                            if (!errorMsg) {
+                                errorMsg = document.createElement('p');
+                                errorMsg.className = 'phone-error-msg text-red-500 text-sm mt-1';
+                                phoneInput.parentElement.appendChild(errorMsg);
+                            }
+                            
+                            const errorCode = itiInstance.getValidationError();
+                            const errors = {
+                                0: 'Numéro invalide',
+                                1: 'Code pays invalide',
+                                2: 'Numéro trop court',
+                                3: 'Numéro trop long',
+                                4: 'Format invalide'
+                            };
+                            errorMsg.textContent = errors[errorCode] || 'Numéro invalide';
+                            console.log('❌ Numéro invalide:', errors[errorCode]);
+                        }
+                    }, 100);
+                });
+
+                // Re-normaliser au changement de pays
+                phoneInput.addEventListener('countrychange', function() {
+                    const value = phoneInput.value.trim();
+                    if (value) {
+                        console.log('🌍 Changement de pays');
+                        phoneInput.dispatchEvent(new Event('blur'));
+                    }
                 });
             }
             
             // Charger Google Places API si nécessaire
             @if($googlePlacesApiKey)
-            // Charger l'API uniquement quand la modale est ouverte
             const openClientProfileModalBtn = document.getElementById('openClientProfileModalBtn');
             if (openClientProfileModalBtn) {
                 openClientProfileModalBtn.addEventListener('click', function() {
-                    // Charger Google Maps API si pas encore chargé
                     if (!window.google || !window.google.maps || !window.google.maps.places) {
                         loadGoogleMapsAPI(initAutocomplete);
                     } else {
-                        // Si déjà chargé, initialiser directement
                         setTimeout(initAutocomplete, 100);
                     }
                 });
@@ -531,14 +763,12 @@
             const closeClientProfileModalBtn = document.getElementById('closeClientProfileModalBtn');
             const clientProfileForm = document.getElementById('clientProfileForm');
             const userData = @json($user);
-            let areAdditionalFieldsVisible = false; // Nouvelle variable d'état
+            let areAdditionalFieldsVisible = false;
 
-            // Référence aux éléments de la modale
             const additionalFieldsContainer = document.getElementById('additional-fields-container');
             const toggleAdditionalFieldsBtn = document.getElementById('toggleAdditionalFieldsBtn');
             const toggleText = document.getElementById('toggleText');
 
-            // Fonction pour basculer la visibilité des champs additionnels
             function toggleAdditionalFields() {
                 if (additionalFieldsContainer) {
                     additionalFieldsContainer.classList.toggle('hidden');
@@ -547,89 +777,120 @@
                 }
             }
 
-            // Écouteur pour le bouton de bascule
             if (toggleAdditionalFieldsBtn) {
                 toggleAdditionalFieldsBtn.addEventListener('click', toggleAdditionalFields);
             }
 
             function validateGuestForm() {
-    console.log('validateGuestForm called');
+                console.log('validateGuestForm called');
 
-    // CHAMPS OBLIGATOIRES UNIQUEMENT
-    const requiredFields = [
-        'modal-prenom',
-        'modal-nom',
-        'modal-telephone',
-        'modal-adresse'
-    ];
+                const requiredFields = [
+                    'modal-prenom',
+                    'modal-nom',
+                    'modal-telephone',
+                    'modal-adresse'
+                ];
 
-    let isValid = true;
+                let isValid = true;
 
-    // Validation champs obligatoires
-    requiredFields.forEach(fieldId => {
-        const input = document.getElementById(fieldId);
-        if (!input || input.value.trim() === '') {
-            isValid = false;
-            if (input) input.classList.add('input-error');
-        } else {
-            input.classList.remove('input-error');
-        }
-    });
+                requiredFields.forEach(fieldId => {
+                    const input = document.getElementById(fieldId);
+                    if (!input || input.value.trim() === '') {
+                        isValid = false;
+                        if (input) input.classList.add('input-error');
+                    } else {
+                        input.classList.remove('input-error');
+                    }
+                });
 
-    // ⚠️ CHAMPS OPTIONNELS
-    // ➜ VALIDÉS UNIQUEMENT S’ILS SONT REMPLIS
-    const optionalValidators = [
-        {
-            id: 'modal-codePostal',
-            validate: value => /^\d+$/.test(value),
-            error: 'Code postal invalide'
-        }
-    ];
+                // Validation téléphone
+                const phoneInput = document.getElementById('modal-telephone');
+                if (phoneInput && window.intlTelInputGlobals) {
+                    const itiInstance = window.intlTelInputGlobals.getInstance(phoneInput);
+                    if (itiInstance && phoneInput.value.trim()) {
+                        let countryData = itiInstance.getSelectedCountryData();
+                        let countryCodeUpper = String(countryData.iso2 || '').toUpperCase();
+                        const value = phoneInput.value.trim();
+                        
+                        const normalizedNumber = normalizePhoneNumber(value, countryData);
+                        
+                        // Auto-détecter le pays depuis le numéro
+                        const detectedRegion = detectCountryFromNumber(normalizedNumber, itiInstance);
+                        if (detectedRegion && detectedRegion !== countryCodeUpper) {
+                            console.log('🔄 Form validation: Switching country to detected:', detectedRegion);
+                            itiInstance.setCountry(detectedRegion.toLowerCase());
+                            countryData = itiInstance.getSelectedCountryData();
+                            countryCodeUpper = detectedRegion;
+                        }
+                        
+                        phoneInput.value = normalizedNumber;
+                        itiInstance.setNumber(normalizedNumber);
+                        
+                        const formatted = itiInstance.getNumber() || normalizedNumber;
+                        const isValidPhone = isLenientlyValidNumber(formatted, countryCodeUpper);
+                        if (!isValidPhone) {
+                            isValid = false;
+                            phoneInput.classList.add('input-error');
+                            
+                            let errorMsg = phoneInput.parentElement.querySelector('.phone-error-msg');
+                            if (!errorMsg) {
+                                errorMsg = document.createElement('p');
+                                errorMsg.className = 'phone-error-msg text-red-500 text-sm mt-1';
+                                phoneInput.parentElement.appendChild(errorMsg);
+                            }
+                            errorMsg.textContent = 'Numéro de téléphone invalide';
+                        } else {
+                            phoneInput.value = itiInstance.getNumber();
+                            const errorMsg = phoneInput.parentElement.querySelector('.phone-error-msg');
+                            if (errorMsg) {
+                                errorMsg.remove();
+                            }
+                        }
+                    }
+                }
 
-    optionalValidators.forEach(({ id, validate }) => {
-        const input = document.getElementById(id);
-        if (input && input.value.trim() !== '') {
-            if (!validate(input.value.trim())) {
-                isValid = false;
-                input.classList.add('input-error');
-            } else {
-                input.classList.remove('input-error');
+                const optionalValidators = [
+                    {
+                        id: 'modal-codePostal',
+                        validate: value => /^\d+$/.test(value),
+                        error: 'Code postal invalide'
+                    }
+                ];
+
+                optionalValidators.forEach(({ id, validate }) => {
+                    const input = document.getElementById(id);
+                    if (input && input.value.trim() !== '') {
+                        if (!validate(input.value.trim())) {
+                            isValid = false;
+                            input.classList.add('input-error');
+                        } else {
+                            input.classList.remove('input-error');
+                        }
+                    } else if (input) {
+                        input.classList.remove('input-error');
+                    }
+                });
+
+                console.log('Validation result:', isValid);
+                return isValid;
             }
-        } else if (input) {
-            input.classList.remove('input-error');
-        }
-    });
 
-    console.log('Validation result:', isValid);
-    return isValid;
-}
-
-
-            // Pré-remplir le formulaire quand on ouvre la modale
             if (openClientProfileModalBtn) {
                 openClientProfileModalBtn.addEventListener('click', () => {
-                    // Masquer les champs additionnels par défaut à l'ouverture de la modale
                     if (additionalFieldsContainer) {
                         additionalFieldsContainer.classList.add('hidden');
                         areAdditionalFieldsVisible = false;
                         toggleText.textContent = "Compléter mon profil (facultatif)";
                     }
 
-                    // Pré-remplir les champs
-                    // Le champ email est un champ caché dans la modale maintenant, il faut le préremplir
                     document.getElementById('modal-email').value = userData.email || '';
-
-                    // Nom et Prénom vides par défaut pour l'invité
                     document.getElementById('modal-nom').value = (isGuest && (userData.nom === 'Invité' || userData.nom === null)) ? '' : (userData.nom || '');
                     document.getElementById('modal-prenom').value = (isGuest && (userData.prenom === 'Client' || userData.prenom === null)) ? '' : (userData.prenom || '');
                     document.getElementById('modal-telephone').value = userData.telephone || '';
                     document.getElementById('modal-adresse').value = userData.adresse || '';
-
-                    // Champs optionnels avec valeurs par défaut pour l'invité si non remplis
                     document.getElementById('modal-ville').value = userData.ville || '';
                     document.getElementById('modal-codePostal').value = userData.codePostal || '';
                     document.getElementById('modal-pays').value = userData.pays || '';
-                    
                     document.getElementById('modal-civilite').value = userData.civilite || '';
                     document.getElementById('modal-nomSociete').value = userData.nomSociete || '';
                     document.getElementById('modal-complementAdresse').value = userData.complementAdresse || '';
@@ -690,7 +951,6 @@
                             if (loader) {
                                 loader.classList.remove('hidden');
                             }
-                            // Recharger la page après un court instant
                             setTimeout(() => {
                                 location.reload();
                             }, 500);
@@ -714,7 +974,6 @@
                 });
             }
 
-            // Auto-ouverture de la modale si le profil est incomplet
             if (!isProfileComplete && openClientProfileModalBtn) {
                 setTimeout(() => {
                     openClientProfileModalBtn.click();
@@ -762,7 +1021,6 @@
                         const loader = document.getElementById('loader');
                         if (loader) loader.classList.remove('hidden');
 
-                        // Vider le stockage de session
                         sessionStorage.removeItem('formState');
                         
                         try {
@@ -784,7 +1042,6 @@
                 });
             }
             
-            // Forcer le rechargement sans cache si paramètre présent
             if (window.location.search.includes('nocache') || !window.google) {
                 const links = document.querySelectorAll('link[rel="stylesheet"]');
                 links.forEach(link => {
@@ -794,9 +1051,14 @@
                 });
             }
 
-            // Show error modal if there's an error message in the session
             @if(session('error'))
                 showCustomAlert('Erreur', '{{ session('error') }}');
             @endif
         });
     </script>
+</body>
+</html>
+
+
+
+

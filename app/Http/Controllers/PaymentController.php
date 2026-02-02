@@ -334,6 +334,16 @@ class PaymentController extends Controller
         Log::info('----------------------------------------------------');
         Log::info('[showPaymentPage] START - Handling /payment route.');
 
+        // Check if user has already completed a payment recently (to prevent duplicate orders)
+        $lastCommandeId = Session::get('last_commande_id');
+        $apiPaymentResult = Session::get('api_payment_result');
+
+        // If both are present, the user has already completed a payment
+        if ($lastCommandeId && $apiPaymentResult) {
+            Log::info('[showPaymentPage] User has already completed a payment. Redirecting to success page.');
+            return redirect()->route('payment.success.show')->with('info', 'Votre commande a déjà été traitée avec succès.');
+        }
+
         $commandeData = Session::get('commande_en_cours');
         if (!$commandeData || !isset($commandeData['client'])) {
             Log::error('[showPaymentPage] CRITICAL: Commande data or client info NOT FOUND in session. Aborting.');
@@ -502,7 +512,7 @@ class PaymentController extends Controller
                 ]);
 
                 // Send email, clear session, and redirect
-                Session::forget(['commande_en_cours', 'monetico_order_id']);
+                Session::forget(['commande_en_cours', 'monetico_order_id', 'guest_customer_details']);
                 Session::put('api_payment_result', $apiResult);
                 Session::put('last_commande_id', $commande->id);
 
@@ -592,7 +602,7 @@ class PaymentController extends Controller
             \Illuminate\Support\Facades\Log::error('[showPaymentSuccess] CRITICAL: Commande object NOT FOUND in DB for ID: ' . $lastCommandeId . '. Redirecting.');
             return redirect()->route('payment')->with('error', 'La commande n\'a pas été trouvée. Veuillez recommencer votre commande.');
         }
-        
+
         // Log the presence and part of invoice_content
         if ($commande->invoice_content) {
             \Illuminate\Support\Facades\Log::debug('[showPaymentSuccess] Commande invoice_content present. Length: ' . strlen($commande->invoice_content) . ', First 100 chars: ' . substr($commande->invoice_content, 0, 100));
@@ -601,8 +611,8 @@ class PaymentController extends Controller
         }
 
 
-        // Forget the session data after using it
-        Session::forget(['api_payment_result', 'last_commande_id']);
+        // Forget all session data after displaying the success page to prevent duplicate orders
+        Session::forget(['api_payment_result', 'last_commande_id', 'commande_en_cours', 'monetico_order_id', 'guest_customer_details']);
 
         return view('payment-success', [
             'apiResult' => $apiResult,
