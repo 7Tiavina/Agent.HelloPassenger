@@ -247,6 +247,25 @@ function updateAdvertModalButtons() {
             addButton.classList.add('bg-transparent', 'border', 'border-gray-400', 'text-gray-700', 'hover:bg-gray-100');
         }
     });
+    
+    // NOUVELLE PARTIE : Mise à jour du bouton "Continuer"
+    const continueBtn = document.getElementById('continue-from-options-modal');
+    if (continueBtn) {
+        const hasOptionsInCart = cartItems.some(item => 
+            item.itemCategory === 'option' && (item.key === 'priority' || item.key === 'premium')
+        );
+        
+        if (hasOptionsInCart) {
+            continueBtn.textContent = 'Valider et continuer →';
+            continueBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            continueBtn.classList.add('bg-yellow-custom', 'text-gray-dark');
+        } else {
+            continueBtn.textContent = 'Je ne suis pas intéressé - Continuer →';
+            // MODIFICATION ICI : Mettre en jaune au lieu de gris
+            continueBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            continueBtn.classList.add('bg-yellow-custom', 'text-gray-dark');
+        }
+    }
 }
 
 function toggleOptionFromModal(optionKey) {
@@ -406,7 +425,7 @@ function showOptionsAdvertisementModal() {
                     </div>
                 </div>
                 <div id="premium_fields_terminal_to_agence" class="hidden mt-4 space-y-3">
-                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la prise en charge personnalisée de vos bagages.</h4>
+                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la prise en charge personnalisée de vos bagages.</h4>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Moyen de transport *</label>
                         <select name="transport_type_arrival" class="input-style custom-select w-full" data-required="true">
@@ -418,7 +437,7 @@ function showOptionsAdvertisementModal() {
                     </div>
                     ${transportSpecificFields('arrival')}
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700">Date d’arrivée</label><input type="date" id="flight_date_arrival" name="date_arrival" class="input-style w-full"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Date d'arrivée</label><input type="date" id="flight_date_arrival" name="date_arrival" class="input-style w-full"></div>
                         <div>
                              <label class="block text-sm font-medium text-gray-700">Lieu de prise en charge *</label>
                              <select name="pickup_location_arrival" class="input-style custom-select w-full" data-required="true"><option value="" selected disabled>Select</option>${lieuxOptionsHTML}</select>
@@ -430,7 +449,7 @@ function showOptionsAdvertisementModal() {
                     <div><label class="block text-sm font-medium text-gray-700">Informations complémentaires</label><textarea name="instructions_arrival" class="input-style w-full" rows="2"></textarea></div>
                 </div>
                 <div id="premium_fields_agence_to_terminal" class="hidden mt-4 space-y-3">
-                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l’organisation de la restitution personnalisée de vos bagages.</h4>
+                    <h4 class="font-semibold text-gray-800 border-t pt-3 mt-3">Communiquez-nous les informations utiles à l'organisation de la restitution personnalisée de vos bagages.</h4>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Moyen de transport *</label>
                         <select name="transport_type_departure" class="input-style custom-select w-full" data-required="true">
